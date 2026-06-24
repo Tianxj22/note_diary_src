@@ -208,6 +208,92 @@ describe('file-store', () => {
       expect(fs.readFileSync(filePath, 'utf-8')).toBe('');
     });
   });
+  // U-12, U-13: 删除笔记
+  describe('deleteNote', () => {
+    it('U-12: 应删除存在的文件并返回 true', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const { filePath } = fileStore.createNote(notesDir, '待删除');
+
+      expect(fs.existsSync(filePath)).toBe(true);
+      const result = fileStore.deleteNote(filePath);
+      expect(result).toBe(true);
+      expect(fs.existsSync(filePath)).toBe(false);
+    });
+
+    it('U-13: 删除不存在的文件应返回 false', () => {
+      const result = fileStore.deleteNote(path.join(tmpDir, '不存在.txt'));
+      expect(result).toBe(false);
+    });
+  });
+
+  // U-14, U-15: 重命名笔记
+  describe('renameNote', () => {
+    it('U-14: 应重命名文件并返回新路径信息', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const { filePath } = fileStore.createNote(notesDir, '旧标题');
+
+      const result = fileStore.renameNote(filePath, '新标题');
+
+      expect(result).not.toBeNull();
+      expect(result.fileName).toMatch(/^新标题_\d+\.txt$/);
+      expect(fs.existsSync(result.filePath)).toBe(true);
+      expect(fs.existsSync(filePath)).toBe(false);
+    });
+
+    it('U-15: 重命名不存在的文件应返回 null', () => {
+      const result = fileStore.renameNote(path.join(tmpDir, '不存在.txt'), 'X');
+      expect(result).toBeNull();
+    });
+  });
+
+  // U-16, U-17: 复制笔记
+  describe('duplicateNote', () => {
+    it('U-16: 应创建副本文件并返回路径信息', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const { filePath } = fileStore.createNote(notesDir, '原稿');
+      const content = '副本测试内容';
+      fs.writeFileSync(filePath, content, 'utf-8');
+
+      const result = fileStore.duplicateNote(filePath);
+
+      expect(result).not.toBeNull();
+      expect(result.fileName).toContain('原稿 - 副本');
+      expect(fs.existsSync(result.filePath)).toBe(true);
+      expect(fs.readFileSync(result.filePath, 'utf-8')).toBe(content);
+      // 原文件应保留
+      expect(fs.existsSync(filePath)).toBe(true);
+    });
+
+    it('U-17: 复制不存在的文件应返回 null', () => {
+      const result = fileStore.duplicateNote(path.join(tmpDir, '不存在.txt'));
+      expect(result).toBeNull();
+    });
+  });
+
+  // U-18, U-19: 剪切笔记
+  describe('cutNote', () => {
+    it('U-18: 应移动文件到剪贴板目录并返回路径信息', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const { filePath } = fileStore.createNote(notesDir, '要剪切的笔记');
+      const content = '剪切测试';
+      fs.writeFileSync(filePath, content, 'utf-8');
+
+      const result = fileStore.cutNote(notesDir, filePath);
+
+      expect(result).not.toBeNull();
+      expect(result.filePath).toContain('.clipboard');
+      expect(fs.existsSync(result.filePath)).toBe(true);
+      expect(fs.readFileSync(result.filePath, 'utf-8')).toBe(content);
+      // 原文件应消失
+      expect(fs.existsSync(filePath)).toBe(false);
+    });
+
+    it('U-19: 剪切不存在的文件应返回 null', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const result = fileStore.cutNote(notesDir, path.join(tmpDir, '不存在.txt'));
+      expect(result).toBeNull();
+    });
+  });
 });
 
 /**

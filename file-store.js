@@ -4,7 +4,7 @@
  * @author       tianxj22
  * @created      2024-06-24
  * @updated      2024-06-24
- * @version      1.0.0
+ * @version      1.1.0
  */
 
 const fs = require('fs');
@@ -91,4 +91,91 @@ function saveNote(filePath, content) {
   }
 }
 
-module.exports = { ensureNotesDir, createNote, listNotes, readNote, saveNote };
+/**
+ * 删除指定笔记文件
+ * @param {string} filePath - 笔记文件的绝对路径
+ * @returns {boolean} 删除成功返回 true，文件不存在或失败返回 false
+ */
+function deleteNote(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return false;
+    fs.unlinkSync(filePath);
+    return true;
+  } catch (err) {
+    console.error('删除笔记失败:', err.message);
+    return false;
+  }
+}
+
+/**
+ * 重命名笔记文件（移动/改名）
+ * @param {string} oldPath - 原文件绝对路径
+ * @param {string} newTitle - 新标题（不含时间戳，会自动追加）
+ * @returns {{ filePath: string, fileName: string } | null} 新文件路径信息，失败返回 null
+ */
+function renameNote(oldPath, newTitle) {
+  try {
+    if (!fs.existsSync(oldPath)) return null;
+    const dir = path.dirname(oldPath);
+    const timestamp = Date.now();
+    const safeTitle = newTitle || '未命名笔记';
+    const newFileName = `${safeTitle}_${timestamp}.txt`;
+    const newPath = path.join(dir, newFileName);
+    fs.renameSync(oldPath, newPath);
+    return { filePath: newPath, fileName: newFileName };
+  } catch (err) {
+    console.error('重命名笔记失败:', err.message);
+    return null;
+  }
+}
+
+/**
+ * 复制笔记文件（创建副本）
+ * @param {string} filePath - 原文件绝对路径
+ * @returns {{ filePath: string, fileName: string } | null} 副本路径信息，失败返回 null
+ */
+function duplicateNote(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    const dir = path.dirname(filePath);
+    const ext = path.extname(filePath);
+    const baseName = path.basename(filePath, ext).replace(/_\d+$/, '');
+    const timestamp = Date.now();
+    const newFileName = `${baseName} - 副本_${timestamp}${ext}`;
+    const newPath = path.join(dir, newFileName);
+    fs.copyFileSync(filePath, newPath);
+    return { filePath: newPath, fileName: newFileName };
+  } catch (err) {
+    console.error('复制笔记失败:', err.message);
+    return null;
+  }
+}
+
+/**
+ * 剪切笔记文件（移动至剪贴板目录）
+ * @param {string} notesDir - notes 目录路径
+ * @param {string} filePath - 原文件绝对路径
+ * @returns {{ filePath: string, fileName: string } | null} 剪贴板中的文件路径信息，失败返回 null
+ */
+function cutNote(notesDir, filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    const clipboardDir = path.join(notesDir, '.clipboard');
+    if (!fs.existsSync(clipboardDir)) {
+      fs.mkdirSync(clipboardDir, { recursive: true });
+    }
+    const fileName = path.basename(filePath);
+    const destPath = path.join(clipboardDir, fileName);
+    // 如果目标已存在，追加时间戳
+    const finalDest = fs.existsSync(destPath)
+      ? path.join(clipboardDir, fileName.replace(/\.txt$/, `_${Date.now()}.txt`))
+      : destPath;
+    fs.renameSync(filePath, finalDest);
+    return { filePath: finalDest, fileName: path.basename(finalDest) };
+  } catch (err) {
+    console.error('剪切笔记失败:', err.message);
+    return null;
+  }
+}
+
+module.exports = { ensureNotesDir, createNote, listNotes, readNote, saveNote, deleteNote, renameNote, duplicateNote, cutNote };

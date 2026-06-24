@@ -4,7 +4,7 @@
   @author       tianxj22
   @created      2024-06-24
   @updated      2024-06-24
-  @version      1.1.0
+  @version      1.2.0
 -->
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -209,6 +209,63 @@
       color: #ccc;
     }
 
+    /* ===== 右键上下文菜单 ===== */
+    .context-menu {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 6px;
+      padding: 4px 0;
+      min-width: 150px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .context-menu.visible {
+      display: block;
+    }
+
+    .context-menu .menu-item {
+      padding: 8px 16px;
+      cursor: pointer;
+      color: #ddd;
+      font-size: 0.85rem;
+      transition: background 0.1s;
+    }
+
+    .context-menu .menu-item:hover {
+      background: #4a4a4a;
+      color: #fff;
+    }
+
+    .context-menu .menu-item.danger {
+      color: #f66;
+    }
+
+    .context-menu .menu-item.danger:hover {
+      background: #a33;
+      color: #fff;
+    }
+
+    .context-menu .menu-divider {
+      height: 1px;
+      background: #555;
+      margin: 4px 8px;
+    }
+
+    /* ===== 侧边栏内联重命名 ===== */
+    .note-item .rename-input {
+      width: calc(100% - 8px);
+      padding: 2px 4px;
+      border: 1px solid #6c9fff;
+      border-radius: 3px;
+      background: #444;
+      color: #fff;
+      font-size: 0.88rem;
+      outline: none;
+    }
+
     /* 状态栏 */
     .status-bar {
       display: flex;
@@ -255,6 +312,15 @@
     </div>
   </div>
 
+  <!-- 右键上下文菜单 -->
+  <div class="context-menu" id="context-menu">
+    <div class="menu-item" data-action="rename">✏️ 重命名</div>
+    <div class="menu-item" data-action="duplicate">📋 复制</div>
+    <div class="menu-item" data-action="cut">✂️ 剪切</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item danger" data-action="delete">🗑️ 删除</div>
+  </div>
+
   <script>
     (function () {
       // ---- 状态 ----
@@ -277,6 +343,10 @@
 
       let textarea = null;
 
+      // ---- 右键菜单 DOM ----
+      const contextMenu = document.getElementById('context-menu');
+      let contextNote = null; // 当前右键操作的笔记对象
+
       // ---- 渲染笔记列表 ----
       function renderNoteList() {
         noteListEl.innerHTML = '';
@@ -290,6 +360,10 @@
           div.innerHTML = `<div class="title">${escapeHtml(n.displayName)}</div>
                            <div class="meta">${formatDate(n.mtime)}</div>`;
           div.addEventListener('click', () => selectNote(n));
+          div.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            showContextMenu(e, n);
+          });
           noteListEl.appendChild(div);
         });
       }
@@ -452,6 +526,155 @@
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
       }
 
+      // ---- 右键菜单 ----
+      /**
+       * 显示右键上下文菜单
+       * @param {MouseEvent} e - 鼠标事件
+       * @param {object} note - 笔记对象
+       */
+      function showContextMenu(e, note) {
+        contextNote = note;
+        contextMenu.style.left = e.clientX + 'px';
+        contextMenu.style.top = e.clientY + 'px';
+        contextMenu.classList.add('visible');
+      }
+
+      /**
+       * 隐藏右键上下文菜单
+       */
+      function hideContextMenu() {
+        contextMenu.classList.remove('visible');
+        contextNote = null;
+      }
+
+      // ---- 笔记操作 ----
+      /**
+       * 删除当前右键选中的笔记
+       */
+      async function handleDelete() {
+        if (!contextNote) return;
+        const name = contextNote.displayName;
+        if (!confirm(`确定要删除笔记"${name}"吗？此操作不可撤销。`)) return;
+        const ok = await window.electronAPI.deleteNote(contextNote.filePath);
+        if (ok) {
+          if (currentNote && currentNote.filePath === contextNote.filePath) {
+            currentNote = null;
+            currentContent = '';
+            lastSavedContent = '';
+            hideEditor();
+            titleInput.value = '';
+          }
+          statusLeft.textContent = `已删除: ${name}`;
+          await loadNoteList();
+          updateStatus();
+        }
+        hideContextMenu();
+      }
+
+      /**
+       * 复制（创建副本）当前右键选中的笔记
+       */
+      async function handleDuplicate() {
+        if (!contextNote) return;
+        const result = await window.electronAPI.duplicateNote(contextNote.filePath);
+        if (result) {
+          statusLeft.textContent = `已复制: ${contextNote.displayName}`;
+          await loadNoteList();
+        }
+        hideContextMenu();
+      }
+
+      /**
+       * 剪切当前右键选中的笔记（移至剪贴板目录）
+       */
+      async function handleCut() {
+        if (!contextNote) return;
+        const result = await window.electronAPI.cutNote(contextNote.filePath);
+        if (result) {
+          if (currentNote && currentNote.filePath === contextNote.filePath) {
+            currentNote = null;
+            currentContent = '';
+            lastSavedContent = '';
+            hideEditor();
+            titleInput.value = '';
+          }
+          statusLeft.textContent = `已剪切: ${contextNote.displayName}`;
+          await loadNoteList();
+          updateStatus();
+        }
+        hideContextMenu();
+      }
+
+      /**
+       * 开始内联重命名侧边栏中的笔记项
+       * @param {object} note - 笔记对象
+       */
+      async function startRename() {
+        if (!contextNote) return;
+        const note = contextNote;
+        hideContextMenu();
+
+        // 在侧边栏中找到对应 DOM 元素
+        const items = noteListEl.querySelectorAll('.note-item');
+        let targetItem = null;
+        items.forEach(item => {
+          const titleEl = item.querySelector('.title');
+          if (titleEl && titleEl.textContent === note.displayName) {
+            targetItem = item;
+          }
+        });
+        if (!targetItem) return;
+
+        const titleEl = targetItem.querySelector('.title');
+        const oldTitle = note.displayName;
+
+        // 替换为 input
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'rename-input';
+        input.value = oldTitle;
+        titleEl.replaceWith(input);
+        input.focus();
+        input.select();
+
+        /**
+         * 确认重命名
+         */
+        const confirmRename = async () => {
+          const newTitle = input.value.trim();
+          if (!newTitle || newTitle === oldTitle) {
+            // 取消：还原 title
+            input.replaceWith(titleEl);
+            return;
+          }
+          const result = await window.electronAPI.renameNote(note.filePath, newTitle);
+          if (result) {
+            statusLeft.textContent = `已重命名: ${oldTitle} → ${newTitle}`;
+            await loadNoteList();
+            // 如果重命名的是当前打开的笔记，更新 currentNote
+            if (currentNote && currentNote.filePath === note.filePath) {
+              currentNote.filePath = result.filePath;
+              currentNote.fileName = result.fileName;
+              currentNote.displayName = newTitle;
+              titleInput.value = newTitle;
+            }
+            updateStatus();
+          } else {
+            input.replaceWith(titleEl);
+          }
+        };
+
+        input.addEventListener('blur', confirmRename);
+        input.addEventListener('keydown', (ke) => {
+          if (ke.key === 'Enter') {
+            input.blur(); // 触发 blur → confirmRename
+          } else if (ke.key === 'Escape') {
+            input.value = oldTitle;
+            input.blur();
+          }
+        });
+      }
+
       // ---- 事件绑定 ----
       document.getElementById('btn-sidebar-new').addEventListener('click', createNewNote);
       document.getElementById('btn-new').addEventListener('click', createNewNote);
@@ -464,15 +687,39 @@
         await createNewNote();
       });
 
-      titleInput.addEventListener('keydown', (e) => {
+      // 右键菜单项点击
+      contextMenu.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const action = item.dataset.action;
+          if (action === 'rename') startRename();
+          else if (action === 'duplicate') handleDuplicate();
+          else if (action === 'cut') handleCut();
+          else if (action === 'delete') handleDelete();
+        });
+      });
+
+      // 点击菜单外部关闭
+      document.addEventListener('click', (e) => {
+        if (!contextMenu.contains(e.target)) {
+          hideContextMenu();
+        }
+      });
+
+      titleInput.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
           if (currentNote) {
             const newTitle = titleInput.value.trim();
             if (newTitle && newTitle !== currentNote.displayName) {
-              currentNote.displayName = newTitle;
-              renderNoteList();
-              saveCurrentNote();
+              const result = await window.electronAPI.renameNote(currentNote.filePath, newTitle);
+              if (result) {
+                currentNote.filePath = result.filePath;
+                currentNote.fileName = result.fileName;
+                currentNote.displayName = newTitle;
+                await loadNoteList();
+                updateStatus();
+                statusLeft.textContent = '已重命名';
+              }
             }
           }
           textarea && textarea.focus();
@@ -481,6 +728,9 @@
 
       // 全局快捷键
       document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          hideContextMenu();
+        }
         if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
           e.preventDefault();
           createNewNote();

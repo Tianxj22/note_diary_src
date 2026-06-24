@@ -7,7 +7,7 @@
  * @version      1.1.0
  */
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 const fileStore = require('./file-store');
 
@@ -54,9 +54,26 @@ function registerIpcHandlers() {
   ipcMain.handle('note:save', (_event, filePath, content) => {
     return fileStore.saveNote(filePath, content);
   });
+
+  ipcMain.handle('note:delete', (_event, filePath) => {
+    return fileStore.deleteNote(filePath);
+  });
+
+  ipcMain.handle('note:rename', (_event, filePath, newTitle) => {
+    return fileStore.renameNote(filePath, newTitle);
+  });
+
+  ipcMain.handle('note:duplicate', (_event, filePath) => {
+    return fileStore.duplicateNote(filePath);
+  });
+
+  ipcMain.handle('note:cut', (_event, filePath) => {
+    return fileStore.cutNote(notesDir, filePath);
+  });
 }
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
   const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
   notesDir = fileStore.ensureNotesDir(userDataPath);
   registerIpcHandlers();

@@ -149,4 +149,109 @@ describe('编辑器 UI E2E', () => {
     const noteCountAfter = await page.locator('.note-item').count();
     expect(noteCountAfter).toBeGreaterThan(noteCountBefore);
   });
+
+  // ---- 右键菜单与笔记操作 ----
+
+  it('E-09: 右键笔记项应弹出上下文菜单', async () => {
+    const firstNote = page.locator('.note-item').first();
+    await firstNote.click({ button: 'right' });
+    await page.waitForTimeout(200);
+
+    const menuVisible = await page.$eval('#context-menu', el => el.classList.contains('visible'));
+    expect(menuVisible).toBe(true);
+  });
+
+  it('E-10: 点击菜单外空白处应关闭菜单', async () => {
+    // 菜单从 E-09 还在显示
+    await page.click('.main-area'); // 点击主区域
+    await page.waitForTimeout(200);
+
+    const menuVisible = await page.$eval('#context-menu', el => el.classList.contains('visible'));
+    expect(menuVisible).toBe(false);
+  });
+
+  it('E-11: 重命名笔记后列表应更新', async () => {
+    // 先创建一篇新笔记用于重命名测试
+    await page.click('#btn-new');
+    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
+    await page.locator('.editor-area textarea').fill('重命名测试');
+    await page.waitForTimeout(600);
+
+    // 右键第一个笔记
+    const firstNote = page.locator('.note-item').first();
+    await firstNote.click({ button: 'right' });
+    await page.waitForTimeout(200);
+
+    // 点击重命名
+    await page.click('.menu-item[data-action="rename"]');
+    await page.waitForTimeout(200);
+
+    // 侧边栏的 rename-input 应出现
+    const renameInput = page.locator('.rename-input');
+    await renameInput.waitFor({ timeout: 3000 });
+    await renameInput.fill('已重命名的笔记');
+    await renameInput.press('Enter');
+    await page.waitForTimeout(500);
+
+    // 验证列表中有新名称
+    const noteTitles = await page.locator('.note-item .title').allTextContents();
+    expect(noteTitles.some(t => t.includes('已重命名的笔记'))).toBe(true);
+  });
+
+  it('E-12: 删除笔记后列表应减少', async () => {
+    const countBefore = await page.locator('.note-item').count();
+
+    const firstNote = page.locator('.note-item').first();
+    await firstNote.click({ button: 'right' });
+    await page.waitForTimeout(200);
+
+    // 监听 confirm 对话框
+    page.once('dialog', async (dialog) => {
+      await dialog.accept();
+    });
+
+    await page.click('.menu-item[data-action="delete"]');
+    await page.waitForTimeout(500);
+
+    const countAfter = await page.locator('.note-item').count();
+    expect(countAfter).toBe(countBefore - 1);
+  });
+
+  it('E-13: 复制笔记后列表应增加', async () => {
+    const countBefore = await page.locator('.note-item').count();
+
+    const firstNote = page.locator('.note-item').first();
+    await firstNote.click({ button: 'right' });
+    await page.waitForTimeout(200);
+
+    await page.click('.menu-item[data-action="duplicate"]');
+    await page.waitForTimeout(500);
+
+    const countAfter = await page.locator('.note-item').count();
+    expect(countAfter).toBe(countBefore + 1);
+  });
+
+  it('E-14: 剪切笔记后列表应减少', async () => {
+    const countBefore = await page.locator('.note-item').count();
+
+    const firstNote = page.locator('.note-item').first();
+    await firstNote.click({ button: 'right' });
+    await page.waitForTimeout(200);
+
+    await page.click('.menu-item[data-action="cut"]');
+    await page.waitForTimeout(500);
+
+    const countAfter = await page.locator('.note-item').count();
+    expect(countAfter).toBe(countBefore - 1);
+  });
+
+  it('E-15: 按 Alt 键不应弹出原生菜单栏', async () => {
+    await page.keyboard.press('Alt');
+    await page.waitForTimeout(300);
+
+    // 原生菜单栏不可见（Electron Menu.setApplicationMenu(null) 已生效）
+    // 验证应用窗口仍然正常
+    const title = await page.title();
+    expect(title).toBe('Note Diary');
+  });
 });

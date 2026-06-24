@@ -39,4 +39,29 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @returns {Promise<boolean>}
    */
   saveNote: (filePath, content) => ipcRenderer.invoke('note:save', filePath, content),
+  /**
+   * 删除笔记文件
+   * @param {string} filePath - 笔记文件绝对路径
+   * @returns {Promise<boolean>}
+   */
+  deleteNote: (filePath) => ipcRenderer.invoke('note:delete', filePath),
+  /**
+   * 重命名笔记文件
+   * @param {string} filePath - 原文件绝对路径
+   * @param {string} newTitle - 新标题
+   * @returns {Promise<{filePath: string, fileName: string} | null>}
+   */
+  renameNote: (filePath, newTitle) => ipcRenderer.invoke('note:rename', filePath, newTitle),
+  /**
+   * 复制笔记文件（创建副本）
+   * @param {string} filePath - 原文件绝对路径
+   * @returns {Promise<{filePath: string, fileName: string} | null>}
+   */
+  duplicateNote: (filePath) => ipcRenderer.invoke('note:duplicate', filePath),
+  /**
+   * 剪切笔记文件（移至剪贴板目录）
+   * @param {string} filePath - 原文件绝对路径
+   * @returns {Promise<{filePath: string, fileName: string} | null>}
+   */
+  cutNote: (filePath) => ipcRenderer.invoke('note:cut', filePath),
 });
