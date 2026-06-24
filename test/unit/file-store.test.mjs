@@ -270,6 +270,96 @@ describe('file-store', () => {
     });
   });
 
+  describe('getNextDefaultName', () => {
+    it('U-20: 首次调用应返回"新建笔记本"（不带序号）', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const result = fileStore.getNextDefaultName(notesDir);
+      expect(result.title).toBe('新建笔记本');
+      expect(result.number).toBe(1);
+    });
+
+    it('U-21: 连续调用应递增序号', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const r1 = fileStore.getNextDefaultName(notesDir);
+      const r2 = fileStore.getNextDefaultName(notesDir);
+      const r3 = fileStore.getNextDefaultName(notesDir);
+      expect(r1.title).toBe('新建笔记本');
+      expect(r2.title).toBe('新建笔记本 (2)');
+      expect(r3.title).toBe('新建笔记本 (3)');
+    });
+
+    it('U-22: 归还序号后应复用最小可用序号（栈弹出）', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      // 创建 1, 2, 3
+      fileStore.getNextDefaultName(notesDir); // 1
+      fileStore.getNextDefaultName(notesDir); // 2
+      fileStore.getNextDefaultName(notesDir); // 3
+      // 归还 2
+      fileStore.releaseNameNumber(notesDir, 2);
+      // 下一个应从栈中弹出 2
+      const result = fileStore.getNextDefaultName(notesDir);
+      expect(result.number).toBe(2);
+      expect(result.title).toBe('新建笔记本 (2)');
+    });
+
+    it('U-23: 归还多个序号后应按栈顺序复用', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      // 创建 1, 2, 3
+      fileStore.getNextDefaultName(notesDir); // 1
+      fileStore.getNextDefaultName(notesDir); // 2
+      fileStore.getNextDefaultName(notesDir); // 3
+      // 归还 2 和 3
+      fileStore.releaseNameNumber(notesDir, 2);
+      fileStore.releaseNameNumber(notesDir, 3);
+      // 栈顶是 3，先弹出 3
+      const r1 = fileStore.getNextDefaultName(notesDir);
+      expect(r1.number).toBe(3);
+      // 再弹出 2
+      const r2 = fileStore.getNextDefaultName(notesDir);
+      expect(r2.number).toBe(2);
+    });
+
+    it('U-24: 栈空后应继续递增 maxNumber', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      // 创建 1, 2
+      fileStore.getNextDefaultName(notesDir); // 1
+      fileStore.getNextDefaultName(notesDir); // 2
+      // 归还 1, 2
+      fileStore.releaseNameNumber(notesDir, 1);
+      fileStore.releaseNameNumber(notesDir, 2);
+      // 复用 2, 1
+      fileStore.getNextDefaultName(notesDir); // 2
+      fileStore.getNextDefaultName(notesDir); // 1
+      // 栈空，应继续 3
+      const result = fileStore.getNextDefaultName(notesDir);
+      expect(result.number).toBe(3);
+      expect(result.title).toBe('新建笔记本 (3)');
+    });
+  });
+
+  describe('releaseNameNumber', () => {
+    it('U-25: 重复归还同一序号不应重复入栈', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      fileStore.getNextDefaultName(notesDir); // 1
+      fileStore.releaseNameNumber(notesDir, 1);
+      fileStore.releaseNameNumber(notesDir, 1);
+      // 弹出一次
+      const r1 = fileStore.getNextDefaultName(notesDir);
+      expect(r1.number).toBe(1);
+      // 栈应为空，下一个递增
+      const r2 = fileStore.getNextDefaultName(notesDir);
+      expect(r2.number).toBe(2);
+    });
+
+    it('U-26: 归还无效序号（0/负数）不应影响栈', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      fileStore.releaseNameNumber(notesDir, 0);
+      fileStore.releaseNameNumber(notesDir, -1);
+      const result = fileStore.getNextDefaultName(notesDir);
+      expect(result.number).toBe(1);
+    });
+  });
+
   // U-18, U-19: 剪切笔记
   describe('cutNote', () => {
     it('U-18: 应移动文件到剪贴板目录并返回路径信息', () => {

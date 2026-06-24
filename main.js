@@ -70,6 +70,14 @@ function registerIpcHandlers() {
   ipcMain.handle('note:cut', (_event, filePath) => {
     return fileStore.cutNote(notesDir, filePath);
   });
+
+  ipcMain.handle('note:next-default-name', () => {
+    return fileStore.getNextDefaultName(notesDir);
+  });
+
+  ipcMain.handle('note:release-name-number', (_event, num) => {
+    return fileStore.releaseNameNumber(notesDir, num);
+  });
 }
 
 app.whenReady().then(() => {

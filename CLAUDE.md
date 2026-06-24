@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-Note Diary — 基于 Electron 的桌面笔记日记应用。当前为初始 Hello World 阶段。
+Note Diary — 基于 Electron 的桌面笔记日记应用。
 
 ## 技术栈
 
@@ -16,25 +16,75 @@ Note Diary — 基于 Electron 的桌面笔记日记应用。当前为初始 Hel
 
 ```
 note_diary/
-├── package.json            # 项目配置与依赖
-├── main.js                 # Electron 主进程
-├── preload.js              # 预加载脚本（contextBridge 安全桥接）
-├── index.html              # 渲染进程入口页面
-├── CLAUDE.md               # 本文件
-└── docs/
-    ├── architecture.md     # 系统框架设计
-    ├── coding_conventions.md  # 代码与注释规范
-    ├── feature_list.md     # 功能清单与项目任务
-    ├── git_workflow.md     # Git 工作流规范
-    ├── progress.md         # 开发进度记录
-    └── test_feedback.md    # 测试反馈记录
+├── package.json              # 项目配置与依赖
+├── main.js                   # Electron 主进程
+├── preload.js                # 预加载脚本（contextBridge 安全桥接）
+├── file-store.js             # 笔记文件存储模块
+├── index.html                # 渲染进程入口页面
+├── CLAUDE.md                 # 本文件 — 项目指令与规则
+├── feature_list.json         # 结构化功能追踪（状态/依赖/验证条件）
+├── progress.md               # 开发进度记录（含恢复点 / Restart Marker）
+├── init.sh                   # 项目验证入口（一键检查可开发状态）
+├── session-handoff.md        # 会话交接模板
+├── docs/
+│   ├── architecture.md       # 系统框架设计
+│   ├── coding_conventions.md # 代码与注释规范
+│   ├── feature_list.md       # 功能清单与项目任务（人工可读）
+│   ├── git_workflow.md       # Git 工作流规范
+│   └── test_feedback.md      # 测试反馈记录
+└── test/
+    ├── README.md             # 测试使用说明 + TDD 工作流
+    ├── vitest.config.mjs     # 测试运行器配置
+    ├── unit/                 # 单元测试
+    └── e2e/                  # E2E 测试
 ```
+
+## Startup Workflow / 启动工作流
+
+Before writing code, start every session:
+
+1. 阅读 `progress.md` 顶部的「Restart Marker」— Current Objective, Blockers, Recommended Next Step
+2. 阅读 `feature_list.json` — 了解所有功能状态和依赖关系
+3. 运行 `bash init.sh` — 验证环境可开发（依赖安装 + 测试通过）
+4. 如上次会话有交接，阅读 `session-handoff.md`
+
+## 开发规则
+
+- 在开发时，如果可能，载入 `harness-creator` skill，以保持项目 harness 处于良好状态。
+- **One feature at a time / 一次一个功能**: 聚焦当前活跃功能，不跨越 feature_list.json 中定义的 scope boundary。
+- **Stay in scope**: 只实现 feature_list.json 中当前活跃功能描述的内容，不引入未规划的特性。
+- **TDD 工作流**: 新需求 → 设计测试用例 → 用户确认 → 实现 → 跑测试。
+
+## Definition of Done / 完成定义
+
+A feature is done only when ALL of the following are met:
+
+- [ ] 对应代码已实现且通过 code review
+- [ ] `npm test` 全部通过（含新增测试用例）
+- [ ] 手动验证 `npm start` 功能可用
+- [ ] `feature_list.json` 中状态已更新为 `done`，`completedAt` 已填写
+- [ ] `progress.md` 恢复点已更新
+- [ ] Verification evidence 已记录在 `progress.md` 的 Verification Evidence 表格中
+
+## End of Session / 会话结束流程
+
+Before ending a session:
+
+1. 更新 `progress.md` 顶部的 Restart Marker（Current Objective, Blockers, Recommended Next Step, Last Updated）
+2. 填写 `session-handoff.md`（如果功能未完成）
+3. 确保 `npm test` 通过
+4. 提交代码（遵循 `docs/git_workflow.md` 规范）
 
 ## 常用命令
 
 ```bash
+bash init.sh      # 验证入口：检查环境 + 安装依赖 + 运行测试（Next steps 见脚本输出）
 npm install       # 安装依赖
 npm start         # 启动应用
+npm test          # 运行全部测试（vitest）
+npm run test:unit # 仅单元测试
+npm run test:e2e  # 仅 E2E 测试
+npm run test:watch # 监听模式
 ```
 
 ## 规范文档索引
@@ -46,8 +96,9 @@ npm start         # 启动应用
 | 代码风格、封装、注释 | `docs/coding_conventions.md` | 文件头/函数注释模板、DRY 原则、命名规范 |
 | Git 提交流程 | `docs/git_workflow.md` | 提交信息格式、粒度、提交前检查清单 |
 | 系统架构 | `docs/architecture.md` | 进程模型、安全模型、数据流 |
-| 功能规划 | `docs/feature_list.md` | 功能清单、优先级、里程碑 |
-| 进度追踪 | `docs/progress.md` | 每次会话后更新进展概要 |
+| 功能规划（结构化） | `feature_list.json` | 结构化功能清单（状态/依赖/验证），机器可读 |
+| 功能规划（可读） | `docs/feature_list.md` | 功能清单、优先级、里程碑 |
+| 进度追踪 | `progress.md` | 每次会话后更新恢复点和进展概要 |
 | 测试反馈 | `docs/test_feedback.md` | 测试用例、Bug 跟踪 |
 
 ## IPC 通信约定
@@ -58,8 +109,7 @@ npm start         # 启动应用
 
 ## 当前状态
 
-- [x] 项目初始化
-- [x] Electron Hello World 窗口
-- [x] 编码规范与 Git 工作流文档
-- [ ] 笔记编辑器基础功能
-- [ ] 本地文件持久化
+- [x] M1: Hello World — 项目初始化、窗口创建、安全桥接
+- [x] M2: 基础编辑 — 存储模块、IPC CRUD、侧边栏列表、编辑器、自动保存、笔记管理
+- [ ] M3: 体验版 — 日历视图、全文搜索、标签系统
+- [ ] M4: 正式版 — 导出、主题切换、自动保存增强

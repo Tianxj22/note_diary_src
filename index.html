@@ -312,7 +312,7 @@
     </div>
   </div>
 
-  <!-- 右键上下文菜单 -->
+  <!-- 右键上下文菜单（笔记项） -->
   <div class="context-menu" id="context-menu">
     <div class="menu-item" data-action="rename">✏️ 重命名</div>
     <div class="menu-item" data-action="duplicate">📋 复制</div>
@@ -320,6 +320,15 @@
     <div class="menu-divider"></div>
     <div class="menu-item danger" data-action="delete">🗑️ 删除</div>
   </div>
+
+  <!-- 右键上下文菜单（侧边栏空白区域） -->
+  <div class="context-menu" id="context-menu-empty">
+    <div class="menu-item" data-action="new-note">📝 新建笔记</div>
+    <div class="menu-item" data-action="import-note">📥 导入笔记</div>
+  </div>
+
+  <!-- 隐藏的文件选择器用于导入 -->
+  <input type="file" id="import-file-input" accept=".txt,.md,.markdown" style="display:none">
 
   <script>
     (function () {
@@ -345,6 +354,8 @@
 
       // ---- 右键菜单 DOM ----
       const contextMenu = document.getElementById('context-menu');
+      const contextMenuEmpty = document.getElementById('context-menu-empty');
+      const importFileInput = document.getElementById('import-file-input');
       let contextNote = null; // 当前右键操作的笔记对象
 
       // ---- 渲染笔记列表 ----
@@ -394,7 +405,8 @@
       // ---- 新建笔记 ----
       async function createNewNote() {
         await saveCurrentNote();
-        const title = titleInput.value.trim() || '未命名笔记';
+        const defaultName = await window.electronAPI.getNextDefaultName();
+        const title = defaultName.title;
         const result = await window.electronAPI.createNote(title);
         currentNote = { filePath: result.filePath, fileName: result.fileName, displayName: title, mtime: Date.now() };
         currentContent = '';
@@ -526,6 +538,17 @@
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
       }
 
+      /**
+       * 解析"新建笔记本*"格式的笔记名称，提取序号
+       * @param {string} displayName - 笔记显示名称
+       * @returns {number|null} 序号（"新建笔记本"返回1，"新建笔记本 (2)"返回2），不匹配返回 null
+       */
+      function parseDefaultNameNumber(displayName) {
+        if (displayName === '新建笔记本') return 1;
+        const match = displayName.match(/^新建笔记本 \((\d+)\)$/);
+        return match ? parseInt(match[1], 10) : null;
+      }
+
       // ---- 右键菜单 ----
       /**
        * 显示右键上下文菜单
@@ -547,6 +570,33 @@
         contextNote = null;
       }
 
+      /**
+       * 显示侧边栏空白区域右键菜单
+       * @param {MouseEvent} e - 鼠标事件
+       */
+      function showEmptyContextMenu(e) {
+        e.preventDefault();
+        contextMenuEmpty.style.left = e.clientX + 'px';
+        contextMenuEmpty.style.top = e.clientY + 'px';
+        contextMenuEmpty.classList.add('visible');
+      }
+
+      /**
+       * 隐藏侧边栏空白区域右键菜单
+       */
+      function hideEmptyContextMenu() {
+        contextMenuEmpty.classList.remove('visible');
+      }
+
+      /**
+       * 导入外部文本文件作为新笔记
+       */
+      async function handleImportNote() {
+        hideEmptyContextMenu();
+        importFileInput.value = '';
+        importFileInput.click();
+      }
+
       // ---- 笔记操作 ----
       /**
        * 删除当前右键选中的笔记
@@ -555,8 +605,12 @@
         if (!contextNote) return;
         const name = contextNote.displayName;
         if (!confirm(`确定要删除笔记"${name}"吗？此操作不可撤销。`)) return;
+        const nameNumber = parseDefaultNameNumber(name);
         const ok = await window.electronAPI.deleteNote(contextNote.filePath);
         if (ok) {
+          if (nameNumber !== null) {
+            await window.electronAPI.releaseNameNumber(nameNumber);
+          }
           if (currentNote && currentNote.filePath === contextNote.filePath) {
             currentNote = null;
             currentContent = '';
@@ -566,6 +620,7 @@
           }
           statusLeft.textContent = `已删除: ${name}`;
           await loadNoteList();
+          renderNoteList();
           updateStatus();
         }
         hideContextMenu();
@@ -580,6 +635,7 @@
         if (result) {
           statusLeft.textContent = `已复制: ${contextNote.displayName}`;
           await loadNoteList();
+          renderNoteList();
         }
         hideContextMenu();
       }
@@ -600,6 +656,7 @@
           }
           statusLeft.textContent = `已剪切: ${contextNote.displayName}`;
           await loadNoteList();
+          renderNoteList();
           updateStatus();
         }
         hideContextMenu();
@@ -683,8 +740,44 @@
 
       document.getElementById('btn-open').addEventListener('click', async () => {
         await saveCurrentNote();
-        // 直接重新创建：实际导入功能后续完善
-        await createNewNote();
+        await handleImportNote();
+      });
+
+      // 侧边栏空白区域右键菜单
+      noteListEl.addEventListener('contextmenu', (e) => {
+        // 仅在点击空白区域（而非 .note-item）时显示空白区域菜单
+        if (!e.target.closest('.note-item')) {
+          showEmptyContextMenu(e);
+        }
+      });
+
+      // 导入文件处理
+      importFileInput.addEventListener('change', async () => {
+        const file = importFileInput.files[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const defaultName = await window.electronAPI.getNextDefaultName();
+          const title = file.name.replace(/\.(txt|md|markdown)$/i, '') || defaultName.title;
+          const result = await window.electronAPI.createNote(title);
+          await window.electronAPI.saveNote(result.filePath, text);
+          await saveCurrentNote();
+          currentNote = { filePath: result.filePath, fileName: result.fileName, displayName: title, mtime: Date.now() };
+          currentContent = text;
+          lastSavedContent = text;
+          undoStack = [];
+          redoStack = [];
+          updateUndoRedoButtons();
+          showEditor();
+          titleInput.value = title;
+          textarea.value = text;
+          await loadNoteList();
+          renderNoteList();
+          updateStatus();
+          statusLeft.textContent = `已导入: ${title}`;
+        } catch (err) {
+          statusLeft.textContent = '导入失败: ' + err.message;
+        }
       });
 
       // 右键菜单项点击
@@ -698,10 +791,26 @@
         });
       });
 
+      // 空白区域右键菜单项点击
+      contextMenuEmpty.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const action = item.dataset.action;
+          if (action === 'new-note') {
+            hideEmptyContextMenu();
+            createNewNote();
+          } else if (action === 'import-note') {
+            handleImportNote();
+          }
+        });
+      });
+
       // 点击菜单外部关闭
       document.addEventListener('click', (e) => {
         if (!contextMenu.contains(e.target)) {
           hideContextMenu();
+        }
+        if (!contextMenuEmpty.contains(e.target)) {
+          hideEmptyContextMenu();
         }
       });
 
@@ -730,6 +839,7 @@
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           hideContextMenu();
+          hideEmptyContextMenu();
         }
         if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
           e.preventDefault();

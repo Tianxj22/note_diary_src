@@ -64,4 +64,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @returns {Promise<{filePath: string, fileName: string} | null>}
    */
   cutNote: (filePath) => ipcRenderer.invoke('note:cut', filePath),
+  /**
+   * 获取下一个可用的默认笔记名称（栈式序号管理）
+   * @returns {Promise<{title: string, number: number}>}
+   */
+  getNextDefaultName: () => ipcRenderer.invoke('note:next-default-name'),
+  /**
+   * 归还默认笔记序号到栈（删除时调用）
+   * @param {number} num - 要归还的序号
+   */
+  releaseNameNumber: (num) => ipcRenderer.invoke('note:release-name-number', num),
 });

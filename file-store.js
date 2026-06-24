@@ -10,6 +10,67 @@
 const fs = require('fs');
 const path = require('path');
 
+const DEFAULT_NOTE_NAME = '新建笔记本';
+const NAME_STACK_FILE = '.name-stack.json';
+
+/**
+ * 加载命名栈状态，文件不存在则初始化
+ * @param {string} notesDir - notes 目录路径
+ * @returns {{ availableStack: number[], maxNumber: number }}
+ */
+function loadNameStack(notesDir) {
+  const stackPath = path.join(notesDir, NAME_STACK_FILE);
+  try {
+    if (fs.existsSync(stackPath)) {
+      return JSON.parse(fs.readFileSync(stackPath, 'utf-8'));
+    }
+  } catch (_) { /* 文件损坏则重建 */ }
+  return { availableStack: [], maxNumber: 0 };
+}
+
+/**
+ * 持久化命名栈状态
+ * @param {string} notesDir - notes 目录路径
+ * @param {{ availableStack: number[], maxNumber: number }} state
+ */
+function saveNameStack(notesDir, state) {
+  const stackPath = path.join(notesDir, NAME_STACK_FILE);
+  fs.writeFileSync(stackPath, JSON.stringify(state), 'utf-8');
+}
+
+/**
+ * 获取下一个可用的默认笔记名称
+ * 栈非空时弹出栈顶序号复用；栈空时使用 maxNumber+1
+ * @param {string} notesDir - notes 目录路径
+ * @returns {{ title: string, number: number }} 笔记标题和序号
+ */
+function getNextDefaultName(notesDir) {
+  const state = loadNameStack(notesDir);
+  let num;
+  if (state.availableStack.length > 0) {
+    num = state.availableStack.pop();
+  } else {
+    num = ++state.maxNumber;
+  }
+  saveNameStack(notesDir, state);
+  const title = num === 1 ? DEFAULT_NOTE_NAME : `${DEFAULT_NOTE_NAME} (${num})`;
+  return { title, number: num };
+}
+
+/**
+ * 归还一个序号到栈中（删除"新建笔记本*"时调用）
+ * @param {string} notesDir - notes 目录路径
+ * @param {number} num - 要归还的序号
+ */
+function releaseNameNumber(notesDir, num) {
+  if (!num || num < 1) return;
+  const state = loadNameStack(notesDir);
+  if (!state.availableStack.includes(num)) {
+    state.availableStack.push(num);
+    saveNameStack(notesDir, state);
+  }
+}
+
 /**
  * 获取笔记存储目录路径，不存在则自动创建
  * @param {string} baseDir - Electron userData 目录路径
@@ -178,4 +239,4 @@ function cutNote(notesDir, filePath) {
   }
 }
 
-module.exports = { ensureNotesDir, createNote, listNotes, readNote, saveNote, deleteNote, renameNote, duplicateNote, cutNote };
+module.exports = { ensureNotesDir, createNote, listNotes, readNote, saveNote, deleteNote, renameNote, duplicateNote, cutNote, getNextDefaultName, releaseNameNumber };
