@@ -1,0 +1,70 @@
+<!--
+  @file         index.html
+  @description  Electron 应用主渲染页面，展示 Hello World 及版本信息
+  @author       tianxj22
+  @created      2024-06-24
+  @updated      2024-06-24
+  @version      1.0.0
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+  <title>Hello World - Electron</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    .container {
+      text-align: center;
+    }
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .subtitle {
+      font-size: 1.2rem;
+      opacity: 0.9;
+      margin-bottom: 2rem;
+    }
+    .version-info {
+      background: rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      backdrop-filter: blur(10px);
+      font-size: 0.9rem;
+      line-height: 1.8;
+    }
+    .version-info span {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Hello World!</h1>
+    <p class="subtitle">Electron 应用启动成功</p>
+    <div class="version-info">
+      <div>Electron: <span id="electron-ver"></span></div>
+      <div>Chrome: <span id="chrome-ver"></span></div>
+      <div>Node.js: <span id="node-ver"></span></div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('electron-ver').textContent = window.electronAPI.versions.electron;
+    document.getElementById('chrome-ver').textContent = window.electronAPI.versions.chrome;
+    document.getElementById('node-ver').textContent = window.electronAPI.versions.node;
+  </script>
+</body>
+</html>
