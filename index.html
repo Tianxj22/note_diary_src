@@ -671,8 +671,7 @@
         const name = contextNote.displayName;
         if (!confirm(`确定要删除笔记"${name}"吗？此操作不可撤销。`)) return;
 
-        // 如果删除的是当前笔记，先关闭它（保存内容 + 清空状态），再删除文件。
-        // 关闭后 currentNote/textarea/saveTimer 均已清空，不存在竞态窗口。
+        // 如果删除的是当前笔记，先关闭（保存内容 + 清空状态），避免编辑框残留指向已删除文件
         const isCurrentNote = currentNote && currentNote.filePath === contextNote.filePath;
         if (isCurrentNote) {
           await closeCurrentNote();
@@ -687,6 +686,14 @@
           statusLeft.textContent = `已删除: ${name}`;
           await loadNoteList();
           renderNoteList();
+          // 删除的是当前笔记：有剩余笔记则打开第一篇，否则新建空白笔记
+          if (isCurrentNote) {
+            if (notes.length > 0) {
+              await selectNote(notes[0]);
+            } else {
+              await createNewNote();
+            }
+          }
           updateStatus();
         }
         hideContextMenu();
@@ -723,6 +730,13 @@
           statusLeft.textContent = `已剪切: ${contextNote.displayName}`;
           await loadNoteList();
           renderNoteList();
+          if (isCurrentNote) {
+            if (notes.length > 0) {
+              await selectNote(notes[0]);
+            } else {
+              await createNewNote();
+            }
+          }
           updateStatus();
         }
         hideContextMenu();

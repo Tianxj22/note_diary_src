@@ -85,15 +85,14 @@ describe('删除后编辑场景 E2E', () => {
     await deleteFirstNote();
 
     expect(await page.locator('.note-item').count()).toBe(1);
-    expect(await page.$('.editor-area .no-note')).not.toBeNull();
 
-    // 点击剩余笔记 A
-    await page.locator('.note-item').first().click();
-    await page.waitForTimeout(300);
-
-    // 验证编辑区可交互：逐一键入字符并验证值改变
+    // 删除的是当前笔记，剩余笔记 A 应被自动打开
+    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
     const ta = page.locator('.editor-area textarea');
-    await ta.fill('');  // 清空
+    expect(await ta.inputValue()).toBe('笔记A的内容');
+
+    // 验证编辑区可交互：清空后键入新内容
+    await ta.fill('');
     await ta.pressSequentially('Hello from DE-01');
     await page.waitForTimeout(800);
 
@@ -193,28 +192,25 @@ describe('删除后编辑场景 E2E', () => {
     expect(contentAfter).toBe('当前笔记的特征内容');
   });
 
-  it('DE-04: 删除所有笔记后新建笔记应可编辑', async () => {
-    // 确保至少有一篇笔记
-    let noteCount = await page.locator('.note-item').count();
-    if (noteCount < 1) {
-      await createNoteWithContent('临时笔记');
-      noteCount = 1;
-    }
+  it('DE-04: 删除当前笔记后自动恢复编辑状态（有剩余则打开剩余，无则新建）', async () => {
+    // 先创建一篇笔记并设为当前笔记
+    await createNoteWithContent('唯一笔记');
+    await page.locator('.note-item').first().click();
+    await page.waitForTimeout(300);
 
-    // 逐个删除所有笔记
-    while ((await page.locator('.note-item').count()) > 0) {
-      await deleteFirstNote();
-    }
+    const countBefore = await page.locator('.note-item').count();
 
-    // 验证列表为空
-    const emptyText = await page.textContent('.note-list .empty');
-    expect(emptyText).toContain('暂无笔记');
-    expect(await page.$('.editor-area .no-note')).not.toBeNull();
+    // 删除当前笔记 → 自动打开剩余笔记或新建
+    await deleteFirstNote();
 
-    // 新建笔记
-    await page.click('#btn-new');
+    // 编辑区应立即可用（自动恢复了编辑状态）
     await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
 
+    // 笔记数：有剩余时为 countBefore-1，无剩余时为 1（自动新建）
+    const countAfter = await page.locator('.note-item').count();
+    expect(countAfter === countBefore - 1 || countAfter === 1).toBe(true);
+
+    // 编辑区可正常使用
     expect(await page.$('.editor-area textarea')).not.toBeNull();
     await page.locator('.editor-area textarea').fill('重新开始的内容');
     await page.waitForTimeout(800);
@@ -472,13 +468,11 @@ describe('删除后编辑场景 E2E', () => {
     await page.locator('.note-item').first().click();
     await page.waitForTimeout(300);
 
-    const countBefore = await page.locator('.note-item').count();
-
-    // 删除
+    // 删除当前笔记（若有剩余则自动打开，若无则自动新建）
     await deleteFirstNote();
-    expect(await page.locator('.note-item').count()).toBe(countBefore - 1);
+    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
 
-    // 使用快捷键新建
+    // 使用快捷键新建另一篇笔记
     await page.keyboard.press('Control+n');
     await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
 
