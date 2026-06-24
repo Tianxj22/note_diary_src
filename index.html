@@ -120,11 +120,44 @@
     /* 工具栏 */
     .toolbar {
       display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 12px;
+      flex-direction: column;
       border-bottom: 1px solid #e0e0e0;
       background: #fafafa;
+    }
+
+    .toolbar-tabs {
+      display: flex;
+      gap: 0;
+      padding: 4px 12px 0;
+    }
+
+    .toolbar-tab {
+      padding: 6px 18px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: #888;
+      transition: color 0.15s, border-color 0.15s;
+      border-radius: 0;
+    }
+
+    .toolbar-tab:hover {
+      color: #555;
+    }
+
+    .toolbar-tab.active {
+      color: #333;
+      border-bottom-color: #6c9fff;
+      font-weight: 600;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px 8px;
     }
 
     .toolbar button {
@@ -319,15 +352,28 @@
   <!-- 主区域 -->
   <div class="main-area">
     <div class="toolbar">
-      <button id="btn-new" title="新建笔记 (Ctrl+N)">新建</button>
-      <button id="btn-open" title="导入外部文件">导入</button>
-      <span class="separator"></span>
-      <button id="btn-undo" title="撤销 (Ctrl+Z)" disabled>↩ 撤销</button>
-      <button id="btn-redo" title="重做 (Ctrl+Y)" disabled>↪ 重做</button>
-      <span class="separator"></span>
-      <button id="btn-save" title="保存笔记 (Ctrl+S)">💾 保存</button>
-      <span class="separator"></span>
-      <input type="text" class="note-title-input" id="note-title" placeholder="笔记标题..." />
+      <div class="toolbar-tabs">
+        <button class="toolbar-tab active" data-tab="file">📁 文件</button>
+        <button class="toolbar-tab" data-tab="style">🎨 样式</button>
+      </div>
+      <div class="toolbar-actions" id="toolbar-file">
+        <button id="btn-new" title="新建笔记 (Ctrl+N)">新建</button>
+        <button id="btn-open" title="导入外部文件">导入</button>
+        <span class="separator"></span>
+        <button id="btn-undo" title="撤销 (Ctrl+Z)" disabled>↩ 撤销</button>
+        <button id="btn-redo" title="重做 (Ctrl+Y)" disabled>↪ 重做</button>
+        <span class="separator"></span>
+        <button id="btn-save" title="保存笔记 (Ctrl+S)">💾 保存</button>
+        <span class="separator"></span>
+        <input type="text" class="note-title-input" id="note-title" placeholder="笔记标题..." />
+      </div>
+      <div class="toolbar-actions" id="toolbar-style" style="display:none">
+        <button id="btn-bold" title="加粗（暂未实现）"><b>B</b> 加粗</button>
+        <button id="btn-italic" title="倾斜（暂未实现）"><i>I</i> 倾斜</button>
+        <button id="btn-underline" title="下划线（暂未实现）"><u>U</u> 下划线</button>
+        <span class="separator"></span>
+        <button id="btn-font" title="字体样式（暂未实现）">字体样式</button>
+      </div>
     </div>
 
     <div class="editor-area" id="editor-area">
@@ -959,6 +1005,17 @@
         if (textarea && !e.target.closest('.btn-close-note')) {
           textarea.focus();
         }
+      });
+
+      // ---- 工具栏标签切换 ----
+      document.querySelectorAll('.toolbar-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.toolbar-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const target = tab.dataset.tab;
+          document.getElementById('toolbar-file').style.display = target === 'file' ? '' : 'none';
+          document.getElementById('toolbar-style').style.display = target === 'style' ? '' : 'none';
+        });
       });
 
       // ---- 启动 ----
