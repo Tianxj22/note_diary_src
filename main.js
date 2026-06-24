@@ -57,7 +57,8 @@ function registerIpcHandlers() {
 }
 
 app.whenReady().then(() => {
-  notesDir = fileStore.ensureNotesDir(app.getPath('userData'));
+  const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
+  notesDir = fileStore.ensureNotesDir(userDataPath);
   registerIpcHandlers();
   createWindow();
 });

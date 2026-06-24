@@ -355,6 +355,9 @@
       function autoSave() {
         if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(async () => {
+          if (textarea && textarea.value !== lastSavedContent) {
+            pushUndo(lastSavedContent);
+          }
           await saveCurrentNote();
           await loadNoteList();
           renderNoteList();
@@ -378,7 +381,6 @@
 
       // ---- 编辑事件 ----
       function onEditorInput() {
-        pushUndo(lastSavedContent);
         autoSave();
       }
 
@@ -410,6 +412,7 @@
         redoStack.push(textarea.value);
         const prev = undoStack.pop();
         textarea.value = prev;
+        lastSavedContent = prev;
         updateUndoRedoButtons();
       }
 
@@ -418,6 +421,7 @@
         undoStack.push(textarea.value);
         const next = redoStack.pop();
         textarea.value = next;
+        lastSavedContent = next;
         updateUndoRedoButtons();
       }
 

@@ -10,6 +10,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { _electron as electron } from '@playwright/test';
 import path from 'path';
+import os from 'os';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -18,10 +20,18 @@ const projectRoot = path.resolve(__dirname, '../..');
 describe('编辑器 UI E2E', () => {
   let app;
   let page;
+  let userDataDir;
 
   beforeAll(async () => {
+    userDataDir = path.join(os.tmpdir(), `note-diary-e2e-${Date.now()}`);
+    fs.mkdirSync(userDataDir, { recursive: true });
+
     app = await electron.launch({
       args: [path.join(projectRoot, 'main.js')],
+      env: {
+        ...process.env,
+        NOTE_DIARY_E2E_DIR: userDataDir,
+      },
     });
 
     page = await app.firstWindow();
@@ -31,6 +41,9 @@ describe('编辑器 UI E2E', () => {
   afterAll(async () => {
     if (app) {
       await app.close();
+    }
+    if (userDataDir && fs.existsSync(userDataDir)) {
+      fs.rmSync(userDataDir, { recursive: true, force: true });
     }
   });
 
@@ -76,8 +89,7 @@ describe('编辑器 UI E2E', () => {
 
     const before = await textarea.inputValue();
     await textarea.fill(before + '\n新增一行');
-
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(600); // 等待 autoSave 完成
 
     await page.click('#btn-undo');
 
@@ -90,10 +102,10 @@ describe('编辑器 UI E2E', () => {
 
     const baseContent = '重做测试内容';
     await textarea.fill(baseContent);
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(600); // 等待 autoSave 完成（防抖 500ms）
     const modifiedContent = baseContent + '\n新增行';
     await textarea.fill(modifiedContent);
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(600); // 等待 autoSave 完成
 
     await page.click('#btn-undo');
     const afterUndo = await textarea.inputValue();
@@ -105,19 +117,27 @@ describe('编辑器 UI E2E', () => {
   });
 
   it('E-07: 创建多个笔记并切换验证内容加载', async () => {
+    // 创建笔记 A 并写入特征内容
     await page.click('#btn-new');
     await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
+    const textarea = page.locator('.editor-area textarea');
+    await textarea.fill('笔记A的特征内容');
+    await page.waitForTimeout(600);
 
-    const textarea2 = page.locator('.editor-area textarea');
-    await textarea2.fill('第二篇笔记的内容');
-    await page.waitForTimeout(800);
+    // 创建笔记 B 并写入特征内容
+    await page.click('#btn-new');
+    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
+    await page.locator('.editor-area textarea').fill('笔记B的特征内容');
+    await page.waitForTimeout(600);
 
-    const firstNoteItem = page.locator('.note-item').first();
-    await firstNoteItem.click();
+    // 点击侧边栏倒数第二项（应切换回笔记 A）
+    const noteItems = page.locator('.note-item');
+    const count = await noteItems.count();
+    await noteItems.nth(count - 2).click();
     await page.waitForTimeout(300);
 
     const loadedContent = await page.locator('.editor-area textarea').inputValue();
-    expect(loadedContent).toContain('Hello Note Diary');
+    expect(loadedContent).toBe('笔记A的特征内容');
   });
 
   it('E-03: 按 Ctrl+N 应新建笔记', async () => {
