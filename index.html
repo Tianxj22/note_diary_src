@@ -181,6 +181,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      position: relative;
     }
 
     .editor-area .no-note {
@@ -232,14 +233,6 @@
     .btn-close-note:hover {
       background: #e0e0e0;
       color: #555;
-    }
-
-    .editor-wrapper {
-      position: relative;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
     }
 
     /* ===== 右键上下文菜单 ===== */
@@ -519,20 +512,17 @@
       // ---- 编辑器显示/隐藏 ----
       function showEditor() {
         editorArea.innerHTML = '';
-        const wrapper = document.createElement('div');
-        wrapper.className = 'editor-wrapper';
         const closeBtn = document.createElement('button');
         closeBtn.className = 'btn-close-note';
         closeBtn.textContent = '×';
         closeBtn.title = '关闭当前笔记';
-        closeBtn.addEventListener('click', () => closeCurrentNote());
-        wrapper.appendChild(closeBtn);
+        closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeCurrentNote(); });
+        editorArea.appendChild(closeBtn);
         textarea = document.createElement('textarea');
         textarea.placeholder = '在这里开始记录...';
         textarea.addEventListener('input', onEditorInput);
         textarea.addEventListener('keydown', onEditorKeydown);
-        wrapper.appendChild(textarea);
-        editorArea.appendChild(wrapper);
+        editorArea.appendChild(textarea);
       }
 
       function hideEditor() {
@@ -920,6 +910,13 @@
         if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
           e.preventDefault();
           createNewNote();
+        }
+      });
+
+      // 防御：点击编辑区任意位置自动聚焦到 textarea
+      editorArea.addEventListener('click', (e) => {
+        if (textarea && !e.target.closest('.btn-close-note')) {
+          textarea.focus();
         }
       });
 

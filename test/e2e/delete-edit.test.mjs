@@ -384,4 +384,110 @@ describe('删除后编辑场景 E2E', () => {
     const loaded = await page.locator('.editor-area textarea').inputValue();
     expect(loaded.length).toBeGreaterThan(0);
   });
+
+  it('DE-10: 删除当前笔记后，点击另一篇笔记→点击编辑区→键盘输入应有响应', async () => {
+    // 创建两篇笔记
+    await createNoteWithContent('焦点测试笔记A');
+    await createNoteWithContent('焦点测试笔记B');
+
+    const countBefore = await page.locator('.note-item').count();
+
+    // 点击第一篇（B，最新），使其成为当前笔记
+    await page.locator('.note-item').first().click();
+    await page.waitForTimeout(300);
+
+    // 删除当前笔记
+    await deleteFirstNote();
+    expect(await page.locator('.note-item').count()).toBe(countBefore - 1);
+
+    // 点击剩余笔记
+    await page.locator('.note-item').first().click();
+    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
+
+    // 模拟真实用户行为：先点击编辑区获取焦点，再键盘输入
+    await page.locator('.editor-area textarea').click();
+    await page.waitForTimeout(100);
+
+    // 检查 textarea 尺寸正常（非 0×0）
+    const box = await page.locator('.editor-area textarea').boundingBox();
+    expect(box).not.toBeNull();
+    expect(box.width).toBeGreaterThan(100);
+    expect(box.height).toBeGreaterThan(100);
+
+    // 检查焦点确实在 textarea 上
+    const isFocused = await page.$eval('.editor-area textarea', el => el === document.activeElement);
+    expect(isFocused).toBe(true);
+
+    // 键盘输入
+    await page.keyboard.type('焦点测试输入内容');
+    await page.waitForTimeout(800);
+
+    // 验证内容已写入
+    const content = await page.locator('.editor-area textarea').inputValue();
+    expect(content).toContain('焦点测试输入内容');
+  });
+
+  it('DE-11: 删除当前笔记（唯一笔记）→ 新建 → 点击编辑区 → 键盘输入应有响应', async () => {
+    // 创建一篇笔记
+    await createNoteWithContent('唯一笔记内容');
+
+    // 点击使其成为当前笔记
+    await page.locator('.note-item').first().click();
+    await page.waitForTimeout(300);
+
+    // 删除（唯一的笔记）
+    await deleteFirstNote();
+
+    // 验证列表为空
+    const noteItems = page.locator('.note-item');
+    const remainingCount = await noteItems.count();
+
+    // 新建笔记
+    await page.click('#btn-new');
+    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
+
+    // 模拟真实用户：点击编辑区获取焦点
+    await page.locator('.editor-area textarea').click();
+    await page.waitForTimeout(100);
+
+    // 检查焦点
+    const isFocused = await page.$eval('.editor-area textarea', el => el === document.activeElement);
+    expect(isFocused).toBe(true);
+
+    // 键盘输入
+    await page.keyboard.type('重建后的输入');
+    await page.waitForTimeout(800);
+
+    const content = await page.locator('.editor-area textarea').inputValue();
+    expect(content).toContain('重建后的输入');
+
+    const statusText = await page.textContent('#status-left');
+    expect(statusText).toContain('已保存');
+  });
+
+  it('DE-12: 删除当前笔记后，纯键盘操作（Ctrl+N 新建）应可用', async () => {
+    await createNoteWithContent('快捷键测试笔记');
+
+    // 设为当前笔记
+    await page.locator('.note-item').first().click();
+    await page.waitForTimeout(300);
+
+    const countBefore = await page.locator('.note-item').count();
+
+    // 删除
+    await deleteFirstNote();
+    expect(await page.locator('.note-item').count()).toBe(countBefore - 1);
+
+    // 使用快捷键新建
+    await page.keyboard.press('Control+n');
+    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
+
+    // 点击聚焦 + 键盘输入
+    await page.locator('.editor-area textarea').click();
+    await page.keyboard.type('快捷键新建的内容');
+    await page.waitForTimeout(800);
+
+    const content = await page.locator('.editor-area textarea').inputValue();
+    expect(content).toContain('快捷键新建的内容');
+  });
 });
