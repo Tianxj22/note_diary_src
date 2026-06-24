@@ -209,6 +209,39 @@
       color: #ccc;
     }
 
+    /* 关闭当前笔记按钮 */
+    .btn-close-note {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      z-index: 10;
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: #999;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .btn-close-note:hover {
+      background: #e0e0e0;
+      color: #555;
+    }
+
+    .editor-wrapper {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
     /* ===== 右键上下文菜单 ===== */
     .context-menu {
       display: none;
@@ -461,14 +494,45 @@
         }, 500);
       }
 
+      // ---- 关闭当前笔记 ----
+      async function closeCurrentNote() {
+        if (!currentNote) return;
+        // 先保存当前内容
+        if (textarea) {
+          const content = textarea.value;
+          if (content !== lastSavedContent) {
+            await window.electronAPI.saveNote(currentNote.filePath, content);
+          }
+        }
+        if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+        currentNote = null;
+        currentContent = '';
+        lastSavedContent = '';
+        undoStack = [];
+        redoStack = [];
+        updateUndoRedoButtons();
+        hideEditor();
+        titleInput.value = '';
+        updateStatus();
+      }
+
       // ---- 编辑器显示/隐藏 ----
       function showEditor() {
         editorArea.innerHTML = '';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'editor-wrapper';
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'btn-close-note';
+        closeBtn.textContent = '×';
+        closeBtn.title = '关闭当前笔记';
+        closeBtn.addEventListener('click', () => closeCurrentNote());
+        wrapper.appendChild(closeBtn);
         textarea = document.createElement('textarea');
         textarea.placeholder = '在这里开始记录...';
         textarea.addEventListener('input', onEditorInput);
         textarea.addEventListener('keydown', onEditorKeydown);
-        editorArea.appendChild(textarea);
+        wrapper.appendChild(textarea);
+        editorArea.appendChild(wrapper);
       }
 
       function hideEditor() {
@@ -617,13 +681,11 @@
         const name = contextNote.displayName;
         if (!confirm(`确定要删除笔记"${name}"吗？此操作不可撤销。`)) return;
 
-        // 在 async gap 之前判定并清空 currentNote，防止 autoSave 竞态复活文件
+        // 如果删除的是当前笔记，先关闭它（保存内容 + 清空状态），再删除文件。
+        // 关闭后 currentNote/textarea/saveTimer 均已清空，不存在竞态窗口。
         const isCurrentNote = currentNote && currentNote.filePath === contextNote.filePath;
         if (isCurrentNote) {
-          currentNote = null;
-          currentContent = '';
-          lastSavedContent = '';
-          if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+          await closeCurrentNote();
         }
 
         const nameNumber = parseDefaultNameNumber(name);
@@ -632,19 +694,10 @@
           if (nameNumber !== null) {
             await window.electronAPI.releaseNameNumber(nameNumber);
           }
-          if (isCurrentNote) {
-            hideEditor();
-            titleInput.value = '';
-          }
           statusLeft.textContent = `已删除: ${name}`;
           await loadNoteList();
           renderNoteList();
           updateStatus();
-        } else {
-          // 删除失败时恢复 currentNote
-          if (isCurrentNote) {
-            currentNote = contextNote;
-          }
         }
         hideContextMenu();
       }
@@ -669,29 +722,18 @@
       async function handleCut() {
         if (!contextNote) return;
 
-        // 在 async gap 之前判定并清空 currentNote，防止 autoSave 竞态重建文件
+        // 如果剪切的是当前笔记，先关闭再移动文件
         const isCurrentNote = currentNote && currentNote.filePath === contextNote.filePath;
         if (isCurrentNote) {
-          currentNote = null;
-          currentContent = '';
-          lastSavedContent = '';
-          if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+          await closeCurrentNote();
         }
 
         const result = await window.electronAPI.cutNote(contextNote.filePath);
         if (result) {
-          if (isCurrentNote) {
-            hideEditor();
-            titleInput.value = '';
-          }
           statusLeft.textContent = `已剪切: ${contextNote.displayName}`;
           await loadNoteList();
           renderNoteList();
           updateStatus();
-        } else {
-          if (isCurrentNote) {
-            currentNote = contextNote;
-          }
         }
         hideContextMenu();
       }

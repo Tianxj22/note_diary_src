@@ -309,4 +309,79 @@ describe('删除后编辑场景 E2E', () => {
       expect(otherContent.length).toBeGreaterThan(0);
     }
   });
+
+  it('DE-07: 点击关闭按钮应回到欢迎界面', async () => {
+    await createNoteWithContent('关闭按钮测试内容');
+
+    // 确认编辑区可见
+    expect(await page.$('.editor-area textarea')).not.toBeNull();
+    // 确认关闭按钮存在
+    expect(await page.$('.btn-close-note')).not.toBeNull();
+
+    // 点击关闭按钮
+    await page.click('.btn-close-note');
+    await page.waitForTimeout(300);
+
+    // 应显示欢迎界面
+    expect(await page.$('.editor-area .no-note')).not.toBeNull();
+    expect(await page.textContent('.editor-area .no-note')).toContain('选择或新建一篇笔记开始编辑');
+  });
+
+  it('DE-08: 关闭后再打开笔记，内容应保留', async () => {
+    await createNoteWithContent('关闭前的内容ABC');
+
+    // 修改内容
+    await page.locator('.editor-area textarea').fill('关闭前修改DEF');
+    await page.waitForTimeout(600); // 等待保存
+
+    // 关闭笔记
+    await page.click('.btn-close-note');
+    await page.waitForTimeout(300);
+
+    expect(await page.$('.editor-area .no-note')).not.toBeNull();
+
+    // 重新打开同一笔记
+    await page.locator('.note-item').first().click();
+    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
+
+    // 内容应为关闭前保存的内容
+    const content = await page.locator('.editor-area textarea').inputValue();
+    expect(content).toBe('关闭前修改DEF');
+  });
+
+  it('DE-09: 关闭笔记不影响删除操作', async () => {
+    await createNoteWithContent('待关闭删除笔记');
+    await createNoteWithContent('保留笔记');
+
+    const countBefore = await page.locator('.note-item').count();
+
+    // 打开第一篇
+    await page.locator('.note-item').first().click();
+    await page.waitForTimeout(300);
+
+    // 通过关闭按钮关闭
+    await page.click('.btn-close-note');
+    await page.waitForTimeout(300);
+
+    // 右键第一篇并删除
+    const firstNote = page.locator('.note-item').first();
+    await firstNote.click({ button: 'right' });
+    await page.waitForTimeout(200);
+
+    page.once('dialog', async (dialog) => {
+      await dialog.accept();
+    });
+
+    await page.click('.menu-item[data-action="delete"]');
+    await page.waitForTimeout(500);
+
+    // 删除成功
+    expect(await page.locator('.note-item').count()).toBe(countBefore - 1);
+
+    // 点击剩余笔记应可编辑
+    await page.locator('.note-item').first().click();
+    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
+    const loaded = await page.locator('.editor-area textarea').inputValue();
+    expect(loaded.length).toBeGreaterThan(0);
+  });
 });
