@@ -737,8 +737,6 @@
       async function handleDelete() {
         if (!contextNote) return;
         const name = contextNote.displayName;
-        if (!confirm(`确定要删除笔记"${name}"吗？此操作不可撤销。`)) return;
-
         // 如果删除的是当前笔记，先关闭（保存内容 + 清空状态），避免编辑框残留指向已删除文件
         const isCurrentNote = currentNote && currentNote.filePath === contextNote.filePath;
         if (isCurrentNote) {

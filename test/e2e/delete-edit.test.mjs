@@ -59,11 +59,6 @@ describe('删除后编辑场景 E2E', () => {
     const firstNote = page.locator('.note-item').first();
     await firstNote.click({ button: 'right' });
     await page.waitForTimeout(200);
-
-    page.once('dialog', async (dialog) => {
-      await dialog.accept();
-    });
-
     await page.click('.menu-item[data-action="delete"]');
     await page.waitForTimeout(500);
   }
@@ -182,10 +177,6 @@ describe('删除后编辑场景 E2E', () => {
     await otherNote.click({ button: 'right' });
     await page.waitForTimeout(200);
 
-    page.once('dialog', async (dialog) => {
-      await dialog.accept();
-    });
-
     await page.click('.menu-item[data-action="delete"]');
     await page.waitForTimeout(500);
 
@@ -240,10 +231,6 @@ describe('删除后编辑场景 E2E', () => {
     // 不等待 autoSave — 立即右键删除（竞态窗口）
     await firstNote.click({ button: 'right' });
     await page.waitForTimeout(200);
-
-    page.once('dialog', async (dialog) => {
-      await dialog.accept();
-    });
 
     await page.click('.menu-item[data-action="delete"]');
     // 等待足够长时间让竞态窗口完全过去
@@ -372,10 +359,6 @@ describe('删除后编辑场景 E2E', () => {
     const firstNote = page.locator('.note-item').first();
     await firstNote.click({ button: 'right' });
     await page.waitForTimeout(200);
-
-    page.once('dialog', async (dialog) => {
-      await dialog.accept();
-    });
 
     await page.click('.menu-item[data-action="delete"]');
     await page.waitForTimeout(500);

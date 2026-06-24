@@ -212,11 +212,6 @@ describe('编辑器 UI E2E', () => {
     await firstNote.click({ button: 'right' });
     await page.waitForTimeout(200);
 
-    // 监听 confirm 对话框
-    page.once('dialog', async (dialog) => {
-      await dialog.accept();
-    });
-
     await page.click('.menu-item[data-action="delete"]');
     await page.waitForTimeout(500);
 
