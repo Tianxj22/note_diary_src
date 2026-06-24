@@ -605,16 +605,23 @@
         if (!contextNote) return;
         const name = contextNote.displayName;
         if (!confirm(`确定要删除笔记"${name}"吗？此操作不可撤销。`)) return;
+
+        // 在 async gap 之前判定并清空 currentNote，防止 autoSave 竞态复活文件
+        const isCurrentNote = currentNote && currentNote.filePath === contextNote.filePath;
+        if (isCurrentNote) {
+          currentNote = null;
+          currentContent = '';
+          lastSavedContent = '';
+          if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+        }
+
         const nameNumber = parseDefaultNameNumber(name);
         const ok = await window.electronAPI.deleteNote(contextNote.filePath);
         if (ok) {
           if (nameNumber !== null) {
             await window.electronAPI.releaseNameNumber(nameNumber);
           }
-          if (currentNote && currentNote.filePath === contextNote.filePath) {
-            currentNote = null;
-            currentContent = '';
-            lastSavedContent = '';
+          if (isCurrentNote) {
             hideEditor();
             titleInput.value = '';
           }
@@ -622,6 +629,11 @@
           await loadNoteList();
           renderNoteList();
           updateStatus();
+        } else {
+          // 删除失败时恢复 currentNote
+          if (isCurrentNote) {
+            currentNote = contextNote;
+          }
         }
         hideContextMenu();
       }
@@ -645,12 +657,19 @@
        */
       async function handleCut() {
         if (!contextNote) return;
+
+        // 在 async gap 之前判定并清空 currentNote，防止 autoSave 竞态重建文件
+        const isCurrentNote = currentNote && currentNote.filePath === contextNote.filePath;
+        if (isCurrentNote) {
+          currentNote = null;
+          currentContent = '';
+          lastSavedContent = '';
+          if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+        }
+
         const result = await window.electronAPI.cutNote(contextNote.filePath);
         if (result) {
-          if (currentNote && currentNote.filePath === contextNote.filePath) {
-            currentNote = null;
-            currentContent = '';
-            lastSavedContent = '';
+          if (isCurrentNote) {
             hideEditor();
             titleInput.value = '';
           }
@@ -658,6 +677,10 @@
           await loadNoteList();
           renderNoteList();
           updateStatus();
+        } else {
+          if (isCurrentNote) {
+            currentNote = contextNote;
+          }
         }
         hideContextMenu();
       }

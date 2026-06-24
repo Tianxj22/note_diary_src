@@ -67,6 +67,7 @@ function releaseNameNumber(notesDir, num) {
   const state = loadNameStack(notesDir);
   if (!state.availableStack.includes(num)) {
     state.availableStack.push(num);
+    state.availableStack.sort((a, b) => b - a);  // 降序排列：pop 时返回最小序号
     saveNameStack(notesDir, state);
   }
 }

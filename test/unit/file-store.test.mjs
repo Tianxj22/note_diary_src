@@ -302,21 +302,56 @@ describe('file-store', () => {
       expect(result.title).toBe('新建笔记本 (2)');
     });
 
-    it('U-23: 归还多个序号后应按栈顺序复用', () => {
+    it('U-23: 归还多个序号后应按从小到大顺序复用', () => {
       const notesDir = fileStore.ensureNotesDir(tmpDir);
       // 创建 1, 2, 3
       fileStore.getNextDefaultName(notesDir); // 1
       fileStore.getNextDefaultName(notesDir); // 2
       fileStore.getNextDefaultName(notesDir); // 3
-      // 归还 2 和 3
-      fileStore.releaseNameNumber(notesDir, 2);
+      // 归还 3 和 2
       fileStore.releaseNameNumber(notesDir, 3);
-      // 栈顶是 3，先弹出 3
+      fileStore.releaseNameNumber(notesDir, 2);
+      // 降序排列后栈为 [3, 2]，pop 返回 2（最小）
       const r1 = fileStore.getNextDefaultName(notesDir);
-      expect(r1.number).toBe(3);
-      // 再弹出 2
+      expect(r1.number).toBe(2);
       const r2 = fileStore.getNextDefaultName(notesDir);
-      expect(r2.number).toBe(2);
+      expect(r2.number).toBe(3);
+    });
+
+    it('U-23a: 归还序号 3 再归还 2，应先复用 2', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      fileStore.getNextDefaultName(notesDir); // 1
+      fileStore.getNextDefaultName(notesDir); // 2
+      fileStore.getNextDefaultName(notesDir); // 3
+      fileStore.releaseNameNumber(notesDir, 3);
+      fileStore.releaseNameNumber(notesDir, 2);
+      expect(fileStore.getNextDefaultName(notesDir).number).toBe(2);
+      expect(fileStore.getNextDefaultName(notesDir).number).toBe(3);
+    });
+
+    it('U-23b: 归还非连续序号应先复用最小的', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      for (let i = 0; i < 5; i++) fileStore.getNextDefaultName(notesDir); // 1-5
+      fileStore.releaseNameNumber(notesDir, 5);
+      fileStore.releaseNameNumber(notesDir, 1);
+      fileStore.releaseNameNumber(notesDir, 3);
+      // 降序排列后栈为 [5, 3, 1]，pop 返回 1（最小）
+      expect(fileStore.getNextDefaultName(notesDir).number).toBe(1);
+      expect(fileStore.getNextDefaultName(notesDir).number).toBe(3);
+      expect(fileStore.getNextDefaultName(notesDir).number).toBe(5);
+    });
+
+    it('U-23c: 归还后栈空应继续递增 maxNumber', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      fileStore.getNextDefaultName(notesDir); // 1
+      fileStore.getNextDefaultName(notesDir); // 2
+      fileStore.releaseNameNumber(notesDir, 2);
+      fileStore.releaseNameNumber(notesDir, 1);
+      // 复用 1, 2
+      expect(fileStore.getNextDefaultName(notesDir).number).toBe(1);
+      expect(fileStore.getNextDefaultName(notesDir).number).toBe(2);
+      // 栈空，递增
+      expect(fileStore.getNextDefaultName(notesDir).number).toBe(3);
     });
 
     it('U-24: 栈空后应继续递增 maxNumber', () => {
