@@ -388,7 +388,17 @@
       // ---- 选择笔记 ----
       async function selectNote(note) {
         if (currentNote && currentNote.filePath === note.filePath) return;
-        await saveCurrentNote();
+        // 在 async gap 前清空 currentNote，防止 autoSave 写入错误的笔记
+        const prevNote = currentNote;
+        currentNote = null;
+        if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+        // 保存上一个笔记（此时 textarea 仍有效）
+        if (prevNote && textarea) {
+          const content = textarea.value;
+          if (content !== lastSavedContent) {
+            await window.electronAPI.saveNote(prevNote.filePath, content);
+          }
+        }
         currentNote = note;
         currentContent = await window.electronAPI.readNote(note.filePath);
         lastSavedContent = currentContent;
@@ -398,6 +408,7 @@
         showEditor();
         titleInput.value = note.displayName;
         textarea.value = currentContent;
+        textarea.focus();
         renderNoteList();
         updateStatus();
       }
@@ -425,8 +436,8 @@
 
       // ---- 保存当前笔记 ----
       async function saveCurrentNote() {
-        if (!currentNote) return;
-        const content = textarea ? textarea.value : '';
+        if (!currentNote || !textarea) return;
+        const content = textarea.value;
         if (content === lastSavedContent) return;
         const ok = await window.electronAPI.saveNote(currentNote.filePath, content);
         if (ok) {

@@ -67,14 +67,14 @@ describe('删除后编辑场景 E2E', () => {
     await page.waitForTimeout(500);
   }
 
-  it('DE-01: 删除当前打开的笔记后，点击剩余笔记应可编辑', async () => {
+  it('DE-01: 删除当前打开的笔记后，点击剩余笔记应可编辑并保存', async () => {
     await createNoteWithContent('笔记A的内容');
     await createNoteWithContent('笔记B的内容');
 
     const noteCount = await page.locator('.note-item').count();
     expect(noteCount).toBe(2);
 
-    // B 最后创建，排在最前且为当前笔记；点击 B 确认已加载
+    // B 最后创建，排在最前且为当前笔记
     await page.locator('.note-item').first().click();
     await page.waitForTimeout(300);
 
@@ -85,21 +85,49 @@ describe('删除后编辑场景 E2E', () => {
     await deleteFirstNote();
 
     expect(await page.locator('.note-item').count()).toBe(1);
-
-    // 编辑区应隐藏（当前笔记被删除）
     expect(await page.$('.editor-area .no-note')).not.toBeNull();
 
     // 点击剩余笔记 A
     await page.locator('.note-item').first().click();
     await page.waitForTimeout(300);
 
-    // 验证编辑区出现且可编辑
-    expect(await page.$('.editor-area textarea')).not.toBeNull();
-    await page.locator('.editor-area textarea').fill('修改后的内容');
+    // 验证编辑区可交互：逐一键入字符并验证值改变
+    const ta = page.locator('.editor-area textarea');
+    await ta.fill('');  // 清空
+    await ta.pressSequentially('Hello from DE-01');
     await page.waitForTimeout(800);
 
+    expect(await ta.inputValue()).toBe('Hello from DE-01');
     const statusText = await page.textContent('#status-left');
     expect(statusText).toContain('已保存');
+  });
+
+  it('DE-01a: 删除当前笔记后点击剩余笔记，键盘输入可触发保存', async () => {
+    await createNoteWithContent('原内容');
+    await createNoteWithContent('待删除');
+
+    await page.locator('.note-item').first().click();
+    await page.waitForTimeout(300);
+
+    expect(await page.locator('.editor-area textarea').inputValue()).toBe('待删除');
+
+    const countBefore = await page.locator('.note-item').count();
+    await deleteFirstNote();
+    const countAfter = await page.locator('.note-item').count();
+    expect(countAfter).toBe(countBefore - 1);
+
+    // 点击剩余笔记
+    await page.locator('.note-item').first().click();
+    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
+
+    // 模拟真实键盘输入
+    await page.locator('.editor-area textarea').click();
+    await page.keyboard.type('键盘输入测试');
+    await page.waitForTimeout(800);
+
+    // 验证内容确实已写入
+    const content = await page.locator('.editor-area textarea').inputValue();
+    expect(content).toContain('键盘输入测试');
   });
 
   it('DE-02: 删除当前打开的笔记后，新建笔记应可编辑', async () => {
@@ -233,5 +261,52 @@ describe('删除后编辑场景 E2E', () => {
     const titles = await page.locator('.note-item .title').allTextContents();
     const zombieCount = titles.filter(t => t.includes('竞态测试')).length;
     expect(zombieCount).toBe(0);
+  });
+
+  it('DE-06: 删除当前笔记后立即点击另一篇（selectNote 竞态窗口）', async () => {
+    // 创建三篇笔记
+    await createNoteWithContent('笔记1内容XXXX');
+    await createNoteWithContent('笔记2内容YYYY');
+    await createNoteWithContent('笔记3内容ZZZZ');
+
+    // 点击第一篇（笔记3，最新），使其成为当前笔记
+    await page.locator('.note-item').first().click();
+    await page.waitForTimeout(300);
+
+    // 修改内容触发 autoSave 计时器
+    const textarea = page.locator('.editor-area textarea');
+    await textarea.fill('笔记3修改后内容AAAA');
+
+    // 不等待 autoSave —— 立即删除当前笔记
+    const countBefore = await page.locator('.note-item').count();
+    await deleteFirstNote();
+    // 此时 autoSave 的 500ms 定时器可能刚触发
+    const countAfter = await page.locator('.note-item').count();
+    expect(countAfter).toBe(countBefore - 1);
+
+    // 立即点击剩余的第一篇笔记（原笔记2，现在排第一）
+    await page.locator('.note-item').first().click();
+    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
+
+    // 验证内容已加载（非空）
+    const loadedContent = await page.locator('.editor-area textarea').inputValue();
+    expect(loadedContent.length).toBeGreaterThan(0);
+
+    // 键入新内容并验证保存
+    await page.locator('.editor-area textarea').fill('竞态后笔记新内容BBBB');
+    await page.waitForTimeout(800);
+
+    const statusText = await page.textContent('#status-left');
+    expect(statusText).toContain('已保存');
+
+    // 点击另一篇笔记，验证它也可以正常加载
+    const noteItems = page.locator('.note-item');
+    const noteCount = await noteItems.count();
+    if (noteCount >= 2) {
+      await noteItems.nth(1).click();
+      await page.waitForTimeout(300);
+      const otherContent = await page.locator('.editor-area textarea').inputValue();
+      expect(otherContent.length).toBeGreaterThan(0);
+    }
   });
 });
