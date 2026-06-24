@@ -325,6 +325,8 @@
       <button id="btn-undo" title="撤销 (Ctrl+Z)" disabled>↩ 撤销</button>
       <button id="btn-redo" title="重做 (Ctrl+Y)" disabled>↪ 重做</button>
       <span class="separator"></span>
+      <button id="btn-save" title="保存笔记 (Ctrl+S)">💾 保存</button>
+      <span class="separator"></span>
       <input type="text" class="note-title-input" id="note-title" placeholder="笔记标题..." />
     </div>
 
@@ -474,17 +476,34 @@
         }
       }
 
-      // ---- 自动保存（防抖） ----
-      function autoSave() {
-        if (saveTimer) clearTimeout(saveTimer);
-        saveTimer = setTimeout(async () => {
-          if (textarea && textarea.value !== lastSavedContent) {
-            pushUndo(lastSavedContent);
-          }
-          await saveCurrentNote();
+      // ---- 自动保存（防抖）—— 已禁用 ----
+      // function autoSave() {
+      //   if (saveTimer) clearTimeout(saveTimer);
+      //   saveTimer = setTimeout(async () => {
+      //     if (textarea && textarea.value !== lastSavedContent) {
+      //       pushUndo(lastSavedContent);
+      //     }
+      //     await saveCurrentNote();
+      //     await loadNoteList();
+      //     renderNoteList();
+      //   }, 500);
+      // }
+
+      // ---- 手动保存 ----
+      async function manualSave() {
+        if (!currentNote || !textarea) return;
+        const content = textarea.value;
+        if (content === lastSavedContent) return;
+        pushUndo(lastSavedContent);
+        const ok = await window.electronAPI.saveNote(currentNote.filePath, content);
+        if (ok) {
+          lastSavedContent = content;
+          currentNote.mtime = Date.now();
+          statusLeft.textContent = '已保存';
+          setTimeout(() => { if (statusLeft.textContent === '已保存') updateStatus(); }, 1500);
           await loadNoteList();
           renderNoteList();
-        }, 500);
+        }
       }
 
       // ---- 关闭当前笔记 ----
@@ -532,7 +551,7 @@
 
       // ---- 编辑事件 ----
       function onEditorInput() {
-        autoSave();
+        // autoSave();  // 已禁用自动保存，改用 Ctrl+S / 保存按钮
       }
 
       function onEditorKeydown(e) {
@@ -545,6 +564,9 @@
         } else if (e.ctrlKey && e.key === 'n') {
           e.preventDefault();
           createNewNote();
+        } else if (e.ctrlKey && e.key === 's') {
+          e.preventDefault();
+          manualSave();
         }
       }
 
@@ -817,6 +839,7 @@
       document.getElementById('btn-new').addEventListener('click', createNewNote);
       document.getElementById('btn-undo').addEventListener('click', undo);
       document.getElementById('btn-redo').addEventListener('click', redo);
+      document.getElementById('btn-save').addEventListener('click', () => manualSave());
 
       document.getElementById('btn-open').addEventListener('click', async () => {
         await saveCurrentNote();
@@ -924,6 +947,10 @@
         if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
           e.preventDefault();
           createNewNote();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+          e.preventDefault();
+          manualSave();
         }
       });
 

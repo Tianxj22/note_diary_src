@@ -78,7 +78,8 @@ describe('编辑器 UI E2E', () => {
     const textarea = page.locator('.editor-area textarea');
     await textarea.fill('Hello Note Diary!');
 
-    await page.waitForTimeout(800);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     const statusText = await page.textContent('#status-left');
     expect(statusText).toContain('已保存');
@@ -89,7 +90,8 @@ describe('编辑器 UI E2E', () => {
 
     const before = await textarea.inputValue();
     await textarea.fill(before + '\n新增一行');
-    await page.waitForTimeout(600); // 等待 autoSave 完成
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     await page.click('#btn-undo');
 
@@ -102,10 +104,12 @@ describe('编辑器 UI E2E', () => {
 
     const baseContent = '重做测试内容';
     await textarea.fill(baseContent);
-    await page.waitForTimeout(600); // 等待 autoSave 完成（防抖 500ms）
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
     const modifiedContent = baseContent + '\n新增行';
     await textarea.fill(modifiedContent);
-    await page.waitForTimeout(600); // 等待 autoSave 完成
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     await page.click('#btn-undo');
     const afterUndo = await textarea.inputValue();
@@ -122,13 +126,15 @@ describe('编辑器 UI E2E', () => {
     await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
     const textarea = page.locator('.editor-area textarea');
     await textarea.fill('笔记A的特征内容');
-    await page.waitForTimeout(600);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     // 创建笔记 B 并写入特征内容
     await page.click('#btn-new');
     await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
     await page.locator('.editor-area textarea').fill('笔记B的特征内容');
-    await page.waitForTimeout(600);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     // 点击侧边栏倒数第二项（应切换回笔记 A）
     const noteItems = page.locator('.note-item');
@@ -175,7 +181,8 @@ describe('编辑器 UI E2E', () => {
     await page.click('#btn-new');
     await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
     await page.locator('.editor-area textarea').fill('重命名测试');
-    await page.waitForTimeout(600);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     // 右键第一个笔记
     const firstNote = page.locator('.note-item').first();

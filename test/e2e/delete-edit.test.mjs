@@ -51,7 +51,8 @@ describe('删除后编辑场景 E2E', () => {
     await page.click('#btn-new');
     await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
     await page.locator('.editor-area textarea').fill(content);
-    await page.waitForTimeout(600); // 等待 autoSave 完成
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
   }
 
   async function deleteFirstNote() {
@@ -94,7 +95,8 @@ describe('删除后编辑场景 E2E', () => {
     // 验证编辑区可交互：清空后键入新内容
     await ta.fill('');
     await ta.pressSequentially('Hello from DE-01');
-    await page.waitForTimeout(800);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     expect(await ta.inputValue()).toBe('Hello from DE-01');
     const statusText = await page.textContent('#status-left');
@@ -122,7 +124,8 @@ describe('删除后编辑场景 E2E', () => {
     // 模拟真实键盘输入
     await page.locator('.editor-area textarea').click();
     await page.keyboard.type('键盘输入测试');
-    await page.waitForTimeout(800);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     // 验证内容确实已写入
     const content = await page.locator('.editor-area textarea').inputValue();
@@ -149,7 +152,8 @@ describe('删除后编辑场景 E2E', () => {
     expect(await page.$('.editor-area textarea')).not.toBeNull();
 
     await textarea.fill('新建笔记的内容');
-    await page.waitForTimeout(800);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     const statusText = await page.textContent('#status-left');
     expect(statusText).toContain('已保存');
@@ -170,7 +174,8 @@ describe('删除后编辑场景 E2E', () => {
     // 在 Y 中输入特征内容
     const textarea = page.locator('.editor-area textarea');
     await textarea.fill('当前笔记的特征内容');
-    await page.waitForTimeout(600);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     // 右键点击第二篇笔记 X（非当前笔记）并删除
     const otherNote = page.locator('.note-item').nth(1);
@@ -213,7 +218,8 @@ describe('删除后编辑场景 E2E', () => {
     // 编辑区可正常使用
     expect(await page.$('.editor-area textarea')).not.toBeNull();
     await page.locator('.editor-area textarea').fill('重新开始的内容');
-    await page.waitForTimeout(800);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     const statusText = await page.textContent('#status-left');
     expect(statusText).toContain('已保存');
@@ -248,7 +254,8 @@ describe('删除后编辑场景 E2E', () => {
     await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
 
     await page.locator('.editor-area textarea').fill('竞态测试后新建的内容');
-    await page.waitForTimeout(800);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     const statusText = await page.textContent('#status-left');
     expect(statusText).toContain('已保存');
@@ -290,7 +297,8 @@ describe('删除后编辑场景 E2E', () => {
 
     // 键入新内容并验证保存
     await page.locator('.editor-area textarea').fill('竞态后笔记新内容BBBB');
-    await page.waitForTimeout(800);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     const statusText = await page.textContent('#status-left');
     expect(statusText).toContain('已保存');
@@ -328,7 +336,8 @@ describe('删除后编辑场景 E2E', () => {
 
     // 修改内容
     await page.locator('.editor-area textarea').fill('关闭前修改DEF');
-    await page.waitForTimeout(600); // 等待保存
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     // 关闭笔记
     await page.click('.btn-close-note');
@@ -416,7 +425,8 @@ describe('删除后编辑场景 E2E', () => {
 
     // 键盘输入
     await page.keyboard.type('焦点测试输入内容');
-    await page.waitForTimeout(800);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     // 验证内容已写入
     const content = await page.locator('.editor-area textarea').inputValue();
@@ -452,7 +462,8 @@ describe('删除后编辑场景 E2E', () => {
 
     // 键盘输入
     await page.keyboard.type('重建后的输入');
-    await page.waitForTimeout(800);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     const content = await page.locator('.editor-area textarea').inputValue();
     expect(content).toContain('重建后的输入');
@@ -479,7 +490,8 @@ describe('删除后编辑场景 E2E', () => {
     // 点击聚焦 + 键盘输入
     await page.locator('.editor-area textarea').click();
     await page.keyboard.type('快捷键新建的内容');
-    await page.waitForTimeout(800);
+    await page.click('#btn-save');
+    await page.waitForTimeout(500);
 
     const content = await page.locator('.editor-area textarea').inputValue();
     expect(content).toContain('快捷键新建的内容');
