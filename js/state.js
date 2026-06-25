@@ -79,3 +79,4 @@ ND.cropCanvas = document.getElementById('crop-canvas');
 ND.cropRect = document.getElementById('crop-rect');
 ND.btnCropConfirm = document.getElementById('btn-crop-confirm');
 ND.btnCropCancel = document.getElementById('btn-crop-cancel');
+ND.btnRestoreImage = document.getElementById('btn-restore-image');

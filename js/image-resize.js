@@ -193,6 +193,10 @@ function syncImageDimensionsToInputs() {
   if (ND.imgWidthInput) ND.imgWidthInput.value = w || '';
   if (ND.imgHeightInput) ND.imgHeightInput.value = h || '';
   if (w && h) ND.imageEditAspectRatio = w / h;
+  // 如果图片有原始数据（被裁剪过），显示恢复按钮
+  if (ND.btnRestoreImage) {
+    ND.btnRestoreImage.style.display = ND.selectedImage.dataset.originalSrc ? '' : 'none';
+  }
 }
 
 // ---- 尺寸输入框事件 ----
@@ -246,18 +250,21 @@ if (ND.btnCropImage) {
 function openCropOverlay() {
   if (!ND.selectedImage || !ND.cropOverlay || !ND.cropCanvas) return;
   const img = ND.selectedImage;
-  const canvas = ND.cropCanvas;
 
-  // 先显示遮罩，否则 workspace 的 clientWidth/Height 为 0
+  // 非破坏性裁剪：如果有原始图片，加载原始图片到 canvas
+  const srcToLoad = img.dataset.originalSrc || img.src;
+
   ND.cropOverlay.style.display = 'flex';
   ND.cropOverlayActive = true;
 
-  // 等待浏览器完成布局后再测量和绘制
-  requestAnimationFrame(() => {
+  // 加载原图到 Image 对象以获取真实尺寸
+  const origImg = new Image();
+  origImg.onload = () => {
+    const canvas = ND.cropCanvas;
     const ctx = canvas.getContext('2d');
-    canvas.width = img.naturalWidth || img.width;
-    canvas.height = img.naturalHeight || img.height;
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    canvas.width = origImg.naturalWidth;
+    canvas.height = origImg.naturalHeight;
+    ctx.drawImage(origImg, 0, 0);
 
     const workspace = ND.cropOverlay.querySelector('.crop-workspace');
     const maxW = workspace.clientWidth * 0.9;
@@ -266,17 +273,60 @@ function openCropOverlay() {
     canvas.style.width = (canvas.width * scale) + 'px';
     canvas.style.height = (canvas.height * scale) + 'px';
 
-    const marginX = canvas.width * 0.1;
-    const marginY = canvas.height * 0.1;
+    // 如果已有裁剪数据，恢复裁剪区；否则默认中央 80%
+    let cropRect;
+    if (img.dataset.crop) {
+      const prev = JSON.parse(img.dataset.crop);
+      cropRect = { x: prev.x, y: prev.y, w: prev.w, h: prev.h };
+    } else {
+      const marginX = canvas.width * 0.1;
+      const marginY = canvas.height * 0.1;
+      cropRect = { x: marginX, y: marginY, w: canvas.width - 2 * marginX, h: canvas.height - 2 * marginY };
+    }
+
     ND.cropState = {
-      rect: { x: marginX, y: marginY, w: canvas.width - 2 * marginX, h: canvas.height - 2 * marginY },
+      rect: cropRect,
       mode: 'idle',
       scale: scale,
       startX: 0, startY: 0,
       startRect: null,
+      origW: canvas.width,
+      origH: canvas.height,
     };
     updateCropRectDisplay();
+    createCropHandles();
+  };
+  origImg.src = srcToLoad;
+}
+
+function closeCropOverlay() {
+  removeCropHandles();
+  ND.cropOverlay.style.display = 'none';
+  ND.cropOverlayActive = false;
+  ND.cropState = null;
+}
+
+function createCropHandles() {
+  removeCropHandles();
+  const rect = document.getElementById('crop-rect');
+  if (!rect) return;
+  const positions = ['nw','n','ne','w','e','sw','s','se'];
+  positions.forEach(pos => {
+    const handle = document.createElement('div');
+    handle.className = 'image-resize-handle handle-' + pos;
+    handle.dataset.handle = pos;
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onCropHandleMouseDown(e, pos);
+    });
+    rect.appendChild(handle);
   });
+}
+
+function removeCropHandles() {
+  const rect = document.getElementById('crop-rect');
+  if (rect) rect.querySelectorAll('.image-resize-handle').forEach(h => h.remove());
 }
 
 function updateCropRectDisplay() {
@@ -284,16 +334,42 @@ function updateCropRectDisplay() {
   const { rect, scale } = ND.cropState;
   const canvasRect = ND.cropCanvas.getBoundingClientRect();
   const wsRect = ND.cropOverlay.querySelector('.crop-workspace').getBoundingClientRect();
-  ND.cropRect.style.left = (canvasRect.left - wsRect.left + rect.x * scale) + 'px';
-  ND.cropRect.style.top = (canvasRect.top - wsRect.top + rect.y * scale) + 'px';
-  ND.cropRect.style.width = (rect.w * scale) + 'px';
-  ND.cropRect.style.height = (rect.h * scale) + 'px';
+  const left = canvasRect.left - wsRect.left + rect.x * scale;
+  const top = canvasRect.top - wsRect.top + rect.y * scale;
+  const w = rect.w * scale;
+  const h = rect.h * scale;
+  ND.cropRect.style.left = left + 'px';
+  ND.cropRect.style.top = top + 'px';
+  ND.cropRect.style.width = w + 'px';
+  ND.cropRect.style.height = h + 'px';
+
+  // 更新裁剪手柄位置
+  const hw = 4;
+  const positions = {
+    nw: [ -hw, -hw ], n: [ w/2 - hw, -hw ], ne: [ w - hw, -hw ],
+    w:  [ -hw, h/2 - hw ], e: [ w - hw, h/2 - hw ],
+    sw: [ -hw, h - hw ], s: [ w/2 - hw, h - hw ], se: [ w - hw, h - hw ],
+  };
+  ND.cropRect.querySelectorAll('.image-resize-handle').forEach(handle => {
+    const p = positions[handle.dataset.handle];
+    if (p) { handle.style.left = p[0] + 'px'; handle.style.top = p[1] + 'px'; }
+  });
 }
 
-// 裁剪矩形交互
+function onCropHandleMouseDown(e, handleType) {
+  if (!ND.cropState) return;
+  ND.cropState.mode = 'resize';
+  ND.cropState.handleType = handleType;
+  ND.cropState.startX = e.clientX;
+  ND.cropState.startY = e.clientY;
+  ND.cropState.startRect = { ...ND.cropState.rect };
+  ND.cropState.startRatio = ND.cropState.rect.w / ND.cropState.rect.h;
+}
+
+// 裁剪矩形移动（mousedown on rect itself）
 if (ND.cropRect) {
   ND.cropRect.addEventListener('mousedown', (e) => {
-    if (!ND.cropState) return;
+    if (!ND.cropState || e.target.classList.contains('image-resize-handle')) return;
     e.preventDefault();
     ND.cropState.mode = 'move';
     ND.cropState.startX = e.clientX;
@@ -303,62 +379,107 @@ if (ND.cropRect) {
 }
 
 document.addEventListener('mousemove', (e) => {
-  if (!ND.cropState || ND.cropState.mode === 'idle') return;
-  const { startX, startY, startRect, scale, rect } = ND.cropState;
+  if (!ND.cropState || ND.cropState.mode === 'idle' || !ND.cropState.startRect) return;
+  const { startX, startY, startRect, scale, rect, mode } = ND.cropState;
   const canvas = ND.cropCanvas;
   const dx = (e.clientX - startX) / scale;
   const dy = (e.clientY - startY) / scale;
 
-  if (ND.cropState.mode === 'move') {
+  if (mode === 'move') {
     rect.x = Math.max(0, Math.min(startRect.x + dx, canvas.width - rect.w));
     rect.y = Math.max(0, Math.min(startRect.y + dy, canvas.height - rect.h));
+  } else if (mode === 'resize') {
+    const hType = ND.cropState.handleType;
+    let newW = startRect.w;
+    let newH = startRect.h;
+    if (hType.includes('e')) newW = startRect.w + dx;
+    if (hType.includes('w')) { newW = startRect.w - dx; rect.x = startRect.x + dx; }
+    if (hType.includes('s')) newH = startRect.h + dy;
+    if (hType.includes('n')) { newH = startRect.h - dy; rect.y = startRect.y + dy; }
+    // 角手柄保持宽高比
+    if (hType.length === 2) {
+      const absW = Math.abs(newW); const absH = Math.abs(newH);
+      if (absW / ND.cropState.startRatio > absH) {
+        newW = (newW >= 0 ? 1 : -1) * absH * ND.cropState.startRatio;
+      } else {
+        newH = (newH >= 0 ? 1 : -1) * absW / ND.cropState.startRatio;
+      }
+    }
+    newW = Math.max(20, Math.abs(newW));
+    newH = Math.max(20, Math.abs(newH));
+    // 约束不超出 canvas
+    if (hType.includes('w')) rect.x = Math.max(0, Math.min(startRect.x + startRect.w - newW, canvas.width - newW));
+    if (hType.includes('n')) rect.y = Math.max(0, Math.min(startRect.y + startRect.h - newH, canvas.height - newH));
+    rect.x = Math.max(0, rect.x); rect.y = Math.max(0, rect.y);
+    rect.w = Math.min(newW, canvas.width - rect.x);
+    rect.h = Math.min(newH, canvas.height - rect.y);
   }
   updateCropRectDisplay();
 });
 
 document.addEventListener('mouseup', () => {
-  if (ND.cropState) ND.cropState.mode = 'idle';
+  if (ND.cropState) { ND.cropState.mode = 'idle'; ND.cropState.startRect = null; }
 });
 
-// 裁剪确认 / 取消
+// 裁剪确认
 if (ND.btnCropConfirm) {
   ND.btnCropConfirm.addEventListener('click', () => {
     if (!ND.selectedImage || !ND.cropState || !ND.cropCanvas) return;
-    const { rect } = ND.cropState;
+    const img = ND.selectedImage;
+    const { rect, origW, origH } = ND.cropState;
     const canvas = ND.cropCanvas;
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = rect.w;
-    tempCanvas.height = rect.h;
+    tempCanvas.width = rect.w; tempCanvas.height = rect.h;
     const tempCtx = tempCanvas.getContext('2d');
     tempCtx.drawImage(canvas, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
     const dataUrl = tempCanvas.toDataURL('image/png');
-    ND.selectedImage.src = dataUrl;
-    ND.selectedImage.style.width = rect.w + 'px';
-    ND.selectedImage.style.height = rect.h + 'px';
+
+    // 非破坏性：首次裁剪时保存原图
+    if (!img.dataset.originalSrc) {
+      img.dataset.originalSrc = img.src;
+    }
+    img.dataset.crop = JSON.stringify({ x: rect.x, y: rect.y, w: rect.w, h: rect.h, origW: origW, origH: origH });
+    img.src = dataUrl;
+    img.style.width = rect.w + 'px';
+    img.style.height = rect.h + 'px';
+
+    // 显示恢复按钮
+    if (ND.btnRestoreImage) ND.btnRestoreImage.style.display = '';
+
     syncImageDimensionsToInputs();
     updateHandlePositions();
-    ND.cropOverlay.style.display = 'none';
-    ND.cropOverlayActive = false;
-    ND.cropState = null;
+    closeCropOverlay();
   });
 }
 
+// 裁剪取消
 if (ND.btnCropCancel) {
-  ND.btnCropCancel.addEventListener('click', () => {
-    ND.cropOverlay.style.display = 'none';
-    ND.cropOverlayActive = false;
-    ND.cropState = null;
-  });
+  ND.btnCropCancel.addEventListener('click', closeCropOverlay);
 }
 
 // Escape 关闭裁剪遮罩
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && ND.cropOverlayActive) {
-    ND.cropOverlay.style.display = 'none';
-    ND.cropOverlayActive = false;
-    ND.cropState = null;
-  }
+  if (e.key === 'Escape' && ND.cropOverlayActive) closeCropOverlay();
 });
+
+// 恢复原图
+function restoreOriginalImage() {
+  if (!ND.selectedImage) return;
+  const img = ND.selectedImage;
+  if (!img.dataset.originalSrc) return;
+  img.src = img.dataset.originalSrc;
+  img.style.width = '';
+  img.style.height = '';
+  delete img.dataset.originalSrc;
+  delete img.dataset.crop;
+  if (ND.btnRestoreImage) ND.btnRestoreImage.style.display = 'none';
+  syncImageDimensionsToInputs();
+  updateHandlePositions();
+}
+
+if (ND.btnRestoreImage) {
+  ND.btnRestoreImage.addEventListener('click', restoreOriginalImage);
+}
 
 // ---- 委托：点击编辑器中图片 → 选中并显示缩放手柄 ----
 ND.editorArea.addEventListener('click', (e) => {
