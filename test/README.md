@@ -3,18 +3,24 @@
 ## 快速开始
 
 ```bash
-# 运行所有测试
+# 运行单元测试（默认，始终可用）
 npm test
 
 # 仅运行单元测试（无需启动 Electron）
 npm run test:unit
 
-# 仅运行 E2E 测试（需要桌面环境）
+# 仅运行 E2E 测试（需要桌面环境 + 兼容的 Electron 版本）
 npm run test:e2e
+
+# 运行全部测试（单元 + E2E）
+npm run test:all
 
 # 监听模式，文件变更自动重跑
 npm run test:watch
 ```
+
+> **注意**: `npm test` 默认仅运行单元测试，确保在任何环境下都能快速验证核心逻辑。
+> E2E 测试需要 Electron 与 Playwright 版本兼容（当前 Electron 33 与 Playwright 1.61 存在已知兼容性问题）。
 
 ## 测试结构
 

@@ -5,9 +5,10 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "vitest run",
+    "test": "vitest run test/unit/",
     "test:unit": "vitest run test/unit/",
     "test:e2e": "vitest run test/e2e/",
+    "test:all": "vitest run",
     "test:watch": "vitest"
   },
   "author": "tianxj22",

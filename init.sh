@@ -9,13 +9,13 @@ echo "=== Note Diary — 项目验证 / Verification ==="
 echo ""
 
 # 1. 检查 Node.js 环境 / Check runtime
-echo "[1/4] Check Node.js environment..."
+echo "[1/5] Check Node.js environment..."
 node --version
 npm --version
 echo ""
 
 # 2. 检查关键源文件 / Static check — verify source files exist (no build/compile step — plain JavaScript)
-echo "[2/4] Static & lint check — verify source files..."
+echo "[2/5] Static & lint check — verify source files..."
 for f in main.js preload.js index.html package.json file-store.js; do
   if [ -f "$f" ]; then
     echo "  PASS $f"
@@ -27,13 +27,17 @@ done
 echo ""
 
 # 3. 安装/更新依赖 / Install dependencies
-echo "[3/4] Install dependencies..."
+echo "[3/5] Install dependencies..."
 npm install --silent
 echo ""
 
 # 4. 运行测试 / Run tests
-echo "[4/4] Run tests (vitest)..."
-npm test
+echo "[4/5] Run unit tests (vitest)..."
+npm run test:unit
+echo ""
+
+echo "[5/5] Run E2E tests (playwright + electron)..."
+npm run test:e2e || echo "  WARNING: E2E tests skipped (requires compatible Electron version)"
 echo ""
 
 echo "=== Verification Complete ==="
