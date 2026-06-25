@@ -45,8 +45,8 @@ function deselectImage() {
     if (ND.switchToolbarTab) ND.switchToolbarTab(ND.previousToolbarTab || 'file');
   }
   // 关闭裁剪遮罩
-  if (ND.cropOverlay && ND.cropOverlay.classList.contains('active')) {
-    ND.cropOverlay.classList.remove('active');
+  if (ND.cropOverlay && ND.cropOverlayActive) {
+    ND.cropOverlay.style.display = 'none';
     ND.cropOverlayActive = false;
     ND.cropState = null;
   }
@@ -247,32 +247,36 @@ function openCropOverlay() {
   if (!ND.selectedImage || !ND.cropOverlay || !ND.cropCanvas) return;
   const img = ND.selectedImage;
   const canvas = ND.cropCanvas;
-  const ctx = canvas.getContext('2d');
 
-  canvas.width = img.naturalWidth || img.width;
-  canvas.height = img.naturalHeight || img.height;
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-  const workspace = ND.cropOverlay.querySelector('.crop-workspace');
-  const maxW = workspace.clientWidth * 0.9;
-  const maxH = workspace.clientHeight * 0.9;
-  const scale = Math.min(maxW / canvas.width, maxH / canvas.height, 1);
-  canvas.style.width = (canvas.width * scale) + 'px';
-  canvas.style.height = (canvas.height * scale) + 'px';
-
-  const marginX = canvas.width * 0.1;
-  const marginY = canvas.height * 0.1;
-  ND.cropState = {
-    rect: { x: marginX, y: marginY, w: canvas.width - 2 * marginX, h: canvas.height - 2 * marginY },
-    mode: 'idle',
-    scale: scale,
-    startX: 0, startY: 0,
-    startRect: null,
-  };
-  updateCropRectDisplay();
-
-  ND.cropOverlay.classList.add('active');
+  // 先显示遮罩，否则 workspace 的 clientWidth/Height 为 0
+  ND.cropOverlay.style.display = 'flex';
   ND.cropOverlayActive = true;
+
+  // 等待浏览器完成布局后再测量和绘制
+  requestAnimationFrame(() => {
+    const ctx = canvas.getContext('2d');
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const workspace = ND.cropOverlay.querySelector('.crop-workspace');
+    const maxW = workspace.clientWidth * 0.9;
+    const maxH = workspace.clientHeight * 0.9;
+    const scale = Math.min(maxW / canvas.width, maxH / canvas.height, 1);
+    canvas.style.width = (canvas.width * scale) + 'px';
+    canvas.style.height = (canvas.height * scale) + 'px';
+
+    const marginX = canvas.width * 0.1;
+    const marginY = canvas.height * 0.1;
+    ND.cropState = {
+      rect: { x: marginX, y: marginY, w: canvas.width - 2 * marginX, h: canvas.height - 2 * marginY },
+      mode: 'idle',
+      scale: scale,
+      startX: 0, startY: 0,
+      startRect: null,
+    };
+    updateCropRectDisplay();
+  });
 }
 
 function updateCropRectDisplay() {
@@ -333,7 +337,7 @@ if (ND.btnCropConfirm) {
     ND.selectedImage.style.height = rect.h + 'px';
     syncImageDimensionsToInputs();
     updateHandlePositions();
-    ND.cropOverlay.classList.remove('active');
+    ND.cropOverlay.style.display = 'none';
     ND.cropOverlayActive = false;
     ND.cropState = null;
   });
@@ -341,7 +345,7 @@ if (ND.btnCropConfirm) {
 
 if (ND.btnCropCancel) {
   ND.btnCropCancel.addEventListener('click', () => {
-    ND.cropOverlay.classList.remove('active');
+    ND.cropOverlay.style.display = 'none';
     ND.cropOverlayActive = false;
     ND.cropState = null;
   });
@@ -350,7 +354,7 @@ if (ND.btnCropCancel) {
 // Escape 关闭裁剪遮罩
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && ND.cropOverlayActive) {
-    ND.cropOverlay.classList.remove('active');
+    ND.cropOverlay.style.display = 'none';
     ND.cropOverlayActive = false;
     ND.cropState = null;
   }
