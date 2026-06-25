@@ -35,16 +35,39 @@
       border-right: 1px solid #1a1a1a;
     }
 
-    .sidebar-header {
-      padding: 16px;
+    /* 侧边栏标签切换 */
+    .sidebar-tabs {
+      display: flex;
       border-bottom: 1px solid #3a3a3a;
     }
 
-    .sidebar-header h2 {
-      font-size: 1rem;
+    .sidebar-tab {
+      flex: 1;
+      padding: 10px 0;
+      border: none;
+      background: transparent;
+      color: #888;
+      cursor: pointer;
+      font-size: 0.82rem;
+      text-align: center;
+      transition: color 0.15s, background 0.15s;
+      border-bottom: 2px solid transparent;
+    }
+
+    .sidebar-tab:hover {
+      color: #ccc;
+      background: #333;
+    }
+
+    .sidebar-tab.active {
       color: #fff;
-      margin-bottom: 10px;
-      letter-spacing: 1px;
+      border-bottom-color: #6c9fff;
+      font-weight: 600;
+    }
+
+    .sidebar-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #3a3a3a;
     }
 
     .btn-new-note {
@@ -63,10 +86,90 @@
       background: #4a4a4a;
     }
 
+    /* 排序控件 */
+    .sort-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      border-bottom: 1px solid #3a3a3a;
+    }
+
+    .sort-controls select {
+      flex: 1;
+      padding: 4px 6px;
+      border: 1px solid #4a4a4a;
+      border-radius: 4px;
+      background: #3a3a3a;
+      color: #ccc;
+      font-size: 0.75rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .sort-dir-btn {
+      width: 26px;
+      height: 26px;
+      border: 1px solid #4a4a4a;
+      border-radius: 4px;
+      background: #3a3a3a;
+      color: #888;
+      cursor: pointer;
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .sort-dir-btn:hover {
+      background: #4a4a4a;
+      color: #ccc;
+    }
+
+    .sort-dir-btn.active {
+      background: #4a6a9a;
+      border-color: #6c9fff;
+      color: #fff;
+    }
+
+    /* 回收站操作 */
+    .trash-actions {
+      padding: 8px 16px;
+      border-bottom: 1px solid #3a3a3a;
+    }
+
+    .btn-empty-trash {
+      width: 100%;
+      padding: 6px 0;
+      border: 1px solid #6a3a3a;
+      border-radius: 4px;
+      background: #4a2a2a;
+      color: #f66;
+      cursor: pointer;
+      font-size: 0.82rem;
+      transition: background 0.15s;
+    }
+
+    .btn-empty-trash:hover {
+      background: #6a3a3a;
+    }
+
     .note-list {
       flex: 1;
       overflow-y: auto;
+      overscroll-behavior: contain;
       padding: 4px 0;
+    }
+
+    /* 回收站笔记项 */
+    .note-item.trash-item .title {
+      color: #999;
+    }
+
+    .note-item.trash-item .meta {
+      color: #666;
+      font-size: 0.65rem;
     }
 
     .note-list .empty {
@@ -115,6 +218,7 @@
       display: flex;
       flex-direction: column;
       background: #fff;
+      overflow: hidden;
     }
 
     /* 工具栏 */
@@ -186,6 +290,47 @@
       background: #f5f5f5;
     }
 
+    /* 样式图标按钮（无文字，仅图标） */
+    .toolbar .style-btn {
+      position: relative;
+      padding: 6px 10px;
+      font-size: 0.9rem;
+      min-width: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toolbar .style-btn.active {
+      background: #d6e4f0;
+      border-color: #6c9fff;
+      color: #1a56b0;
+    }
+
+    /* 自定义 tooltip，悬浮 0.5s 后显示 */
+    .toolbar .style-btn::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 4px 8px;
+      background: #333;
+      color: #fff;
+      font-size: 0.72rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 100;
+    }
+
+    .toolbar .style-btn:hover::after {
+      opacity: 1;
+      transition-delay: 0.5s;
+    }
+
     .toolbar .separator {
       width: 1px;
       height: 22px;
@@ -193,19 +338,118 @@
       margin: 0 4px;
     }
 
-    .toolbar .note-title-input {
-      flex: 1;
+    .toolbar select {
       padding: 6px 8px;
       border: 1px solid #d0d0d0;
       border-radius: 4px;
-      font-size: 0.85rem;
-      color: #333;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: #444;
       outline: none;
+    }
+
+    .toolbar select:hover {
+      border-color: #bbb;
+    }
+
+    .toolbar .color-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      border: 1px solid #d0d0d0;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: #444;
+      transition: background 0.1s, border-color 0.1s;
+    }
+
+    .toolbar .color-btn:hover {
+      background: #eee;
+      border-color: #bbb;
+    }
+
+    .toolbar .color-btn input[type="color"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .toolbar .color-swatch {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      border: 1px solid #ccc;
+      margin-left: 2px;
+      vertical-align: middle;
+    }
+
+    /* 对齐条形图标 */
+    .align-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: 18px;
+      height: 16px;
+      justify-content: center;
+    }
+
+    .align-bars span {
+      display: block;
+      height: 2px;
+      background: #444;
+      border-radius: 1px;
+    }
+
+    .style-btn.active .align-bars span {
+      background: #1a56b0;
+    }
+
+    /* 左对齐：左端齐平 */
+    .align-left span:nth-child(1) { width: 16px; }
+    .align-left span:nth-child(2) { width: 12px; margin-left: 0; }
+    .align-left span:nth-child(3) { width: 14px; margin-left: 0; }
+
+    /* 居中：三根横线居中 */
+    .align-center span:nth-child(1) { width: 10px; margin: 0 auto; }
+    .align-center span:nth-child(2) { width: 16px; margin: 0 auto; }
+    .align-center span:nth-child(3) { width: 12px; margin: 0 auto; }
+
+    /* 右对齐：右端齐平 */
+    .align-right span:nth-child(1) { width: 16px; margin-left: auto; }
+    .align-right span:nth-child(2) { width: 12px; margin-left: auto; }
+    .align-right span:nth-child(3) { width: 14px; margin-left: auto; }
+
+    /* 编辑区标题输入 */
+    .editor-title-input {
+      width: 100%;
+      padding: 16px 24px 8px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      outline: none;
+      font-size: 1.2rem;
+      font-weight: 600;
+      font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+      color: #333;
+      background: transparent;
       transition: border-color 0.15s;
     }
 
-    .toolbar .note-title-input:focus {
-      border-color: #6c9fff;
+    .editor-title-input:focus {
+      border-bottom-color: #6c9fff;
+    }
+
+    .editor-title-input::placeholder {
+      color: #ccc;
     }
 
     /* 编辑区 */
@@ -227,11 +471,12 @@
       user-select: none;
     }
 
-    .editor-area textarea {
+    .editor-area .editor-content {
       flex: 1;
       border: none;
       outline: none;
-      resize: none;
+      overflow-y: auto;
+      overscroll-behavior: contain;
       padding: 20px 24px;
       font-size: 0.95rem;
       line-height: 1.8;
@@ -239,7 +484,8 @@
       color: #333;
     }
 
-    .editor-area textarea::placeholder {
+    .editor-area .editor-content:empty::before {
+      content: '在这里开始记录...';
       color: #ccc;
     }
 
@@ -340,9 +586,27 @@
 <body>
   <!-- 侧边栏 -->
   <aside class="sidebar">
-    <div class="sidebar-header">
-      <h2>NOTE DIARY</h2>
+    <div class="sidebar-tabs">
+      <button class="sidebar-tab active" data-view="workspace" id="tab-workspace">📁 工作区</button>
+      <button class="sidebar-tab" data-view="trash" id="tab-trash">🗑 回收站</button>
+    </div>
+    <!-- 工作区页眉 -->
+    <div class="sidebar-header" id="sidebar-header-workspace">
       <button class="btn-new-note" id="btn-sidebar-new">+ 新建笔记</button>
+    </div>
+    <!-- 排序控件 -->
+    <div class="sort-controls" id="sort-controls">
+      <select id="sort-by">
+        <option value="mtime">修改时间</option>
+        <option value="name">名称</option>
+        <option value="created">创建时间</option>
+      </select>
+      <button class="sort-dir-btn" id="sort-asc" title="升序">↑</button>
+      <button class="sort-dir-btn active" id="sort-desc" title="倒序">↓</button>
+    </div>
+    <!-- 回收站页眉 -->
+    <div class="trash-actions" id="trash-actions" style="display:none">
+      <button class="btn-empty-trash" id="btn-empty-trash">🗑 清空回收站</button>
     </div>
     <div class="note-list" id="note-list">
       <div class="empty">暂无笔记<br>点击上方按钮创建</div>
@@ -365,14 +629,58 @@
         <span class="separator"></span>
         <button id="btn-save" title="保存笔记 (Ctrl+S)">💾 保存</button>
         <span class="separator"></span>
-        <input type="text" class="note-title-input" id="note-title" placeholder="笔记标题..." />
       </div>
       <div class="toolbar-actions" id="toolbar-style" style="display:none">
-        <button id="btn-bold" title="加粗（暂未实现）"><b>B</b> 加粗</button>
-        <button id="btn-italic" title="倾斜（暂未实现）"><i>I</i> 倾斜</button>
-        <button id="btn-underline" title="下划线（暂未实现）"><u>U</u> 下划线</button>
+        <button id="btn-bold" class="style-btn" data-tooltip="加粗 (Ctrl+B)"><b>B</b></button>
+        <button id="btn-italic" class="style-btn" data-tooltip="倾斜 (Ctrl+I)"><i>I</i></button>
+        <button id="btn-underline" class="style-btn" data-tooltip="下划线 (Ctrl+U)"><u>U</u></button>
         <span class="separator"></span>
-        <button id="btn-font" title="字体样式（暂未实现）">字体样式</button>
+        <select id="btn-font-family" title="字体选择">
+          <option value="">字体</option>
+          <option value="Microsoft YaHei">微软雅黑</option>
+          <option value="SimSun">宋体</option>
+          <option value="KaiTi">楷体</option>
+          <option value="FangSong">仿宋</option>
+          <option value="SimHei">黑体</option>
+          <option value="Arial">Arial</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Verdana">Verdana</option>
+        </select>
+        <select id="btn-font-size" title="字号选择">
+          <option value="">字号</option>
+          <option value="1">12px</option>
+          <option value="2">14px</option>
+          <option value="3">16px</option>
+          <option value="4">18px</option>
+          <option value="5">20px</option>
+          <option value="6">24px</option>
+          <option value="7">30px</option>
+          <option value="8">36px</option>
+          <option value="9">48px</option>
+        </select>
+        <span class="separator"></span>
+        <button id="btn-align-left" class="style-btn" data-tooltip="左对齐">
+          <span class="align-bars align-left"><span></span><span></span><span></span></span>
+        </button>
+        <button id="btn-align-center" class="style-btn" data-tooltip="居中对齐">
+          <span class="align-bars align-center"><span></span><span></span><span></span></span>
+        </button>
+        <button id="btn-align-right" class="style-btn" data-tooltip="右对齐">
+          <span class="align-bars align-right"><span></span><span></span><span></span></span>
+        </button>
+        <span class="separator"></span>
+        <span class="color-btn" title="字体颜色">
+          A<span class="color-swatch" id="swatch-forecolor" style="background:#333"></span>
+          <input type="color" id="btn-forecolor" value="#333333">
+        </span>
+        <span class="color-btn" title="字体底色">
+          <span class="color-swatch" id="swatch-hilitecolor" style="background:#ff0"></span>
+          <input type="color" id="btn-hilitecolor" value="#ffff00">
+        </span>
+        <span class="separator"></span>
+        <button id="btn-format-painter" class="style-btn" data-tooltip="格式刷">🖌</button>
       </div>
     </div>
 
@@ -401,6 +709,13 @@
     <div class="menu-item" data-action="import-note">📥 导入笔记</div>
   </div>
 
+  <!-- 右键上下文菜单（回收站笔记） -->
+  <div class="context-menu" id="context-menu-trash">
+    <div class="menu-item" data-action="restore">↩ 恢复</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item danger" data-action="delete-permanent">🗑 永久删除</div>
+  </div>
+
   <!-- 隐藏的文件选择器用于导入 -->
   <input type="file" id="import-file-input" accept=".txt,.md,.markdown" style="display:none">
 
@@ -410,31 +725,54 @@
       let notes = [];
       let currentNote = null;        // { fileName, filePath, displayName, mtime }
       let currentContent = '';
-      let undoStack = [];
-      let redoStack = [];
-      const MAX_UNDO = 50;
       let saveTimer = null;
       let lastSavedContent = '';
 
       // ---- DOM 引用 ----
       const noteListEl = document.getElementById('note-list');
       const editorArea = document.getElementById('editor-area');
-      const titleInput = document.getElementById('note-title');
       const btnUndo = document.getElementById('btn-undo');
       const btnRedo = document.getElementById('btn-redo');
       const statusLeft = document.getElementById('status-left');
 
-      let textarea = null;
+      let editorDiv = null;
+      let editorTitleInput = null;
+
+      // ---- 排序 / 视图状态 ----
+      let activeView = 'workspace'; // 'workspace' | 'trash'
+      let sortBy = 'mtime';
+      let sortDir = 'desc';
+
+      // ---- 样式工具栏 DOM ----
+      const btnBold = document.getElementById('btn-bold');
+      const btnItalic = document.getElementById('btn-italic');
+      const btnUnderline = document.getElementById('btn-underline');
+      const btnFontFamily = document.getElementById('btn-font-family');
+      const btnFontSize = document.getElementById('btn-font-size');
+      const btnAlignLeft = document.getElementById('btn-align-left');
+      const btnAlignCenter = document.getElementById('btn-align-center');
+      const btnAlignRight = document.getElementById('btn-align-right');
+      const btnForecolor = document.getElementById('btn-forecolor');
+      const btnHilitecolor = document.getElementById('btn-hilitecolor');
+      const swatchForecolor = document.getElementById('swatch-forecolor');
+      const swatchHilitecolor = document.getElementById('swatch-hilitecolor');
+      const btnFormatPainter = document.getElementById('btn-format-painter');
+
+      // ---- 格式刷状态 ----
+      let formatPainterActive = false;
+      let savedFormat = null;
 
       // ---- 右键菜单 DOM ----
       const contextMenu = document.getElementById('context-menu');
       const contextMenuEmpty = document.getElementById('context-menu-empty');
+      const contextMenuTrash = document.getElementById('context-menu-trash');
       const importFileInput = document.getElementById('import-file-input');
       let contextNote = null; // 当前右键操作的笔记对象
 
       // ---- 渲染笔记列表 ----
       function renderNoteList() {
         noteListEl.innerHTML = '';
+        if (activeView !== 'workspace') return;
         if (notes.length === 0) {
           noteListEl.innerHTML = '<div class="empty">暂无笔记<br>点击上方按钮创建</div>';
           return;
@@ -453,10 +791,38 @@
         });
       }
 
+      /** 渲染回收站列表 */
+      function renderTrashList() {
+        noteListEl.innerHTML = '';
+        if (activeView !== 'trash') return;
+        if (trashNotes.length === 0) {
+          noteListEl.innerHTML = '<div class="empty">回收站为空</div>';
+          return;
+        }
+        trashNotes.forEach(n => {
+          const div = document.createElement('div');
+          div.className = 'note-item trash-item';
+          div.innerHTML = `<div class="title">${escapeHtml(n.displayName)}</div>
+                           <div class="meta">删除于 ${formatDate(n.deletedAt)}</div>`;
+          div.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            showTrashContextMenu(e, n);
+          });
+          noteListEl.appendChild(div);
+        });
+      }
+
       // ---- 加载笔记列表 ----
       async function loadNoteList() {
-        notes = await window.electronAPI.listNotes();
+        notes = await window.electronAPI.listNotes({ sortBy, sortDir });
         renderNoteList();
+      }
+
+      // ---- 加载回收站列表 ----
+      let trashNotes = [];
+      async function loadTrashList() {
+        trashNotes = await window.electronAPI.listTrash();
+        renderTrashList();
       }
 
       // ---- 选择笔记 ----
@@ -467,22 +833,25 @@
         currentNote = null;
         if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
         // 保存上一个笔记（此时 textarea 仍有效）
-        if (prevNote && textarea) {
-          const content = textarea.value;
+        if (prevNote && editorDiv) {
+          const content = editorDiv.innerHTML;
           if (content !== lastSavedContent) {
             await window.electronAPI.saveNote(prevNote.filePath, content);
           }
         }
         currentNote = note;
         currentContent = await window.electronAPI.readNote(note.filePath);
+        // 兼容旧纯文本笔记：将换行转换为 HTML <br>
+        if (!/^\s*</.test(currentContent)) {
+          currentContent = currentContent.split('\n').map(line =>
+            line ? escapeHtml(line) : '<br>'
+          ).join('<br>');
+        }
         lastSavedContent = currentContent;
-        undoStack = [];
-        redoStack = [];
-        updateUndoRedoButtons();
         showEditor();
-        titleInput.value = note.displayName;
-        textarea.value = currentContent;
-        textarea.focus();
+        editorTitleInput.value = note.displayName;
+        editorDiv.innerHTML = currentContent;
+        editorDiv.focus();
         renderNoteList();
         updateStatus();
       }
@@ -496,13 +865,10 @@
         currentNote = { filePath: result.filePath, fileName: result.fileName, displayName: title, mtime: Date.now() };
         currentContent = '';
         lastSavedContent = '';
-        undoStack = [];
-        redoStack = [];
-        updateUndoRedoButtons();
         showEditor();
-        titleInput.value = title;
-        textarea.value = '';
-        textarea.focus();
+        editorTitleInput.value = title;
+        editorDiv.innerHTML = '';
+        editorDiv.focus();
         await loadNoteList();
         renderNoteList();
         updateStatus();
@@ -510,8 +876,8 @@
 
       // ---- 保存当前笔记 ----
       async function saveCurrentNote() {
-        if (!currentNote || !textarea) return;
-        const content = textarea.value;
+        if (!currentNote || !editorDiv) return;
+        const content = editorDiv.innerHTML;
         if (content === lastSavedContent) return;
         const ok = await window.electronAPI.saveNote(currentNote.filePath, content);
         if (ok) {
@@ -526,7 +892,7 @@
       // function autoSave() {
       //   if (saveTimer) clearTimeout(saveTimer);
       //   saveTimer = setTimeout(async () => {
-      //     if (textarea && textarea.value !== lastSavedContent) {
+      //     if (editorDiv && editorDiv.innerHTML !== lastSavedContent) {
       //       pushUndo(lastSavedContent);
       //     }
       //     await saveCurrentNote();
@@ -537,10 +903,9 @@
 
       // ---- 手动保存 ----
       async function manualSave() {
-        if (!currentNote || !textarea) return;
-        const content = textarea.value;
+        if (!currentNote || !editorDiv) return;
+        const content = editorDiv.innerHTML;
         if (content === lastSavedContent) return;
-        pushUndo(lastSavedContent);
         const ok = await window.electronAPI.saveNote(currentNote.filePath, content);
         if (ok) {
           lastSavedContent = content;
@@ -556,8 +921,8 @@
       async function closeCurrentNote() {
         if (!currentNote) return;
         // 先保存当前内容
-        if (textarea) {
-          const content = textarea.value;
+        if (editorDiv) {
+          const content = editorDiv.innerHTML;
           if (content !== lastSavedContent) {
             await window.electronAPI.saveNote(currentNote.filePath, content);
           }
@@ -566,11 +931,7 @@
         currentNote = null;
         currentContent = '';
         lastSavedContent = '';
-        undoStack = [];
-        redoStack = [];
-        updateUndoRedoButtons();
         hideEditor();
-        titleInput.value = '';
         updateStatus();
       }
 
@@ -583,31 +944,53 @@
         closeBtn.title = '关闭当前笔记';
         closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeCurrentNote(); });
         editorArea.appendChild(closeBtn);
-        textarea = document.createElement('textarea');
-        textarea.placeholder = '在这里开始记录...';
-        textarea.addEventListener('input', onEditorInput);
-        textarea.addEventListener('keydown', onEditorKeydown);
-        editorArea.appendChild(textarea);
+        editorTitleInput = document.createElement('input');
+        editorTitleInput.type = 'text';
+        editorTitleInput.className = 'editor-title-input';
+        editorTitleInput.placeholder = '笔记标题...';
+        editorTitleInput.addEventListener('keydown', async (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentNote) {
+              const newTitle = editorTitleInput.value.trim();
+              if (newTitle && newTitle !== currentNote.displayName) {
+                const result = await window.electronAPI.renameNote(currentNote.filePath, newTitle);
+                if (result) {
+                  currentNote.filePath = result.filePath;
+                  currentNote.fileName = result.fileName;
+                  currentNote.displayName = newTitle;
+                  await loadNoteList();
+                  renderNoteList();
+                  updateStatus();
+                  statusLeft.textContent = '已重命名';
+                }
+              }
+            }
+            editorDiv && editorDiv.focus();
+          }
+        });
+        editorArea.appendChild(editorTitleInput);
+        editorDiv = document.createElement('div');
+        editorDiv.className = 'editor-content';
+        editorDiv.contentEditable = 'true';
+        editorDiv.addEventListener('input', onEditorInput);
+        editorDiv.addEventListener('keydown', onEditorKeydown);
+        editorArea.appendChild(editorDiv);
       }
 
       function hideEditor() {
         editorArea.innerHTML = '<div class="no-note">选择或新建一篇笔记开始编辑</div>';
-        textarea = null;
+        editorDiv = null;
+        editorTitleInput = null;
       }
 
       // ---- 编辑事件 ----
       function onEditorInput() {
-        // autoSave();  // 已禁用自动保存，改用 Ctrl+S / 保存按钮
+        updateUndoRedoButtons();
       }
 
       function onEditorKeydown(e) {
-        if (e.ctrlKey && e.key === 'z') {
-          e.preventDefault();
-          undo();
-        } else if (e.ctrlKey && e.key === 'y') {
-          e.preventDefault();
-          redo();
-        } else if (e.ctrlKey && e.key === 'n') {
+        if (e.ctrlKey && e.key === 'n') {
           e.preventDefault();
           createNewNote();
         } else if (e.ctrlKey && e.key === 's') {
@@ -616,37 +999,17 @@
         }
       }
 
-      // ---- 撤销/重做 ----
-      function pushUndo(content) {
-        if (undoStack.length >= MAX_UNDO) {
-          undoStack.shift();
-        }
-        undoStack.push(content);
-        redoStack = [];
-        updateUndoRedoButtons();
-      }
-
-      function undo() {
-        if (undoStack.length === 0) return;
-        redoStack.push(textarea.value);
-        const prev = undoStack.pop();
-        textarea.value = prev;
-        lastSavedContent = prev;
-        updateUndoRedoButtons();
-      }
-
-      function redo() {
-        if (redoStack.length === 0) return;
-        undoStack.push(textarea.value);
-        const next = redoStack.pop();
-        textarea.value = next;
-        lastSavedContent = next;
-        updateUndoRedoButtons();
-      }
-
+      // ---- 撤销/重做（使用浏览器原生 contenteditable 机制） ----
+      /**
+       * 更新撤销/重做按钮的启用状态
+       */
       function updateUndoRedoButtons() {
-        btnUndo.disabled = undoStack.length === 0;
-        btnRedo.disabled = redoStack.length === 0;
+        try {
+          btnUndo.disabled = !document.queryCommandEnabled('undo');
+          btnRedo.disabled = !document.queryCommandEnabled('redo');
+        } catch (_) {
+          // queryCommandEnabled 可能抛异常，忽略
+        }
       }
 
       // ---- 状态栏 ----
@@ -749,15 +1112,12 @@
           if (nameNumber !== null) {
             await window.electronAPI.releaseNameNumber(nameNumber);
           }
-          statusLeft.textContent = `已删除: ${name}`;
+          statusLeft.textContent = `已移至回收站: ${name}`;
           await loadNoteList();
-          renderNoteList();
-          // 删除的是当前笔记：有剩余笔记则打开第一篇，否则新建空白笔记
+          // 删除的是当前笔记：有剩余则打开第一篇，无则回欢迎页
           if (isCurrentNote) {
             if (notes.length > 0) {
               await selectNote(notes[0]);
-            } else {
-              await createNewNote();
             }
           }
           updateStatus();
@@ -859,7 +1219,7 @@
               currentNote.filePath = result.filePath;
               currentNote.fileName = result.fileName;
               currentNote.displayName = newTitle;
-              titleInput.value = newTitle;
+              if (editorTitleInput) editorTitleInput.value = newTitle;
             }
             updateStatus();
           } else {
@@ -881,9 +1241,103 @@
       // ---- 事件绑定 ----
       document.getElementById('btn-sidebar-new').addEventListener('click', createNewNote);
       document.getElementById('btn-new').addEventListener('click', createNewNote);
-      document.getElementById('btn-undo').addEventListener('click', undo);
-      document.getElementById('btn-redo').addEventListener('click', redo);
       document.getElementById('btn-save').addEventListener('click', () => manualSave());
+
+      // ---- 侧边栏视图切换 ----
+      document.getElementById('tab-workspace').addEventListener('click', () => switchView('workspace'));
+      document.getElementById('tab-trash').addEventListener('click', () => switchView('trash'));
+
+      function switchView(view) {
+        activeView = view;
+        document.getElementById('tab-workspace').classList.toggle('active', view === 'workspace');
+        document.getElementById('tab-trash').classList.toggle('active', view === 'trash');
+        document.getElementById('sidebar-header-workspace').style.display = view === 'workspace' ? '' : 'none';
+        document.getElementById('sort-controls').style.display = view === 'workspace' ? '' : 'none';
+        document.getElementById('trash-actions').style.display = view === 'trash' ? '' : 'none';
+        // 切换到回收站时，隐藏编辑区
+        if (view === 'trash' && currentNote) {
+          closeCurrentNote();
+        }
+        if (view === 'workspace') {
+          loadNoteList();
+        } else {
+          loadTrashList();
+        }
+      }
+
+      // ---- 排序控件 ----
+      const sortBySelect = document.getElementById('sort-by');
+      const sortAscBtn = document.getElementById('sort-asc');
+      const sortDescBtn = document.getElementById('sort-desc');
+
+      sortBySelect.addEventListener('change', () => {
+        sortBy = sortBySelect.value;
+        loadNoteList();
+      });
+
+      sortAscBtn.addEventListener('click', () => {
+        sortDir = 'asc';
+        sortAscBtn.classList.add('active');
+        sortDescBtn.classList.remove('active');
+        loadNoteList();
+      });
+
+      sortDescBtn.addEventListener('click', () => {
+        sortDir = 'desc';
+        sortDescBtn.classList.add('active');
+        sortAscBtn.classList.remove('active');
+        loadNoteList();
+      });
+
+      // ---- 回收站操作 ----
+      document.getElementById('btn-empty-trash').addEventListener('click', async () => {
+        await window.electronAPI.emptyTrash();
+        statusLeft.textContent = '回收站已清空';
+        await loadTrashList();
+      });
+
+      // 回收站右键菜单
+      function showTrashContextMenu(e, trashNote) {
+        contextNote = trashNote;
+        contextMenuTrash.style.left = e.clientX + 'px';
+        contextMenuTrash.style.top = e.clientY + 'px';
+        contextMenuTrash.classList.add('visible');
+      }
+
+      async function handleRestoreFromTrash() {
+        if (!contextNote) return;
+        const note = contextNote;
+        const result = await window.electronAPI.restoreFromTrash(note.fileName);
+        if (result) {
+          statusLeft.textContent = `已恢复: ${note.displayName}`;
+          await loadTrashList();
+          await loadNoteList();
+        }
+        contextMenuTrash.classList.remove('visible');
+      }
+
+      async function handlePermanentDelete() {
+        if (!contextNote) return;
+        const note = contextNote;
+        const nameNumber = parseDefaultNameNumber(note.displayName);
+        const ok = await window.electronAPI.permanentlyDelete(note.fileName);
+        if (ok) {
+          if (nameNumber !== null) {
+            await window.electronAPI.releaseNameNumber(nameNumber);
+          }
+          statusLeft.textContent = `已永久删除: ${note.displayName}`;
+          await loadTrashList();
+        }
+        contextMenuTrash.classList.remove('visible');
+      }
+
+      contextMenuTrash.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const action = item.dataset.action;
+          if (action === 'restore') handleRestoreFromTrash();
+          else if (action === 'delete-permanent') handlePermanentDelete();
+        });
+      });
 
       document.getElementById('btn-open').addEventListener('click', async () => {
         await saveCurrentNote();
@@ -912,12 +1366,12 @@
           currentNote = { filePath: result.filePath, fileName: result.fileName, displayName: title, mtime: Date.now() };
           currentContent = text;
           lastSavedContent = text;
-          undoStack = [];
-          redoStack = [];
-          updateUndoRedoButtons();
           showEditor();
-          titleInput.value = title;
-          textarea.value = text;
+          if (editorTitleInput) editorTitleInput.value = title;
+          // 将导入的纯文本转换为 HTML（换行 → <br>）
+          editorDiv.innerHTML = text.split('\n').map(line =>
+            line ? escapeHtml(line) : '<br>'
+          ).join('<br>');
           await loadNoteList();
           renderNoteList();
           updateStatus();
@@ -959,26 +1413,8 @@
         if (!contextMenuEmpty.contains(e.target)) {
           hideEmptyContextMenu();
         }
-      });
-
-      titleInput.addEventListener('keydown', async (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          if (currentNote) {
-            const newTitle = titleInput.value.trim();
-            if (newTitle && newTitle !== currentNote.displayName) {
-              const result = await window.electronAPI.renameNote(currentNote.filePath, newTitle);
-              if (result) {
-                currentNote.filePath = result.filePath;
-                currentNote.fileName = result.fileName;
-                currentNote.displayName = newTitle;
-                await loadNoteList();
-                updateStatus();
-                statusLeft.textContent = '已重命名';
-              }
-            }
-          }
-          textarea && textarea.focus();
+        if (!contextMenuTrash.contains(e.target)) {
+          contextMenuTrash.classList.remove('visible');
         }
       });
 
@@ -987,6 +1423,7 @@
         if (e.key === 'Escape') {
           hideContextMenu();
           hideEmptyContextMenu();
+          contextMenuTrash.classList.remove('visible');
         }
         if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
           e.preventDefault();
@@ -1000,8 +1437,22 @@
 
       // 防御：点击编辑区任意位置自动聚焦到 textarea
       editorArea.addEventListener('click', (e) => {
-        if (textarea && !e.target.closest('.btn-close-note')) {
-          textarea.focus();
+        if (editorDiv && !e.target.closest('.btn-close-note')) {
+          editorDiv.focus();
+        }
+      });
+
+      // ---- 撤销/重做按钮 ----
+      btnUndo.addEventListener('click', () => {
+        if (editorDiv) {
+          editorDiv.focus();
+          document.execCommand('undo');
+        }
+      });
+      btnRedo.addEventListener('click', () => {
+        if (editorDiv) {
+          editorDiv.focus();
+          document.execCommand('redo');
         }
       });
 
@@ -1015,6 +1466,226 @@
           document.getElementById('toolbar-style').style.display = target === 'style' ? '' : 'none';
         });
       });
+
+      // ---- 样式按钮事件绑定 ----
+      /**
+       * 确保编辑器获得焦点后执行命令
+       * @param {string} command - execCommand 命令名
+       * @param {string} [value] - 可选参数值
+       */
+      function execStyleCommand(command, value) {
+        if (editorDiv) {
+          editorDiv.focus();
+          document.execCommand(command, false, value);
+          updateStyleToolbar();
+        }
+      }
+
+      /**
+       * 将 rgb(r,g,b) 颜色转为 hex #rrggbb
+       * @param {string} rgb - RGB 格式颜色字符串
+       * @returns {string|null} hex 颜色或 null
+       */
+      function rgbToHex(rgb) {
+        if (!rgb || rgb === 'transparent' || rgb === 'rgba(0,0,0,0)') return null;
+        const m = rgb.match(/\d+/g);
+        if (!m) return null;
+        return '#' + m.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+      }
+
+      /**
+       * 检测当前段落对齐方式并更新按钮 active 态
+       */
+      function updateAlignButtons() {
+        if (!editorDiv) return;
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+        let node = sel.anchorNode;
+        while (node && node !== editorDiv) {
+          if (node.nodeType === 1) {
+            const ta = window.getComputedStyle(node).textAlign;
+            if (ta && ta !== 'start' && ta !== 'justify') {
+              btnAlignLeft.classList.toggle('active', ta === 'left');
+              btnAlignCenter.classList.toggle('active', ta === 'center');
+              btnAlignRight.classList.toggle('active', ta === 'right');
+              return;
+            }
+          }
+          node = node.parentNode;
+        }
+        // 默认左对齐
+        btnAlignLeft.classList.toggle('active', true);
+        btnAlignCenter.classList.toggle('active', false);
+        btnAlignRight.classList.toggle('active', false);
+      }
+
+      /**
+       * 根据当前选区/光标位置更新样式工具栏所有按钮状态
+       */
+      function updateStyleToolbar() {
+        if (!editorDiv) return;
+        const hasFocus = document.activeElement === editorDiv || editorDiv.contains(document.activeElement);
+        if (!hasFocus && !formatPainterActive) return;
+
+        // Toggle 按钮
+        btnBold.classList.toggle('active', document.queryCommandState('bold'));
+        btnItalic.classList.toggle('active', document.queryCommandState('italic'));
+        btnUnderline.classList.toggle('active', document.queryCommandState('underline'));
+
+        // 字体下拉同步
+        const font = document.queryCommandValue('fontName');
+        btnFontFamily.value = font || '';
+
+        // 字号下拉同步
+        const size = document.queryCommandValue('fontSize');
+        btnFontSize.value = size || '';
+
+        // 颜色色块同步
+        const fore = rgbToHex(document.queryCommandValue('foreColor'));
+        if (fore) {
+          btnForecolor.value = fore;
+          swatchForecolor.style.background = fore;
+        }
+        const hilite = rgbToHex(document.queryCommandValue('hiliteColor'));
+        if (hilite) {
+          btnHilitecolor.value = hilite;
+          swatchHilitecolor.style.background = hilite;
+        } else {
+          swatchHilitecolor.style.background = '#ff0';
+          btnHilitecolor.value = '#ffff00';
+        }
+
+        // 对齐按钮
+        updateAlignButtons();
+      }
+
+      // 加粗
+      btnBold.addEventListener('click', () => { execStyleCommand('bold'); });
+
+      // 倾斜
+      btnItalic.addEventListener('click', () => { execStyleCommand('italic'); });
+
+      // 下划线
+      btnUnderline.addEventListener('click', () => { execStyleCommand('underline'); });
+
+      // 字体选择
+      btnFontFamily.addEventListener('change', (e) => {
+        if (e.target.value) {
+          execStyleCommand('fontName', e.target.value);
+        }
+      });
+
+      // 字号选择
+      btnFontSize.addEventListener('change', (e) => {
+        if (e.target.value) {
+          execStyleCommand('fontSize', e.target.value);
+        }
+      });
+
+      // 左对齐
+      btnAlignLeft.addEventListener('click', () => { execStyleCommand('justifyLeft'); });
+
+      // 居中对齐
+      btnAlignCenter.addEventListener('click', () => { execStyleCommand('justifyCenter'); });
+
+      // 右对齐
+      btnAlignRight.addEventListener('click', () => { execStyleCommand('justifyRight'); });
+
+      // 字体颜色
+      btnForecolor.addEventListener('input', (e) => {
+        if (editorDiv) {
+          editorDiv.focus();
+          document.execCommand('foreColor', false, e.target.value);
+          swatchForecolor.style.background = e.target.value;
+        }
+      });
+
+      // 字体底色
+      btnHilitecolor.addEventListener('input', (e) => {
+        if (editorDiv) {
+          editorDiv.focus();
+          document.execCommand('hiliteColor', false, e.target.value);
+          swatchHilitecolor.style.background = e.target.value;
+        }
+      });
+
+      // ---- 格式刷 ----
+      function activateFormatPainter() {
+        if (!editorDiv) return;
+        editorDiv.focus();
+        savedFormat = {
+          bold: document.queryCommandState('bold'),
+          italic: document.queryCommandState('italic'),
+          underline: document.queryCommandState('underline'),
+          fontName: document.queryCommandValue('fontName'),
+          fontSize: document.queryCommandValue('fontSize'),
+          foreColor: document.queryCommandValue('foreColor'),
+          hiliteColor: document.queryCommandValue('hiliteColor'),
+        };
+        formatPainterActive = true;
+        btnFormatPainter.classList.add('active');
+        editorDiv.style.cursor = 'copy';
+      }
+
+      function applyFormatPainter() {
+        if (!formatPainterActive || !savedFormat) return;
+        if (savedFormat.bold) document.execCommand('bold');
+        if (savedFormat.italic) document.execCommand('italic');
+        if (savedFormat.underline) document.execCommand('underline');
+        if (savedFormat.fontName) document.execCommand('fontName', false, savedFormat.fontName);
+        if (savedFormat.fontSize) document.execCommand('fontSize', false, savedFormat.fontSize);
+        if (savedFormat.foreColor && savedFormat.foreColor !== 'rgb(0, 0, 0)' && savedFormat.foreColor !== 'rgb(0,0,0)') {
+          document.execCommand('foreColor', false, savedFormat.foreColor);
+        }
+        if (savedFormat.hiliteColor && savedFormat.hiliteColor !== 'transparent' && savedFormat.hiliteColor !== 'rgb(255, 255, 255)' && savedFormat.hiliteColor !== 'rgb(255,255,255)') {
+          document.execCommand('hiliteColor', false, savedFormat.hiliteColor);
+        }
+        deactivateFormatPainter();
+        updateStyleToolbar();
+      }
+
+      function deactivateFormatPainter() {
+        formatPainterActive = false;
+        savedFormat = null;
+        btnFormatPainter.classList.remove('active');
+        if (editorDiv) editorDiv.style.cursor = '';
+      }
+
+      btnFormatPainter.addEventListener('click', () => {
+        if (formatPainterActive) {
+          deactivateFormatPainter();
+        } else {
+          activateFormatPainter();
+        }
+      });
+
+      // 编辑器内 mouseup 时，若格式刷激活则应用格式
+      editorArea.addEventListener('mouseup', (e) => {
+        if (formatPainterActive && editorDiv && editorDiv.contains(e.target)) {
+          // 延迟执行，确保选区已更新
+          setTimeout(() => {
+            if (formatPainterActive) applyFormatPainter();
+          }, 50);
+        }
+      });
+
+      // 选区变化时更新工具栏
+      document.addEventListener('selectionchange', () => {
+        if (!formatPainterActive) updateStyleToolbar();
+      });
+      if (editorDiv) {
+        editorDiv.addEventListener('click', updateStyleToolbar);
+        editorDiv.addEventListener('keyup', updateStyleToolbar);
+      }
+      // 编辑器创建后绑定事件（在 showEditor 中追加）
+      const origShowEditor = showEditor;
+      showEditor = function () {
+        origShowEditor();
+        if (editorDiv) {
+          editorDiv.addEventListener('click', updateStyleToolbar);
+          editorDiv.addEventListener('keyup', updateStyleToolbar);
+        }
+      };
 
       // ---- 启动 ----
       loadNoteList();

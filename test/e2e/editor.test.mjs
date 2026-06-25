@@ -65,9 +65,9 @@ describe('编辑器 UI E2E', () => {
   it('E-02: 点击"+ 新建笔记"后应出现编辑区和列表条目', async () => {
     await page.click('#btn-sidebar-new');
 
-    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
+    await page.waitForSelector('.editor-area .editor-content', { timeout: 3000 });
 
-    const textareaExists = await page.$('.editor-area textarea');
+    const textareaExists = await page.$('.editor-area .editor-content');
     expect(textareaExists).not.toBeNull();
 
     const emptyEl = await page.$('.note-list .empty');
@@ -75,7 +75,7 @@ describe('编辑器 UI E2E', () => {
   });
 
   it('E-04: 在编辑区输入文字后状态栏应显示"已保存"', async () => {
-    const textarea = page.locator('.editor-area textarea');
+    const textarea = page.locator('.editor-area .editor-content');
     await textarea.fill('Hello Note Diary!');
 
     await page.click('#btn-save');
@@ -86,7 +86,7 @@ describe('编辑器 UI E2E', () => {
   });
 
   it('E-05: 输入文字后点击"撤销"应回退内容', async () => {
-    const textarea = page.locator('.editor-area textarea');
+    const textarea = page.locator('.editor-area .editor-content');
 
     const before = await textarea.inputValue();
     await textarea.fill(before + '\n新增一行');
@@ -100,7 +100,7 @@ describe('编辑器 UI E2E', () => {
   });
 
   it('E-06: 撤销后点击"重做"应恢复内容', async () => {
-    const textarea = page.locator('.editor-area textarea');
+    const textarea = page.locator('.editor-area .editor-content');
 
     const baseContent = '重做测试内容';
     await textarea.fill(baseContent);
@@ -123,16 +123,16 @@ describe('编辑器 UI E2E', () => {
   it('E-07: 创建多个笔记并切换验证内容加载', async () => {
     // 创建笔记 A 并写入特征内容
     await page.click('#btn-new');
-    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
-    const textarea = page.locator('.editor-area textarea');
+    await page.waitForSelector('.editor-area .editor-content', { timeout: 3000 });
+    const textarea = page.locator('.editor-area .editor-content');
     await textarea.fill('笔记A的特征内容');
     await page.click('#btn-save');
     await page.waitForTimeout(500);
 
     // 创建笔记 B 并写入特征内容
     await page.click('#btn-new');
-    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
-    await page.locator('.editor-area textarea').fill('笔记B的特征内容');
+    await page.waitForSelector('.editor-area .editor-content', { timeout: 3000 });
+    await page.locator('.editor-area .editor-content').fill('笔记B的特征内容');
     await page.click('#btn-save');
     await page.waitForTimeout(500);
 
@@ -142,7 +142,7 @@ describe('编辑器 UI E2E', () => {
     await noteItems.nth(count - 2).click();
     await page.waitForTimeout(300);
 
-    const loadedContent = await page.locator('.editor-area textarea').inputValue();
+    const loadedContent = await page.locator('.editor-area .editor-content').inputValue();
     expect(loadedContent).toBe('笔记A的特征内容');
   });
 
@@ -150,7 +150,7 @@ describe('编辑器 UI E2E', () => {
     const noteCountBefore = await page.locator('.note-item').count();
 
     await page.keyboard.press('Control+n');
-    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
+    await page.waitForSelector('.editor-area .editor-content', { timeout: 3000 });
 
     const noteCountAfter = await page.locator('.note-item').count();
     expect(noteCountAfter).toBeGreaterThan(noteCountBefore);
@@ -179,8 +179,8 @@ describe('编辑器 UI E2E', () => {
   it('E-11: 重命名笔记后列表应更新', async () => {
     // 先创建一篇新笔记用于重命名测试
     await page.click('#btn-new');
-    await page.waitForSelector('.editor-area textarea', { timeout: 3000 });
-    await page.locator('.editor-area textarea').fill('重命名测试');
+    await page.waitForSelector('.editor-area .editor-content', { timeout: 3000 });
+    await page.locator('.editor-area .editor-content').fill('重命名测试');
     await page.click('#btn-save');
     await page.waitForTimeout(500);
 
