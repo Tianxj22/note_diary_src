@@ -97,4 +97,35 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @returns {Promise<boolean>}
    */
   emptyTrash: () => ipcRenderer.invoke('trash:empty'),
+  /**
+   * 打开文件选择器选择图片，返回 base64 data URI
+   * @returns {Promise<string|null>}
+   */
+  openImageFile: () => ipcRenderer.invoke('image:open-file'),
+  /**
+   * 读取系统剪贴板中的图片，返回 base64 data URI
+   * @returns {Promise<string|null>}
+   */
+  readClipboardImage: () => ipcRenderer.invoke('image:read-clipboard'),
+  /**
+   * 全屏截图：隐藏窗口 → 截取全屏 → 恢复窗口
+   * @returns {Promise<string|null>}
+   */
+  captureFullscreen: () => ipcRenderer.invoke('image:capture-fullscreen'),
+  /**
+   * 框选截图：打开覆盖层 → 拖拽选区 → 裁剪截图
+   * @returns {Promise<string|null>}
+   */
+  captureArea: () => ipcRenderer.invoke('image:capture-area'),
+  /**
+   * 列出所有可截图的窗口
+   * @returns {Promise<Array<{id:string, name:string, thumbnail:string}>>}
+   */
+  listWindows: () => ipcRenderer.invoke('image:list-windows'),
+  /**
+   * 根据窗口 source id 截图指定窗口
+   * @param {string} sourceId
+   * @returns {Promise<string|null>}
+   */
+  captureWindowById: (sourceId) => ipcRenderer.invoke('image:capture-window-by-id', sourceId),
 });

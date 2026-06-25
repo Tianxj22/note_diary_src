@@ -1,0 +1,32 @@
+/* Note Diary - base styles */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: 1fr;
+  height: 100vh;
+  color: #333;
+  background: #f5f5f5;
+}
+
+/* ===== 主区域 ===== */
+.main-area {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* 状态栏 */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 12px;
+  border-top: 1px solid #e8e8e8;
+  background: #fafafa;
+  font-size: 0.72rem;
+  color: #999;
+}

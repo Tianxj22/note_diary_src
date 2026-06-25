@@ -1,0 +1,200 @@
+/* Note Diary - sidebar styles */
+
+/* ===== 侧边栏 ===== */
+.sidebar {
+  background: #2c2c2c;
+  color: #ccc;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #1a1a1a;
+}
+
+/* 侧边栏标签切换 */
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.sidebar-tab {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  font-size: 0.82rem;
+  text-align: center;
+  transition: color 0.15s, background 0.15s;
+  border-bottom: 2px solid transparent;
+}
+
+.sidebar-tab:hover {
+  color: #ccc;
+  background: #333;
+}
+
+.sidebar-tab.active {
+  color: #fff;
+  border-bottom-color: #6c9fff;
+  font-weight: 600;
+}
+
+.sidebar-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.btn-new-note {
+  width: 100%;
+  padding: 8px 0;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  background: #3a3a3a;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+
+.btn-new-note:hover {
+  background: #4a4a4a;
+}
+
+/* 排序控件 */
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.sort-controls select {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  background: #3a3a3a;
+  color: #ccc;
+  font-size: 0.75rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.sort-dir-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  background: #3a3a3a;
+  color: #888;
+  cursor: pointer;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s, color 0.1s;
+}
+
+.sort-dir-btn:hover {
+  background: #4a4a4a;
+  color: #ccc;
+}
+
+.sort-dir-btn.active {
+  background: #4a6a9a;
+  border-color: #6c9fff;
+  color: #fff;
+}
+
+/* 回收站操作 */
+.trash-actions {
+  padding: 8px 16px;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.btn-empty-trash {
+  width: 100%;
+  padding: 6px 0;
+  border: 1px solid #6a3a3a;
+  border-radius: 4px;
+  background: #4a2a2a;
+  color: #f66;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: background 0.15s;
+}
+
+.btn-empty-trash:hover {
+  background: #6a3a3a;
+}
+
+.note-list {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 0;
+}
+
+/* 回收站笔记项 */
+.note-item.trash-item .title {
+  color: #999;
+}
+
+.note-item.trash-item .meta {
+  color: #666;
+  font-size: 0.65rem;
+}
+
+.note-list .empty {
+  text-align: center;
+  color: #666;
+  margin-top: 40px;
+  font-size: 0.85rem;
+}
+
+.note-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.note-item:hover {
+  background: #333;
+}
+
+.note-item.active {
+  background: #3a3a3a;
+  border-left-color: #6c9fff;
+  color: #fff;
+}
+
+.note-item .title {
+  font-size: 0.9rem;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.note-item .meta {
+  font-size: 0.7rem;
+  color: #777;
+}
+
+.note-item.active .meta {
+  color: #999;
+}
+
+/* ===== 侧边栏内联重命名 ===== */
+.note-item .rename-input {
+  width: calc(100% - 8px);
+  padding: 2px 4px;
+  border: 1px solid #6c9fff;
+  border-radius: 3px;
+  background: #444;
+  color: #fff;
+  font-size: 0.88rem;
+  outline: none;
+}

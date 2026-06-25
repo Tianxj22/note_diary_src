@@ -1,0 +1,34 @@
+/* Note Diary - image resize styles */
+
+/* 图片缩放手柄容器 */
+.image-resize-container {
+  position: absolute;
+  pointer-events: none;
+  z-index: 50;
+  display: none;
+}
+
+.image-resize-container.active {
+  display: block;
+}
+
+/* 缩放手柄通用样式 */
+.image-resize-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border: 1px solid #6c9fff;
+  pointer-events: auto;
+  z-index: 51;
+  box-sizing: border-box;
+}
+
+.image-resize-handle.handle-nw { cursor: nwse-resize; }
+.image-resize-handle.handle-ne { cursor: nesw-resize; }
+.image-resize-handle.handle-sw { cursor: nesw-resize; }
+.image-resize-handle.handle-se { cursor: nwse-resize; }
+.image-resize-handle.handle-n  { cursor: ns-resize; }
+.image-resize-handle.handle-s  { cursor: ns-resize; }
+.image-resize-handle.handle-w  { cursor: ew-resize; }
+.image-resize-handle.handle-e  { cursor: ew-resize; }

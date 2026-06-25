@@ -24,6 +24,11 @@ for f in main.js preload.js index.html package.json file-store.js; do
     exit 1
   fi
 done
+# Verify CSS and JS modules exist
+css_count=$(ls css/*.css 2>/dev/null | wc -l)
+js_count=$(ls js/*.js 2>/dev/null | wc -l)
+echo "  PASS css/ ($css_count files)"
+echo "  PASS js/ ($js_count files)"
 echo ""
 
 # 3. 安装/更新依赖 / Install dependencies

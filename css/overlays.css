@@ -1,0 +1,259 @@
+/* Note Diary - overlays styles */
+
+/* ===== 右键上下文菜单 ===== */
+.context-menu {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 150px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+.context-menu.visible {
+  display: block;
+}
+
+.context-menu .menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  color: #ddd;
+  font-size: 0.85rem;
+  transition: background 0.1s;
+}
+
+.context-menu .menu-item:hover {
+  background: #4a4a4a;
+  color: #fff;
+}
+
+.context-menu .menu-item.danger {
+  color: #f66;
+}
+
+.context-menu .menu-item.danger:hover {
+  background: #a33;
+  color: #fff;
+}
+
+.context-menu .menu-divider {
+  height: 1px;
+  background: #555;
+  margin: 4px 8px;
+}
+
+/* ===== 图片插入下拉菜单 ===== */
+.dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-wrapper .dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 1000;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 170px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+.dropdown-wrapper .dropdown-menu.visible {
+  display: block;
+}
+
+.dropdown-wrapper .dropdown-menu .menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  color: #ddd;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+
+.dropdown-wrapper .dropdown-menu .menu-item:hover {
+  background: #4a4a4a;
+  color: #fff;
+}
+
+.dropdown-wrapper .dropdown-menu .menu-divider {
+  height: 1px;
+  background: #555;
+  margin: 4px 8px;
+}
+
+/* ===== 窗口截图选择器 ===== */
+.window-picker-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+
+.window-picker-overlay.visible {
+  display: flex;
+}
+
+.window-picker-dialog {
+  background: #fff;
+  border-radius: 8px;
+  width: 600px;
+  max-height: 480px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.window-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.window-picker-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #999;
+  padding: 0 4px;
+}
+
+.window-picker-close:hover { color: #333; }
+
+.window-picker-list {
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.window-picker-item {
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.window-picker-item:hover { border-color: #6c9fff; }
+
+.window-picker-item img {
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  background: #f0f0f0;
+  display: block;
+  border-radius: 3px;
+}
+
+.window-picker-item .window-name {
+  font-size: 0.72rem;
+  color: #555;
+  text-align: center;
+  padding: 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== 图片裁剪遮罩 ===== */
+.crop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+}
+
+.crop-overlay.active {
+  display: flex;
+}
+
+.crop-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.crop-workspace {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#crop-canvas {
+  max-width: 95%;
+  max-height: 85%;
+  display: block;
+}
+
+.crop-rect {
+  position: absolute;
+  border: 2px dashed #fff;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  cursor: move;
+  z-index: 5;
+}
+
+.crop-toolbar {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px;
+  background: #fafafa;
+  border-top: 1px solid #e0e0e0;
+  z-index: 10;
+}
+
+.crop-toolbar button {
+  padding: 6px 18px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #444;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.crop-toolbar button:hover {
+  background: #eee;
+  border-color: #bbb;
+}
+
+#btn-crop-confirm {
+  background: #6c9fff;
+  border-color: #5a8eeb;
+  color: #fff;
+}
+
+#btn-crop-confirm:hover {
+  background: #5a8eeb;
+}

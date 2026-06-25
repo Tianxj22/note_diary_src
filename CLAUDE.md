@@ -20,7 +20,28 @@ note_diary/
 ├── main.js                   # Electron 主进程
 ├── preload.js                # 预加载脚本（contextBridge 安全桥接）
 ├── file-store.js             # 笔记文件存储模块
-├── index.html                # 渲染进程入口页面
+├── index.html                # 渲染进程入口页面（HTML 骨架）
+├── css/                      # 样式表（按功能区拆分）
+│   ├── base.css              # Reset, body grid, status bar
+│   ├── sidebar.css           # 侧边栏
+│   ├── toolbar.css           # 工具栏、按钮、tooltip
+│   ├── editor.css            # 编辑区、标记、图片
+│   ├── overlays.css          # 右键菜单、下拉菜单、窗口选择器
+│   └── image-resize.css      # 图片缩放手柄
+├── js/                       # 渲染进程脚本（按功能区拆分，ND 命名空间）
+│   ├── state.js              # 全局状态 + DOM 引用
+│   ├── utils.js              # 工具函数
+│   ├── sidebar-render.js     # 侧边栏渲染
+│   ├── sidebar-ops.js        # 笔记 CRUD 操作
+│   ├── editor-core.js        # 编辑器核心（showEditor/save/selectNote）
+│   ├── editor-events.js      # 键盘事件（Enter/Backspace）、标记检测、undo/redo
+│   ├── editor-markers.js     # 清单/时间戳标记创建与切换
+│   ├── insert-features.js    # 图片插入、窗口选择器
+│   ├── image-resize.js       # 图片缩放手柄
+│   ├── style-toolbar.js      # 样式按钮、格式刷
+│   ├── context-menus.js      # 右键上下文菜单
+│   ├── view-switching.js     # 视图切换、排序、标签页
+│   └── init.js               # 启动入口、全局事件绑定
 ├── CLAUDE.md                 # 本文件 — 项目指令与规则
 ├── feature_list.json         # 结构化功能追踪（状态/依赖/验证条件）
 ├── progress.md               # 开发进度记录（含恢复点 / Restart Marker）
