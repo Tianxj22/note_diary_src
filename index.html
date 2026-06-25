@@ -402,6 +402,15 @@
       font-size: 1rem;
     }
 
+    /* 日志时间戳（非编辑，默认字体样式） */
+    .editor-content .log-stamp {
+      display: inline;
+      user-select: none;
+      color: #888;
+      margin-right: 4px;
+      font-size: 0.88rem;
+    }
+
     /* 已勾选的清单行：删除线 + 淡化 */
     .checklist-checked {
       text-decoration: line-through;
@@ -607,7 +616,7 @@
     </div>
     <!-- 工作区页眉 -->
     <div class="sidebar-header" id="sidebar-header-workspace">
-      <button class="btn-new-note" id="btn-sidebar-new">+ 新建笔记</button>
+      <button class="btn-new-note" id="btn-sidebar-new" title="新建笔记 (Ctrl+N)">+ 新建笔记</button>
     </div>
     <!-- 排序控件 -->
     <div class="sort-controls" id="sort-controls">
@@ -637,13 +646,13 @@
         <button class="toolbar-tab" data-tab="insert">📥 插入</button>
       </div>
       <div class="toolbar-actions" id="toolbar-file">
-        <button id="btn-new" title="新建笔记 (Ctrl+N)">新建</button>
-        <button id="btn-open" title="导入外部文件">导入</button>
+        <button id="btn-new" class="style-btn" data-tooltip="新建笔记 (Ctrl+N)">📝</button>
+        <button id="btn-open" class="style-btn" data-tooltip="导入外部文件">📥</button>
         <span class="separator"></span>
-        <button id="btn-undo" title="撤销 (Ctrl+Z)" disabled>↩ 撤销</button>
-        <button id="btn-redo" title="重做 (Ctrl+Y)" disabled>↪ 重做</button>
+        <button id="btn-undo" class="style-btn" data-tooltip="撤销 (Ctrl+Z)" disabled>↩</button>
+        <button id="btn-redo" class="style-btn" data-tooltip="重做 (Ctrl+Y)" disabled>↪</button>
         <span class="separator"></span>
-        <button id="btn-save" title="保存笔记 (Ctrl+S)">💾 保存</button>
+        <button id="btn-save" class="style-btn" data-tooltip="保存笔记 (Ctrl+S)">💾</button>
         <span class="separator"></span>
       </div>
       <div class="toolbar-actions" id="toolbar-style" style="display:none">
@@ -699,8 +708,8 @@
         <button id="btn-format-painter" class="style-btn" data-tooltip="格式刷">🖌</button>
       </div>
       <div class="toolbar-actions" id="toolbar-insert" style="display:none">
-        <button id="btn-checklist" class="style-btn" data-tooltip="插入清单">☑ 清单</button>
-        <button id="btn-timestamp" class="style-btn" data-tooltip="插入日志时间">📅 日志</button>
+        <button id="btn-checklist" class="style-btn" data-tooltip="插入清单">☑</button>
+        <button id="btn-timestamp" class="style-btn" data-tooltip="插入日志时间">📅</button>
       </div>
     </div>
 
@@ -1009,13 +1018,140 @@
         updateUndoRedoButtons();
       }
 
+      /**
+       * 获取当前光标所在的块级元素
+       * @returns {Element|null}
+       */
+      function getCurrentBlock() {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return null;
+        let node = sel.anchorNode;
+        while (node && node !== editorDiv) {
+          if (node.nodeType === 1) {
+            const tag = node.tagName ? node.tagName.toLowerCase() : '';
+            if (tag === 'div' || tag === 'p' || tag === 'li') return node;
+          }
+          node = node.parentNode;
+        }
+        return null;
+      }
+
+      /** 获取块级元素中的标记元素（清单或日志） */
+      function getBlockMarker(block) {
+        if (!block) return null;
+        const cb = block.querySelector('.check-box');
+        if (cb) return { type: 'checklist', el: cb };
+        const log = block.querySelector('.log-stamp');
+        if (log) return { type: 'log', el: log };
+        return null;
+      }
+
+      /** 块的文本内容是否为空（仅标记元素） */
+      function isBlockContentEmpty(block) {
+        if (!block) return true;
+        // 克隆节点并移除标记元素，检查剩余文本
+        const clone = block.cloneNode(true);
+        clone.querySelectorAll('.check-box, .log-stamp').forEach(el => el.remove());
+        return clone.textContent.trim() === '';
+      }
+
+      /** 在块中插入复选框 */
+      function insertCheckboxMarker(block) {
+        const cb = document.createElement('span');
+        cb.className = 'check-box';
+        cb.contentEditable = 'false';
+        cb.textContent = '☐';
+        cb.title = '点击切换完成状态';
+        block.insertBefore(cb, block.firstChild);
+        const space = document.createTextNode(' ');
+        if (cb.nextSibling) block.insertBefore(space, cb.nextSibling);
+        else block.appendChild(space);
+      }
+
+      /** 在块中插入日志时间戳 */
+      function insertTimestampMarker(block) {
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const ts = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        const span = document.createElement('span');
+        span.className = 'log-stamp';
+        span.contentEditable = 'false';
+        span.textContent = ts;
+        block.insertBefore(span, block.firstChild);
+        const space = document.createTextNode(' ');
+        if (span.nextSibling) block.insertBefore(space, span.nextSibling);
+        else block.appendChild(space);
+      }
+
+      function onEditorInput() {
+        updateUndoRedoButtons();
+      }
+
       function onEditorKeydown(e) {
         if (e.ctrlKey && e.key === 'n') {
           e.preventDefault();
           createNewNote();
-        } else if (e.ctrlKey && e.key === 's') {
+          return;
+        }
+        if (e.ctrlKey && e.key === 's') {
           e.preventDefault();
           manualSave();
+          return;
+        }
+        if (e.key === 'Enter') {
+          const block = getCurrentBlock();
+          const marker = block ? getBlockMarker(block) : null;
+          if (!marker) return; // 普通行，正常回车
+          e.preventDefault();
+          if (isBlockContentEmpty(block)) {
+            // 空行：删除标记，创建普通换行
+            marker.el.remove();
+            block.normalize();
+            document.execCommand('insertLineBreak');
+          } else {
+            // 有内容：使用默认行为拆分行，然后给新行也插入标记
+            document.execCommand('insertLineBreak');
+            setTimeout(() => {
+              const newBlock = getCurrentBlock();
+              if (newBlock && !getBlockMarker(newBlock)) {
+                if (marker.type === 'checklist') insertCheckboxMarker(newBlock);
+                else insertTimestampMarker(newBlock);
+                // 把光标移到标记后
+                const sel = window.getSelection();
+                if (sel.rangeCount) {
+                  const r = sel.getRangeAt(0);
+                  r.setStart(newBlock, 0);
+                  r.collapse(true);
+                  sel.removeAllRanges();
+                  sel.addRange(r);
+                }
+              }
+            }, 0);
+          }
+          return;
+        }
+        if (e.key === 'Backspace') {
+          const sel = window.getSelection();
+          if (!sel.rangeCount) return;
+          const range = sel.getRangeAt(0);
+          // 光标在块开头且块有标记 → 删除标记
+          if (range.collapsed && range.startOffset === 0) {
+            const block = getCurrentBlock();
+            const marker = block ? getBlockMarker(block) : null;
+            if (!marker) return;
+            const node = range.startContainer;
+            // 光标在标记后的第一个文本节点位置0
+            const markerNext = marker.el.nextSibling;
+            if (node === markerNext || (node === block && block.firstChild === marker.el)) {
+              e.preventDefault();
+              marker.el.remove();
+              // 如果标记是第一个子节点，还需要清理后面的空格
+              if (block.firstChild && block.firstChild.textContent === ' ') {
+                block.firstChild.remove();
+              }
+              block.normalize();
+            }
+          }
         }
       }
 
@@ -1723,7 +1859,24 @@
         const now = new Date();
         const pad = n => String(n).padStart(2, '0');
         const ts = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-        document.execCommand('insertText', false, ts + ' ');
+        const span = document.createElement('span');
+        span.className = 'log-stamp';
+        span.contentEditable = 'false';
+        span.textContent = ts;
+        const sel = window.getSelection();
+        if (sel.rangeCount) {
+          const range = sel.getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(span);
+          range.setStartAfter(span);
+          range.collapse(true);
+          const space = document.createTextNode(' ');
+          range.insertNode(space);
+          range.setStartAfter(space);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
       });
 
       // 委托：点击复选框切换完成状态

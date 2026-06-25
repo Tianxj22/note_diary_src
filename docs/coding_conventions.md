@@ -172,3 +172,22 @@ npm run test:e2e  # E2E 测试（需要桌面环境，条件允许时运行）
 - 什么场景下
 - 用户做了什么操作
 - 系统应该呈现什么结果
+
+---
+
+## 8. UI 组件规范
+
+### 8.1 按钮纯图标原则
+
+所有工具栏按钮必须只展示图标，禁止附加文字标签。按钮的功能说明通过以下方式提供：
+- `title` 属性（原生 tooltip）
+- 自定义 CSS tooltip（`::after` + `data-tooltip`，鼠标悬停 0.5s 后显示）
+
+示例：
+```html
+<!-- ✅ 正确 -->
+<button class="style-btn" data-tooltip="加粗 (Ctrl+B)"><b>B</b></button>
+
+<!-- ❌ 错误 -->
+<button><b>B</b> 加粗</button>
+```
