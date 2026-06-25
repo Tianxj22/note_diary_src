@@ -393,6 +393,21 @@
       vertical-align: middle;
     }
 
+    /* 清单复选框 */
+    .editor-content .check-box {
+      display: inline;
+      cursor: pointer;
+      user-select: none;
+      margin-right: 4px;
+      font-size: 1rem;
+    }
+
+    /* 已勾选的清单行：删除线 + 淡化 */
+    .checklist-checked {
+      text-decoration: line-through;
+      opacity: 0.5;
+    }
+
     /* 对齐条形图标 */
     .align-bars {
       display: flex;
@@ -619,6 +634,7 @@
       <div class="toolbar-tabs">
         <button class="toolbar-tab active" data-tab="file">📁 文件</button>
         <button class="toolbar-tab" data-tab="style">🎨 样式</button>
+        <button class="toolbar-tab" data-tab="insert">📥 插入</button>
       </div>
       <div class="toolbar-actions" id="toolbar-file">
         <button id="btn-new" title="新建笔记 (Ctrl+N)">新建</button>
@@ -681,6 +697,10 @@
         </span>
         <span class="separator"></span>
         <button id="btn-format-painter" class="style-btn" data-tooltip="格式刷">🖌</button>
+      </div>
+      <div class="toolbar-actions" id="toolbar-insert" style="display:none">
+        <button id="btn-checklist" class="style-btn" data-tooltip="插入清单">☑ 清单</button>
+        <button id="btn-timestamp" class="style-btn" data-tooltip="插入日志时间">📅 日志</button>
       </div>
     </div>
 
@@ -1464,6 +1484,7 @@
           const target = tab.dataset.tab;
           document.getElementById('toolbar-file').style.display = target === 'file' ? '' : 'none';
           document.getElementById('toolbar-style').style.display = target === 'style' ? '' : 'none';
+          document.getElementById('toolbar-insert').style.display = target === 'insert' ? '' : 'none';
         });
       });
 
@@ -1666,6 +1687,61 @@
           setTimeout(() => {
             if (formatPainterActive) applyFormatPainter();
           }, 50);
+        }
+      });
+
+      // ---- 插入功能 ----
+      document.getElementById('btn-checklist').addEventListener('click', () => {
+        if (!editorDiv) return;
+        editorDiv.focus();
+        const cb = document.createElement('span');
+        cb.className = 'check-box';
+        cb.contentEditable = 'false';
+        cb.textContent = '☐';
+        cb.title = '点击切换完成状态';
+        // 插入复选框 + 空格，光标移到后面
+        const sel = window.getSelection();
+        if (sel.rangeCount) {
+          const range = sel.getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(cb);
+          // 在复选框后插入空格并将光标移到空格后
+          range.setStartAfter(cb);
+          range.collapse(true);
+          const space = document.createTextNode(' ');
+          range.insertNode(space);
+          range.setStartAfter(space);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      });
+
+      document.getElementById('btn-timestamp').addEventListener('click', () => {
+        if (!editorDiv) return;
+        editorDiv.focus();
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const ts = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        document.execCommand('insertText', false, ts + ' ');
+      });
+
+      // 委托：点击复选框切换完成状态
+      editorArea.addEventListener('click', (e) => {
+        const cb = e.target.closest('.check-box');
+        if (!cb || !editorDiv) return;
+        e.stopPropagation();
+        const isChecked = cb.classList.toggle('checked');
+        cb.textContent = isChecked ? '☑' : '☐';
+        // 找到复选框所在的块级父元素，切换删除线样式
+        let block = cb.parentElement;
+        while (block && block !== editorDiv) {
+          const tag = block.tagName ? block.tagName.toLowerCase() : '';
+          if (tag === 'div' || tag === 'p' || tag === 'li' || block === editorArea) break;
+          block = block.parentElement;
+        }
+        if (block && block !== editorArea) {
+          block.classList.toggle('checklist-checked', isChecked);
         }
       });
 
