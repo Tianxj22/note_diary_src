@@ -22,10 +22,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
    */
   createNote: (title) => ipcRenderer.invoke('note:create', title),
   /**
-   * 列出所有笔记
-   * @returns {Promise<Array<{fileName: string, filePath: string, displayName: string, mtime: number}>>}
+   * 列出所有笔记（支持排序选项）
+   * @param {object} [opts] - { sortBy: 'name'|'created'|'mtime', sortDir: 'asc'|'desc' }
+   * @returns {Promise<Array>}
    */
-  listNotes: () => ipcRenderer.invoke('note:list'),
+  listNotes: (opts) => ipcRenderer.invoke('note:list', opts),
   /**
    * 读取笔记内容
    * @param {string} filePath - 笔记文件绝对路径
@@ -74,4 +75,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @param {number} num - 要归还的序号
    */
   releaseNameNumber: (num) => ipcRenderer.invoke('note:release-name-number', num),
+  /**
+   * 列出回收站中的笔记
+   * @returns {Promise<Array<{fileName: string, displayName: string, deletedAt: number}>>}
+   */
+  listTrash: () => ipcRenderer.invoke('trash:list'),
+  /**
+   * 从回收站恢复笔记
+   * @param {string} fileName - 文件名
+   * @returns {Promise<{filePath: string, fileName: string} | null>}
+   */
+  restoreFromTrash: (fileName) => ipcRenderer.invoke('trash:restore', fileName),
+  /**
+   * 永久删除回收站中的笔记
+   * @param {string} fileName - 文件名
+   * @returns {Promise<boolean>}
+   */
+  permanentlyDelete: (fileName) => ipcRenderer.invoke('trash:delete-permanent', fileName),
+  /**
+   * 清空回收站
+   * @returns {Promise<boolean>}
+   */
+  emptyTrash: () => ipcRenderer.invoke('trash:empty'),
 });

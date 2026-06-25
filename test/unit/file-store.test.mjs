@@ -419,6 +419,101 @@ describe('file-store', () => {
       expect(result).toBeNull();
     });
   });
+
+  // U-27 ~ U-35: 回收站 + 排序
+  describe('trash (回收站)', () => {
+    it('U-27: moveToTrash 应将文件移入 .trash 并记录删除时间', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const { filePath } = fileStore.createNote(notesDir, '回收站测试');
+      const ok = fileStore.moveToTrash(notesDir, filePath);
+      expect(ok).toBe(true);
+      expect(fs.existsSync(filePath)).toBe(false);
+      const trashFiles = fileStore.listTrash(notesDir);
+      expect(trashFiles.length).toBe(1);
+      expect(trashFiles[0].deletedAt).toBeGreaterThan(0);
+    });
+
+    it('U-28: listTrash 空回收站返回空数组', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const result = fileStore.listTrash(notesDir);
+      expect(result).toEqual([]);
+    });
+
+    it('U-29: restoreFromTrash 应恢复文件到 notes/', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const { filePath, fileName } = fileStore.createNote(notesDir, '恢复测试');
+      fileStore.moveToTrash(notesDir, filePath);
+      const result = fileStore.restoreFromTrash(notesDir, fileName);
+      expect(result).not.toBeNull();
+      expect(fs.existsSync(result.filePath)).toBe(true);
+      expect(fileStore.listTrash(notesDir).length).toBe(0);
+    });
+
+    it('U-30: permanentlyDelete 应永久删除回收站文件', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const { filePath, fileName } = fileStore.createNote(notesDir, '永久删');
+      fileStore.moveToTrash(notesDir, filePath);
+      const ok = fileStore.permanentlyDelete(notesDir, fileName);
+      expect(ok).toBe(true);
+      expect(fileStore.listTrash(notesDir).length).toBe(0);
+    });
+
+    it('U-31: emptyTrash 应清空整个回收站', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      for (let i = 0; i < 3; i++) {
+        const { filePath } = fileStore.createNote(notesDir, `清空测试${i}`);
+        fileStore.moveToTrash(notesDir, filePath);
+      }
+      expect(fileStore.listTrash(notesDir).length).toBe(3);
+      fileStore.emptyTrash(notesDir);
+      expect(fileStore.listTrash(notesDir).length).toBe(0);
+    });
+  });
+
+  describe('listNotes 排序', () => {
+    it('U-32: 按名称升序排列', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      fileStore.createNote(notesDir, 'C笔记');
+      fileStore.createNote(notesDir, 'A笔记');
+      fileStore.createNote(notesDir, 'B笔记');
+      const result = fileStore.listNotes(notesDir, { sortBy: 'name', sortDir: 'asc' });
+      const names = result.map(n => n.displayName);
+      // 按 localeCompare 排序，B 在 C 前，A 在最前
+      expect(names[0]).toBe('A笔记');
+      expect(names[1]).toBe('B笔记');
+      expect(names[2]).toBe('C笔记');
+    });
+
+    it('U-33: 按名称倒序排列', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      fileStore.createNote(notesDir, 'C笔记');
+      fileStore.createNote(notesDir, 'A笔记');
+      fileStore.createNote(notesDir, 'B笔记');
+      const result = fileStore.listNotes(notesDir, { sortBy: 'name', sortDir: 'desc' });
+      expect(result[0].displayName).toBe('C笔记');
+      expect(result[2].displayName).toBe('A笔记');
+    });
+
+    it('U-34: 按修改时间升序排列', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const a = fileStore.createNote(notesDir, '先创建');
+      const b = fileStore.createNote(notesDir, '后创建');
+      // 先创建的文件 mtime 更早
+      const result = fileStore.listNotes(notesDir, { sortBy: 'mtime', sortDir: 'asc' });
+      expect(result[0].displayName).toBe('先创建');
+      expect(result[1].displayName).toBe('后创建');
+    });
+
+    it('U-35: 过滤 .trash 和 .clipboard 目录中的文件', () => {
+      const notesDir = fileStore.ensureNotesDir(tmpDir);
+      const { filePath } = fileStore.createNote(notesDir, '正常笔记');
+      // 在 .trash 中放一个文件（模拟），确保不被列出
+      fileStore.moveToTrash(notesDir, filePath);
+      const result = fileStore.listNotes(notesDir);
+      const names = result.map(n => n.displayName);
+      expect(names).not.toContain('正常笔记');
+    });
+  });
 });
 
 /**

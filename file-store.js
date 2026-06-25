@@ -1,10 +1,10 @@
 /**
  * @file         file-store.js
- * @description  笔记文件的基础读写操作模块，封装 notes 目录下的文件 CRUD
+ * @description  笔记文件的基础读写操作模块，封装 notes 目录下的文件 CRUD、回收站、排序
  * @author       tianxj22
  * @created      2024-06-24
- * @updated      2024-06-24
- * @version      1.1.0
+ * @updated      2026-06-25
+ * @version      1.2.0
  */
 
 const fs = require('fs');
@@ -12,12 +12,12 @@ const path = require('path');
 
 const DEFAULT_NOTE_NAME = '新建笔记本';
 const NAME_STACK_FILE = '.name-stack.json';
+const TRASH_DIR = '.trash';
+const TRASH_META_FILE = '.trash-meta.json';
+const CLIPBOARD_DIR = '.clipboard';
 
-/**
- * 加载命名栈状态，文件不存在则初始化
- * @param {string} notesDir - notes 目录路径
- * @returns {{ availableStack: number[], maxNumber: number }}
- */
+// ===== 命名栈 =====
+
 function loadNameStack(notesDir) {
   const stackPath = path.join(notesDir, NAME_STACK_FILE);
   try {
@@ -28,22 +28,11 @@ function loadNameStack(notesDir) {
   return { availableStack: [], maxNumber: 0 };
 }
 
-/**
- * 持久化命名栈状态
- * @param {string} notesDir - notes 目录路径
- * @param {{ availableStack: number[], maxNumber: number }} state
- */
 function saveNameStack(notesDir, state) {
   const stackPath = path.join(notesDir, NAME_STACK_FILE);
   fs.writeFileSync(stackPath, JSON.stringify(state), 'utf-8');
 }
 
-/**
- * 获取下一个可用的默认笔记名称
- * 栈非空时弹出栈顶序号复用；栈空时使用 maxNumber+1
- * @param {string} notesDir - notes 目录路径
- * @returns {{ title: string, number: number }} 笔记标题和序号
- */
 function getNextDefaultName(notesDir) {
   const state = loadNameStack(notesDir);
   let num;
@@ -57,26 +46,18 @@ function getNextDefaultName(notesDir) {
   return { title, number: num };
 }
 
-/**
- * 归还一个序号到栈中（删除"新建笔记本*"时调用）
- * @param {string} notesDir - notes 目录路径
- * @param {number} num - 要归还的序号
- */
 function releaseNameNumber(notesDir, num) {
   if (!num || num < 1) return;
   const state = loadNameStack(notesDir);
   if (!state.availableStack.includes(num)) {
     state.availableStack.push(num);
-    state.availableStack.sort((a, b) => b - a);  // 降序排列：pop 时返回最小序号
+    state.availableStack.sort((a, b) => b - a);
     saveNameStack(notesDir, state);
   }
 }
 
-/**
- * 获取笔记存储目录路径，不存在则自动创建
- * @param {string} baseDir - Electron userData 目录路径
- * @returns {string} notes 目录的绝对路径
- */
+// ===== 目录 =====
+
 function ensureNotesDir(baseDir) {
   const notesDir = path.join(baseDir, 'notes');
   if (!fs.existsSync(notesDir)) {
@@ -85,12 +66,30 @@ function ensureNotesDir(baseDir) {
   return notesDir;
 }
 
-/**
- * 创建一篇新笔记（空文件）
- * @param {string} notesDir - notes 目录路径
- * @param {string} title - 笔记标题
- * @returns {{ filePath: string, fileName: string }} 新笔记的文件路径和文件名
- */
+// ===== 回收站元数据 =====
+
+function loadTrashMeta(notesDir) {
+  const trashDir = path.join(notesDir, TRASH_DIR);
+  const metaPath = path.join(trashDir, TRASH_META_FILE);
+  try {
+    if (fs.existsSync(metaPath)) {
+      return JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+    }
+  } catch (_) { /* 文件损坏则重建 */ }
+  return {};
+}
+
+function saveTrashMeta(notesDir, meta) {
+  const trashDir = path.join(notesDir, TRASH_DIR);
+  if (!fs.existsSync(trashDir)) {
+    fs.mkdirSync(trashDir, { recursive: true });
+  }
+  const metaPath = path.join(trashDir, TRASH_META_FILE);
+  fs.writeFileSync(metaPath, JSON.stringify(meta), 'utf-8');
+}
+
+// ===== CRUD =====
+
 function createNote(notesDir, title) {
   const safeTitle = title || '未命名笔记';
   const timestamp = Date.now();
@@ -101,48 +100,52 @@ function createNote(notesDir, title) {
 }
 
 /**
- * 列出所有笔记文件，按修改时间倒序排列
+ * 列出所有笔记文件，支持排序，排除 .trash / .clipboard 目录
  * @param {string} notesDir - notes 目录路径
- * @returns {Array<{ fileName: string, filePath: string, mtime: number }>} 笔记信息数组
+ * @param {object} [opts] - 排序选项
+ * @param {string} [opts.sortBy='mtime'] - 'name' | 'created' | 'mtime'
+ * @param {string} [opts.sortDir='desc'] - 'asc' | 'desc'
+ * @returns {Array<{ fileName: string, filePath: string, displayName: string, mtime: number, createdAt: number }>}
  */
-function listNotes(notesDir) {
-  if (!fs.existsSync(notesDir)) {
-    return [];
-  }
-  return fs.readdirSync(notesDir)
+function listNotes(notesDir, opts = {}) {
+  const { sortBy = 'mtime', sortDir = 'desc' } = opts;
+  if (!fs.existsSync(notesDir)) return [];
+
+  const ignored = new Set([TRASH_DIR, CLIPBOARD_DIR]);
+
+  const notes = fs.readdirSync(notesDir)
     .filter(f => f.endsWith('.txt'))
     .map(f => {
       const filePath = path.join(notesDir, f);
       const stat = fs.statSync(filePath);
       const displayName = f.replace(/\.txt$/, '').replace(/_\d+$/, '');
-      return {
-        fileName: f,
-        filePath,
-        displayName,
-        mtime: stat.mtimeMs,
-      };
+      // 从文件名解析创建时间（格式：标题_时间戳.txt）
+      const tsMatch = f.match(/_(\d{13})\.txt$/);
+      const createdAt = tsMatch ? parseInt(tsMatch[1], 10) : stat.mtimeMs;
+      return { fileName: f, filePath, displayName, mtime: stat.mtimeMs, createdAt };
     })
-    .sort((a, b) => b.mtime - a.mtime);
+    // 排除回收站和剪贴板中的文件
+    .filter(n => {
+      const parent = path.basename(path.dirname(n.filePath));
+      return !ignored.has(parent);
+    });
+
+  const dir = sortDir === 'asc' ? 1 : -1;
+  if (sortBy === 'name') {
+    notes.sort((a, b) => dir * a.displayName.localeCompare(b.displayName, 'zh-CN'));
+  } else if (sortBy === 'created') {
+    notes.sort((a, b) => dir * (a.createdAt - b.createdAt));
+  } else {
+    notes.sort((a, b) => dir * (a.mtime - b.mtime));
+  }
+  return notes;
 }
 
-/**
- * 读取指定笔记文件的全部内容
- * @param {string} filePath - 笔记文件的绝对路径
- * @returns {string} 笔记文本内容，文件不存在则返回空字符串
- */
 function readNote(filePath) {
-  if (!fs.existsSync(filePath)) {
-    return '';
-  }
+  if (!fs.existsSync(filePath)) return '';
   return fs.readFileSync(filePath, 'utf-8');
 }
 
-/**
- * 将内容写入指定笔记文件
- * @param {string} filePath - 笔记文件的绝对路径
- * @param {string} content - 要保存的文本内容
- * @returns {boolean} 保存成功返回 true，失败返回 false
- */
 function saveNote(filePath, content) {
   try {
     fs.writeFileSync(filePath, content, 'utf-8');
@@ -154,14 +157,31 @@ function saveNote(filePath, content) {
 }
 
 /**
- * 删除指定笔记文件
- * @param {string} filePath - 笔记文件的绝对路径
- * @returns {boolean} 删除成功返回 true，文件不存在或失败返回 false
+ * 删除笔记：移入回收站（非永久删除）
+ * @param {string} notesDir - notes 目录路径
+ * @param {string} filePath - 笔记文件绝对路径
+ * @returns {boolean}
  */
-function deleteNote(filePath) {
+function moveToTrash(notesDir, filePath) {
   try {
     if (!fs.existsSync(filePath)) return false;
-    fs.unlinkSync(filePath);
+    const trashDir = path.join(notesDir, TRASH_DIR);
+    if (!fs.existsSync(trashDir)) {
+      fs.mkdirSync(trashDir, { recursive: true });
+    }
+    const fileName = path.basename(filePath);
+    const destPath = path.join(trashDir, fileName);
+    // 如果回收站已有同名文件，追加时间戳
+    const finalName = fs.existsSync(destPath)
+      ? fileName.replace(/\.txt$/, `_${Date.now()}.txt`)
+      : fileName;
+    const finalPath = path.join(trashDir, finalName);
+    fs.renameSync(filePath, finalPath);
+
+    // 记录删除时间
+    const meta = loadTrashMeta(notesDir);
+    meta[finalName] = Date.now();
+    saveTrashMeta(notesDir, meta);
     return true;
   } catch (err) {
     console.error('删除笔记失败:', err.message);
@@ -170,11 +190,90 @@ function deleteNote(filePath) {
 }
 
 /**
- * 重命名笔记文件（移动/改名）
- * @param {string} oldPath - 原文件绝对路径
- * @param {string} newTitle - 新标题（不含时间戳，会自动追加）
- * @returns {{ filePath: string, fileName: string } | null} 新文件路径信息，失败返回 null
+ * 永久删除文件（已废弃，保留向后兼容）
+ * @deprecated 使用 moveToTrash 代替
  */
+function deleteNote(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return false;
+    fs.unlinkSync(filePath);
+    return true;
+  } catch (err) {
+    console.error('永久删除笔记失败:', err.message);
+    return false;
+  }
+}
+
+// ===== 回收站操作 =====
+
+/** 列出回收站中的笔记 */
+function listTrash(notesDir) {
+  const trashDir = path.join(notesDir, TRASH_DIR);
+  if (!fs.existsSync(trashDir)) return [];
+  const meta = loadTrashMeta(notesDir);
+  return fs.readdirSync(trashDir)
+    .filter(f => f.endsWith('.txt'))
+    .map(f => ({
+      fileName: f,
+      displayName: f.replace(/\.txt$/, '').replace(/_\d+$/, ''),
+      deletedAt: meta[f] || 0,
+    }))
+    .sort((a, b) => b.deletedAt - a.deletedAt);
+}
+
+/** 从回收站恢复笔记 */
+function restoreFromTrash(notesDir, fileName) {
+  try {
+    const trashDir = path.join(notesDir, TRASH_DIR);
+    const srcPath = path.join(trashDir, fileName);
+    if (!fs.existsSync(srcPath)) return null;
+    const destPath = path.join(notesDir, fileName);
+    fs.renameSync(srcPath, destPath);
+    const meta = loadTrashMeta(notesDir);
+    delete meta[fileName];
+    saveTrashMeta(notesDir, meta);
+    return { filePath: destPath, fileName };
+  } catch (err) {
+    console.error('恢复笔记失败:', err.message);
+    return null;
+  }
+}
+
+/** 永久删除回收站中的单个文件 */
+function permanentlyDelete(notesDir, fileName) {
+  try {
+    const filePath = path.join(notesDir, TRASH_DIR, fileName);
+    if (!fs.existsSync(filePath)) return false;
+    fs.unlinkSync(filePath);
+    const meta = loadTrashMeta(notesDir);
+    delete meta[fileName];
+    saveTrashMeta(notesDir, meta);
+    return true;
+  } catch (err) {
+    console.error('永久删除失败:', err.message);
+    return false;
+  }
+}
+
+/** 清空回收站 */
+function emptyTrash(notesDir) {
+  try {
+    const trashDir = path.join(notesDir, TRASH_DIR);
+    if (!fs.existsSync(trashDir)) return true;
+    fs.readdirSync(trashDir)
+      .filter(f => f.endsWith('.txt'))
+      .forEach(f => fs.unlinkSync(path.join(trashDir, f)));
+    const metaPath = path.join(trashDir, TRASH_META_FILE);
+    if (fs.existsSync(metaPath)) fs.unlinkSync(metaPath);
+    return true;
+  } catch (err) {
+    console.error('清空回收站失败:', err.message);
+    return false;
+  }
+}
+
+// ===== 重命名/复制 =====
+
 function renameNote(oldPath, newTitle) {
   try {
     if (!fs.existsSync(oldPath)) return null;
@@ -191,11 +290,6 @@ function renameNote(oldPath, newTitle) {
   }
 }
 
-/**
- * 复制笔记文件（创建副本）
- * @param {string} filePath - 原文件绝对路径
- * @returns {{ filePath: string, fileName: string } | null} 副本路径信息，失败返回 null
- */
 function duplicateNote(filePath) {
   try {
     if (!fs.existsSync(filePath)) return null;
@@ -213,22 +307,15 @@ function duplicateNote(filePath) {
   }
 }
 
-/**
- * 剪切笔记文件（移动至剪贴板目录）
- * @param {string} notesDir - notes 目录路径
- * @param {string} filePath - 原文件绝对路径
- * @returns {{ filePath: string, fileName: string } | null} 剪贴板中的文件路径信息，失败返回 null
- */
 function cutNote(notesDir, filePath) {
   try {
     if (!fs.existsSync(filePath)) return null;
-    const clipboardDir = path.join(notesDir, '.clipboard');
+    const clipboardDir = path.join(notesDir, CLIPBOARD_DIR);
     if (!fs.existsSync(clipboardDir)) {
       fs.mkdirSync(clipboardDir, { recursive: true });
     }
     const fileName = path.basename(filePath);
     const destPath = path.join(clipboardDir, fileName);
-    // 如果目标已存在，追加时间戳
     const finalDest = fs.existsSync(destPath)
       ? path.join(clipboardDir, fileName.replace(/\.txt$/, `_${Date.now()}.txt`))
       : destPath;
@@ -240,4 +327,9 @@ function cutNote(notesDir, filePath) {
   }
 }
 
-module.exports = { ensureNotesDir, createNote, listNotes, readNote, saveNote, deleteNote, renameNote, duplicateNote, cutNote, getNextDefaultName, releaseNameNumber };
+module.exports = {
+  ensureNotesDir, createNote, listNotes, readNote, saveNote, deleteNote,
+  moveToTrash, renameNote, duplicateNote, cutNote,
+  getNextDefaultName, releaseNameNumber,
+  listTrash, restoreFromTrash, permanentlyDelete, emptyTrash,
+};
