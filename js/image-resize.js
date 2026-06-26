@@ -1,3 +1,12 @@
+/**
+ * @file         js/image-resize.js
+ * @description  Note Diary — 图片选中/取消 + 缩放手柄创建/更新/拖拽 + 裁剪遮罩 + 恢复原图
+ * @author       tianxj22
+ * @created      2026-06-25
+ * @updated      2026-06-26
+ * @version      1.0.0
+ */
+
 // ============================================================
 // image-resize.js — 图片选中/取消 + 缩放手柄创建/更新/拖拽
 // 依赖：ND.selectedImage, ND.resizeHandles, ND.isDragging, ND.dragState

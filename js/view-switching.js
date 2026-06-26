@@ -1,3 +1,12 @@
+/**
+ * @file         js/view-switching.js
+ * @description  Note Diary — 侧边栏视图切换 + 排序控件 + 工具栏标签页 + 导入文件 + 回收站操作
+ * @author       tianxj22
+ * @created      2026-06-25
+ * @updated      2026-06-26
+ * @version      1.0.0
+ */
+
 // ============================================================
 // view-switching.js — 侧边栏视图切换 + 排序控件 + 工具栏标签页
 //                      + 导入文件 + 回收站操作

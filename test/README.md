@@ -27,10 +27,15 @@ npm run test:watch
 ```
 test/
 ├── unit/
-│   └── file-store.test.js    # 笔记文件读写模块单元测试（11 条）
+│   └── file-store.test.mjs   # 笔记文件读写模块单元测试（45 条）
 ├── e2e/
-│   └── editor.test.js        # 编辑器 UI 端到端测试（8 条）
-├── vitest.config.js          # Vitest 配置
+│   ├── editor.test.mjs       # 编辑器 UI 端到端测试（15 条）
+│   ├── delete-edit.test.mjs  # 删除后编辑专项测试（12 条）
+│   ├── editor-title.test.mjs # 标题栏同步测试（8 条）
+│   ├── editor-style.test.mjs # 富文本样式工具栏测试（15 条）
+│   ├── checklist-log.test.mjs # 清单复选框 + 日志时间戳测试（14 条）
+│   └── image-insert.test.mjs # 图片插入与窗口选择器测试（22 条）
+├── vitest.config.mjs         # Vitest 配置
 └── README.md                 # 本文件
 ```
 
@@ -51,19 +56,18 @@ test/
 | U-09 | readNote | 不存在文件返回空串 |
 | U-10 | saveNote | 写入内容返回 true |
 | U-11 | saveNote | 无效路径返回 false |
+| U-12~U-35 | 全部函数 | 删除/重命名/复制/剪切/命名栈/回收站/排序 — 34 条 |
 
-### E2E 测试 (编辑器 UI)
+### E2E 测试
 
-| 编号 | 测试内容 |
-|---|---|
-| E-01 | 应用启动：窗口标题 + 空状态显示 |
-| E-02 | 新建笔记（按钮）：编辑区出现 + 列表更新 |
-| E-03 | 新建笔记（快捷键）：Ctrl+N |
-| E-04 | 输入文字后自动保存 |
-| E-05 | 撤销操作 |
-| E-06 | 重做操作 |
-| E-07 | 多笔记间切换 |
-| E-08 | 数据持久化验证 |
+| 文件 | 编号范围 | 测试内容 |
+|---|---|---|
+| `editor.test.mjs` | E-01 ~ E-15 | 新建/切换/保存/撤销/重做/右键菜单/关闭笔记 |
+| `delete-edit.test.mjs` | DE-01 ~ DE-12 | 删除后编辑/竞态条件/关闭按钮/聚焦防御 |
+| `editor-title.test.mjs` | ET-01 ~ ET-08 | 标题栏与侧边栏双向同步 |
+| `editor-style.test.mjs` | ES-01 ~ ES-15 | 加粗/斜体/下划线/字体/字号/颜色/对齐/格式刷 |
+| `checklist-log.test.mjs` | CL-01 ~ CL-14 | 清单插入/切换/时间戳/Enter继承/Backspace删除 |
+| `image-insert.test.mjs` | IMG-01 ~ IMG-22 | 5种图片插入方式/窗口选择器/撤销重做联动 |
 
 ## 新功能 TDD 工作流
 

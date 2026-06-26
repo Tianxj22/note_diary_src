@@ -2,6 +2,9 @@
  * @file         js/utils.js
  * @description  Note Diary — 工具函数
  * @author       tianxj22
+ * @created      2026-06-24
+ * @updated      2026-06-26
+ * @version      1.0.0
  */
 
 /**

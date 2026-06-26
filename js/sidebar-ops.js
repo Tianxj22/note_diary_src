@@ -2,6 +2,9 @@
  * @file         js/sidebar-ops.js
  * @description  Note Diary — 侧边栏笔记操作（新建/删除/复制/剪切/重命名/导入）
  * @author       tianxj22
+ * @created      2026-06-24
+ * @updated      2026-06-26
+ * @version      1.0.0
  */
 
 // ---- 新建笔记 ----

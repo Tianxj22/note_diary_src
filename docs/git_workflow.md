@@ -45,11 +45,11 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 feat: 实现笔记本地保存功能
 
-- 新增 utils/file-store.js，封装文件读写操作
+- 新增 file-store.js，封装文件读写操作
 - 主进程新增 note:save IPC 处理器
 - preload.js 暴露 saveNote() 接口
 - 渲染进程新增保存按钮及交互逻辑
-- 更新 feature_list.md，标记 F-011 为已完成
+- 更新 feature_list.json，标记 F-013 为已完成
 - 更新 progress.md 记录本次进展
 
 Co-Authored-By: Claude <noreply@anthropic.com>
@@ -59,8 +59,8 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 - [ ] 应用能正常启动 (`npm start`)
 - [ ] 无 ESLint 报错（如有配置）
-- [ ] 新功能已在 `docs/feature_list.md` 登记或更新状态
-- [ ] 本次进展已在 `docs/progress.md` 记录
+- [ ] 新功能已在 `feature_list.json` 和 `docs/feature_list.md` 登记或更新状态
+- [ ] 本次进展已在 `progress.md` 记录
 - [ ] 无调试用的 `console.log` 残留
 - [ ] 无临时文件被提交（检查 `git status`）
 
@@ -75,8 +75,8 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 每次 commit
     │
-    ├── 功能变动 → 更新 docs/feature_list.md
-    ├── 进展概要 → 更新 docs/progress.md
+    ├── 功能变动 → 更新 feature_list.json + docs/feature_list.md
+    ├── 进展概要 → 更新 progress.md
     ├── 测试相关 → 更新 docs/test_feedback.md
     └── 架构调整 → 更新 docs/architecture.md
 ```

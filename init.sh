@@ -29,6 +29,15 @@ css_count=$(ls css/*.css 2>/dev/null | wc -l)
 js_count=$(ls js/*.js 2>/dev/null | wc -l)
 echo "  PASS css/ ($css_count files)"
 echo "  PASS js/ ($js_count files)"
+# Minimum file count guards
+if [ "$css_count" -lt 6 ]; then
+  echo "  FAIL css/ has $css_count files, expected at least 6!"
+  exit 1
+fi
+if [ "$js_count" -lt 13 ]; then
+  echo "  FAIL js/ has $js_count files, expected at least 13!"
+  exit 1
+fi
 echo ""
 
 # 3. 安装/更新依赖 / Install dependencies

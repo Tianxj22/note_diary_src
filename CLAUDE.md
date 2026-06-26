@@ -46,7 +46,6 @@ note_diary/
 ├── feature_list.json         # 结构化功能追踪（状态/依赖/验证条件）
 ├── progress.md               # 开发进度记录（含恢复点 / Restart Marker）
 ├── init.sh                   # 项目验证入口（一键检查可开发状态）
-├── session-handoff.md        # 会话交接模板
 ├── docs/
 │   ├── architecture.md       # 系统框架设计
 │   ├── coding_conventions.md # 代码与注释规范
@@ -67,7 +66,6 @@ Before writing code, start every session:
 1. 阅读 `progress.md` 顶部的「Restart Marker」— Current Objective, Blockers, Recommended Next Step
 2. 阅读 `feature_list.json` — 了解所有功能状态和依赖关系
 3. 运行 `bash init.sh` — 验证环境可开发（依赖安装 + 测试通过）
-4. 如上次会话有交接，阅读 `session-handoff.md`
 
 ## 开发规则
 
@@ -92,9 +90,8 @@ A feature is done only when ALL of the following are met:
 Before ending a session:
 
 1. 更新 `progress.md` 顶部的 Restart Marker（Current Objective, Blockers, Recommended Next Step, Last Updated）
-2. 填写 `session-handoff.md`（如果功能未完成）
-3. 确保 `npm test` 通过
-4. 提交代码（遵循 `docs/git_workflow.md` 规范）
+2. 确保 `npm test` 通过
+3. 提交代码（遵循 `docs/git_workflow.md` 规范）
 
 ## 常用命令
 
@@ -102,9 +99,10 @@ Before ending a session:
 bash init.sh      # 验证入口：检查环境 + 安装依赖 + 运行测试（Next steps 见脚本输出）
 npm install       # 安装依赖
 npm start         # 启动应用
-npm test          # 运行全部测试（vitest）
-npm run test:unit # 仅单元测试
-npm run test:e2e  # 仅 E2E 测试
+npm test          # 运行单元测试（vitest run test/unit/）
+npm run test:all   # 运行全部测试（单元 + E2E）
+npm run test:unit  # 仅单元测试
+npm run test:e2e   # 仅 E2E 测试
 npm run test:watch # 监听模式
 ```
 
@@ -132,5 +130,12 @@ npm run test:watch # 监听模式
 
 - [x] M1: Hello World — 项目初始化、窗口创建、安全桥接
 - [x] M2: 基础编辑 — 存储模块、IPC CRUD、侧边栏列表、编辑器、自动保存、笔记管理
+- [x] M2-ext: 富文本编辑器 — 样式工具栏、格式刷、字体/颜色/对齐（contenteditable）
+- [x] M2-ext: 图片系统 — 文件/截图/粘贴插入、缩放手柄、裁剪、宽高比锁定
+- [x] M2-ext: 工具栏分类标签 — 文件/插入/图片编辑三标签
+- [x] M2-ext: 系统托盘 + Ctrl+Shift+N 全局快捷键唤起
+- [x] M2-ext: 回收站 — 工作区/回收站分栏、恢复/永久删除/清空
+- [x] M2-ext: 清单复选框 + 日志时间戳 — Enter继承、Backspace删除
+- [x] M2-ext: 侧边栏排序 — 名称/时间排序、方向切换
 - [ ] M3: 体验版 — 日历视图、全文搜索、标签系统
 - [ ] M4: 正式版 — 导出、主题切换、自动保存增强

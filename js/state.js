@@ -2,6 +2,9 @@
  * @file         js/state.js
  * @description  Note Diary — 全局状态与 DOM 引用
  * @author       tianxj22
+ * @created      2026-06-24
+ * @updated      2026-06-26
+ * @version      1.0.0
  */
 
 window.ND = window.ND || {};

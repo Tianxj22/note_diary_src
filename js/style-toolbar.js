@@ -1,3 +1,12 @@
+/**
+ * @file         js/style-toolbar.js
+ * @description  Note Diary — 样式执行 + 工具栏状态同步 + 格式刷
+ * @author       tianxj22
+ * @created      2026-06-25
+ * @updated      2026-06-26
+ * @version      1.0.0
+ */
+
 // ============================================================
 // style-toolbar.js — 样式执行 + 工具栏状态同步 + 格式刷
 // 依赖：ND.btnBold, ND.btnItalic, ND.btnUnderline, ND.btnFontFamily,
