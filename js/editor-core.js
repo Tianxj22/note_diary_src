@@ -48,6 +48,7 @@ async function selectNote(note) {
   if (ND.drawingActive && ND.drawCanvas) {
     ND.drawCanvas.classList.add('drawing-active');
     updateCanvasCursor();
+    ND.editorDiv.contentEditable = 'false';
     ND.switchToolbarTab('draw');
   }
   renderNoteList();
@@ -71,6 +72,7 @@ async function createNewNote() {
   if (ND.drawingActive && ND.drawCanvas) {
     ND.drawCanvas.classList.add('drawing-active');
     updateCanvasCursor();
+    ND.editorDiv.contentEditable = 'false';
     ND.switchToolbarTab('draw');
   }
   await loadNoteList();

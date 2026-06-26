@@ -40,6 +40,8 @@ function toggleDrawingMode(active) {
     canvas.classList.add('drawing-active');
     updateCanvasCursor();
     ND.switchToolbarTab('draw');
+    // 禁止编辑文字
+    if (ND.editorDiv) ND.editorDiv.contentEditable = 'false';
     // 初始化快照（如果没有）
     if (ND.drawingSnapshots.length === 0 && ND.drawCtx) {
       pushSnapshot(ND.drawCtx);
@@ -48,6 +50,8 @@ function toggleDrawingMode(active) {
   } else {
     canvas.classList.remove('drawing-active');
     canvas.classList.remove('cursor-eraser', 'cursor-fill', 'cursor-picker', 'cursor-zoom-in', 'cursor-zoom-out');
+    // 恢复文字编辑
+    if (ND.editorDiv) ND.editorDiv.contentEditable = 'true';
     ND.isDrawing = false;
     ND.previewSnapshot = null;
     // 切换回之前的标签
