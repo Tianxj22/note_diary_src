@@ -172,12 +172,16 @@
         <span class="separator"></span>
 
         <!-- 颜色工具 -->
-        <span class="color-btn" title="主/副颜色">
-          <span class="color-swatch" id="swatch-primary" style="background:#000000"></span>
-          <span class="color-swatch secondary-swatch" id="swatch-secondary" style="background:#ffffff"></span>
+        <span class="color-label">主</span>
+        <span class="color-btn" title="主颜色（左键绘制用）">
+          <span class="color-swatch color-swatch-primary" id="swatch-primary" style="background:#000000"></span>
           <input type="color" id="btn-primary-color" value="#000000">
         </span>
-        <input type="color" id="btn-secondary-color" value="#ffffff" style="display:none">
+        <span class="color-label">副</span>
+        <span class="color-btn" title="副颜色（备用）">
+          <span class="color-swatch color-swatch-secondary" id="swatch-secondary" style="background:#ffffff"></span>
+          <input type="color" id="btn-secondary-color" value="#ffffff">
+        </span>
         <button id="btn-color-swap" class="style-btn" data-tooltip="交换主副颜色">⇄</button>
         <button id="btn-tool-picker" class="style-btn draw-tool-btn" data-tooltip="取色器" data-tool="picker">💉</button>
         <span class="separator"></span>

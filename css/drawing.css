@@ -9,33 +9,81 @@
 
 /* ===== 绘图工具栏按钮 ===== */
 
+/* 确保下拉菜单不被裁剪 */
+#toolbar-draw {
+  overflow: visible;
+  z-index: 10;
+}
+
+#toolbar-draw .dropdown-wrapper {
+  position: relative;
+}
+
+#toolbar-draw .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  min-width: 140px;
+}
+
 .draw-tool-btn.active {
   background: #d6e4f0;
   border-color: #6c9fff;
   color: #1a56b0;
 }
 
-/* ===== 重叠颜色色板 ===== */
+/* ===== 颜色选择器 ===== */
 
-#swatch-primary {
-  position: relative;
-  z-index: 2;
+.color-label {
+  font-size: 0.7rem;
+  color: #999;
+  margin: 0 1px 0 4px;
+  user-select: none;
 }
 
-.color-swatch.secondary-swatch {
+.color-swatch-primary {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: 2px solid #6c9fff;
+  box-shadow: 0 0 0 1px #fff;
+}
+
+.color-swatch-secondary {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: 2px solid #ccc;
+}
+
+/* 让 input[type=color] 覆盖整个色板，确保点击必定触发 */
+.color-btn {
+  position: relative;
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.color-btn input[type=color] {
   position: absolute;
-  top: 4px;
-  left: 10px;
-  width: 12px;
-  height: 12px;
-  border: 1px solid #ccc;
-  z-index: 1;
-  border-radius: 2px;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 #btn-color-swap {
   font-size: 0.85rem;
   padding: 2px 5px;
+  vertical-align: middle;
 }
 
 /* ===== 嵌入画布（双层架构绘图层） ===== */

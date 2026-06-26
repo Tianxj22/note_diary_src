@@ -363,8 +363,35 @@ document.querySelector('.toolbar-tabs').addEventListener('click', function(e) {
   }
 }, true);
 
-// 工具栏面板按钮委托
+// 工具栏面板按钮委托 + 下拉菜单 toggle
 document.getElementById('toolbar-draw').addEventListener('click', function(e) {
+  // 阻止事件穿透到 canvas
+  e.stopPropagation();
+
+  // 如果有打开的选区下拉，先关闭
+  var selectMenu = document.getElementById('dropdown-select-menu');
+  var shapeMenu = document.getElementById('dropdown-shape-menu');
+
+  // 点击选区下拉切换按钮 → toggle
+  var selectBtn = e.target.closest('#btn-tool-select');
+  if (selectBtn) {
+    selectMenu.classList.toggle('visible');
+    if (shapeMenu) shapeMenu.classList.remove('visible');
+    return;
+  }
+  // 点击形状下拉切换按钮 → toggle
+  var shapeBtn = e.target.closest('#btn-tool-shape');
+  if (shapeBtn) {
+    shapeMenu.classList.toggle('visible');
+    if (selectMenu) selectMenu.classList.remove('visible');
+    return;
+  }
+
+  // 关闭所有下拉（点击了其他区域）
+  if (selectMenu) selectMenu.classList.remove('visible');
+  if (shapeMenu) shapeMenu.classList.remove('visible');
+
+  // 普通工具按钮
   var btn = e.target.closest('.draw-tool-btn');
   if (btn && btn.dataset.tool) {
     selectTool(btn.dataset.tool);
