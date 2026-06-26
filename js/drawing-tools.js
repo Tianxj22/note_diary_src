@@ -339,9 +339,8 @@ function pushSnapshot(ctx) {
   // 限制历史层数
   if (ND.drawingSnapshots.length > 50) {
     ND.drawingSnapshots.shift();
-  } else {
-    ND.drawingSnapshotIndex = ND.drawingSnapshots.length - 1;
   }
+  ND.drawingSnapshotIndex = ND.drawingSnapshots.length - 1;
 }
 
 /**

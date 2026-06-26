@@ -1,16 +1,17 @@
 /**
  * @file         js/drawing-ui.js
- * @description  Note Diary — 绘图模式 UI 控制：进入/退出、工具栏事件、画布鼠标事件、覆盖层管理
+ * @description  Note Diary — 绘图模式切换 + 工具栏事件 + 画布鼠标事件分发
  * @author       tianxj22
  * @created      2026-06-26
  * @updated      2026-06-26
- * @version      1.0.0
+ * @version      1.1.0
  *
- * 依赖：drawing-tools.js（铅笔/画笔/橡皮/填充/取色器/形状/快照/缩放）
+ * 双层架构：画布嵌入在 editor-scroll 中，始终可见。
+ * 绘图模式仅切换 pointer-events（穿透/拦截）+ 光标。
  */
 
 // ============================================================
-// 坐标转换：鼠标事件坐标 → canvas 像素坐标
+// 坐标转换
 // ============================================================
 
 function getCanvasPos(e) {
@@ -22,124 +23,75 @@ function getCanvasPos(e) {
 }
 
 // ============================================================
-// 进入/退出绘图模式
+// 绘图模式切换
 // ============================================================
 
-function enterDrawingMode() {
-  if (!ND.editorDiv) {
+function toggleDrawingMode(active) {
+  if (active === undefined) active = !ND.drawingActive;
+  if (active && !ND.editorDiv) {
     ND.statusLeft.textContent = '请先选择或新建一篇笔记';
     return;
   }
+  ND.drawingActive = active;
+  var canvas = ND.drawCanvas;
+  if (!canvas) return;
 
-  // 保存当前标签页
-  var activeTab = document.querySelector('.toolbar-tab.active');
-  ND.drawingPreviousTab = activeTab ? activeTab.dataset.tab : 'file';
-  ND.switchToolbarTab('draw');
-
-  // 获取或创建画布
-  var canvas = document.getElementById('draw-canvas');
-  if (!canvas) {
-    canvas = document.createElement('canvas');
-    canvas.id = 'draw-canvas';
-    var ws = document.querySelector('.draw-workspace');
-    if (ws) ws.appendChild(canvas);
+  if (active) {
+    canvas.classList.add('drawing-active');
+    updateCanvasCursor();
+    ND.switchToolbarTab('draw');
+    // 初始化快照（如果没有）
+    if (ND.drawingSnapshots.length === 0 && ND.drawCtx) {
+      pushSnapshot(ND.drawCtx);
+    }
+    ND.statusLeft.textContent = '绘图模式 — ' + getToolName(ND.currentTool);
+  } else {
+    canvas.classList.remove('drawing-active');
+    canvas.classList.remove('cursor-eraser', 'cursor-fill', 'cursor-picker', 'cursor-zoom-in', 'cursor-zoom-out');
+    ND.isDrawing = false;
+    ND.previewSnapshot = null;
+    // 切换回之前的标签
+    if (ND.drawingPreviousTab && ND.drawingPreviousTab !== 'draw') {
+      ND.switchToolbarTab(ND.drawingPreviousTab);
+    }
   }
-
-  // 设置画布大小（自适应编辑区）
-  var areaRect = ND.editorArea.getBoundingClientRect();
-  var w = Math.max(400, Math.min(areaRect.width - 64, 1200));
-  var h = Math.max(300, Math.min(areaRect.height - 120, 800));
-  canvas.width = w;
-  canvas.height = h;
-  canvas.style.width = w + 'px';
-  canvas.style.height = h + 'px';
-
-  ND.drawCanvas = canvas;
-  ND.drawCtx = canvas.getContext('2d');
-
-  // 白色背景
-  ND.drawCtx.fillStyle = '#ffffff';
-  ND.drawCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // 显示覆盖层
-  ND.drawOverlay.classList.add('active');
-  ND.drawingActive = true;
-
-  // 设置默认工具
-  ND.currentTool = 'pencil';
-  updateActiveToolButton();
-  updateCanvasCursor();
-
-  // 初始快照
-  ND.drawingSnapshots = [];
-  ND.drawingSnapshotIndex = -1;
-  pushSnapshot(ND.drawCtx);
-
-  // 缩放重置
-  ND.zoomLevel = 1;
-  ND.drawZoomLabel.textContent = '100%';
-  zoomCanvas(ND.drawCanvas, 1);
-
-  // 绑定事件
-  bindCanvasEvents();
-
-  ND.statusLeft.textContent = '绘图模式 — 铅笔';
 }
 
-function exitDrawingMode() {
-  ND.drawOverlay.classList.remove('active');
-  ND.drawingActive = false;
-  ND.isDrawing = false;
-  ND.previewSnapshot = null;
-  ND.drawingSnapshots = [];
-  ND.drawingSnapshotIndex = -1;
-  ND.zoomLevel = 1;
-  unbindCanvasEvents();
-  // 恢复标签
-  ND.switchToolbarTab(ND.drawingPreviousTab);
-  ND.statusLeft.textContent = '就绪';
-}
-
-function finalizeDrawing() {
-  if (!ND.drawCanvas || !ND.editorDiv) return;
-  var dataUrl = ND.drawCanvas.toDataURL('image/png');
-  // 复用 insert-features.js 的插入函数
-  insertImageAtCursor(dataUrl);
-  ND.statusLeft.textContent = '绘图已插入';
-  exitDrawingMode();
-}
-
-function clearCanvas() {
-  if (!ND.drawCtx || !ND.drawCanvas) return;
-  ND.drawCtx.globalCompositeOperation = 'source-over';
-  ND.drawCtx.fillStyle = '#ffffff';
-  ND.drawCtx.fillRect(0, 0, ND.drawCanvas.width, ND.drawCanvas.height);
-  pushSnapshot(ND.drawCtx);
-  ND.statusLeft.textContent = '画布已清除';
+function getToolName(tool) {
+  var names = {
+    'pencil': '铅笔', 'brush': '画笔', 'eraser': '橡皮', 'fill': '颜料桶',
+    'picker': '取色器', 'zoom-in': '放大', 'zoom-out': '缩小',
+    'shape-rect': '矩形', 'shape-ellipse': '圆形', 'shape-line': '直线',
+    'shape-roundrect': '圆角矩形'
+  };
+  return names[tool] || tool;
 }
 
 // ============================================================
 // 画布鼠标事件
 // ============================================================
 
-var _canvasMouseDown = null;
-var _canvasMouseMove = null;
-var _canvasMouseUp = null;
+// 存储 bound 函数引用用于 unbind
+var _boundMouseDown = null;
+var _boundMouseMove = null;
+var _boundMouseUp = null;
 
 function bindCanvasEvents() {
-  _canvasMouseDown = function(e) { onCanvasMouseDown(e); };
-  _canvasMouseMove = function(e) { onCanvasMouseMove(e); };
-  _canvasMouseUp = function(e) { onCanvasMouseUp(e); };
-  ND.drawCanvas.addEventListener('mousedown', _canvasMouseDown);
-  document.addEventListener('mousemove', _canvasMouseMove);
-  document.addEventListener('mouseup', _canvasMouseUp);
+  if (!ND.drawCanvas) return;
+  unbindCanvasEvents();
+  _boundMouseDown = function(e) { onCanvasMouseDown(e); };
+  _boundMouseMove = function(e) { onCanvasMouseMove(e); };
+  _boundMouseUp = function(e) { onCanvasMouseUp(e); };
+  ND.drawCanvas.addEventListener('mousedown', _boundMouseDown);
+  document.addEventListener('mousemove', _boundMouseMove);
+  document.addEventListener('mouseup', _boundMouseUp);
 }
 
 function unbindCanvasEvents() {
-  if (_canvasMouseDown) ND.drawCanvas.removeEventListener('mousedown', _canvasMouseDown);
-  if (_canvasMouseMove) document.removeEventListener('mousemove', _canvasMouseMove);
-  if (_canvasMouseUp) document.removeEventListener('mouseup', _canvasMouseUp);
-  _canvasMouseDown = _canvasMouseMove = _canvasMouseUp = null;
+  if (_boundMouseDown && ND.drawCanvas) ND.drawCanvas.removeEventListener('mousedown', _boundMouseDown);
+  if (_boundMouseMove) document.removeEventListener('mousemove', _boundMouseMove);
+  if (_boundMouseUp) document.removeEventListener('mouseup', _boundMouseUp);
+  _boundMouseDown = _boundMouseMove = _boundMouseUp = null;
 }
 
 function onCanvasMouseDown(e) {
@@ -147,9 +99,10 @@ function onCanvasMouseDown(e) {
   e.preventDefault();
   var pos = getCanvasPos(e);
   var ctx = ND.drawCtx;
+  if (!ctx) return;
 
-  // 形状/直线工具：保存快照用于预览
-  if (ND.currentTool.indexOf('shape-') === 0 || ND.currentTool === 'shape-line') {
+  // 形状工具：保存快照用于预览
+  if (ND.currentTool.indexOf('shape-') === 0) {
     pushSnapshot(ctx);
     ND.previewSnapshot = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
   }
@@ -175,14 +128,15 @@ function onCanvasMouseDown(e) {
       var imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
       var filled = floodFill(imageData, pos.x, pos.y, ND.primaryColor, 10);
       ctx.putImageData(filled, 0, 0);
-      ND.statusLeft.textContent = '颜料桶填充完成';
+      pushSnapshot(ctx); // post-fill snapshot for redo
+      ND.statusLeft.textContent = '绘图模式 — 颜料桶';
       break;
     case 'picker':
       var color = pickColor(ctx, pos.x, pos.y);
       ND.primaryColor = color;
       ND.btnPrimaryColor.value = color;
       ND.swatchPrimary.style.background = color;
-      ND.statusLeft.textContent = '取色: ' + color;
+      ND.statusLeft.textContent = '绘图模式 — 取色: ' + color;
       break;
     case 'zoom-in':
       ND.zoomLevel = Math.min(3, ND.zoomLevel + 0.25);
@@ -194,7 +148,6 @@ function onCanvasMouseDown(e) {
       ND.drawZoomLabel.textContent = Math.round(ND.zoomLevel * 100) + '%';
       zoomCanvas(ND.drawCanvas, ND.zoomLevel);
       break;
-    // 形状工具：记录起始坐标
     case 'shape-rect':
     case 'shape-ellipse':
     case 'shape-line':
@@ -221,7 +174,6 @@ function onCanvasMouseMove(e) {
     case 'eraser':
       eraserMove(ctx, pos.x, pos.y);
       break;
-    // 形状预览：恢复快照 → 画预览
     case 'shape-rect':
       if (ND.previewSnapshot) ctx.putImageData(ND.previewSnapshot, 0, 0);
       drawRect(ctx, ND.drawStartX, ND.drawStartY, pos.x, pos.y,
@@ -246,46 +198,44 @@ function onCanvasMouseMove(e) {
 
 function onCanvasMouseUp(e) {
   if (!ND.drawingActive) return;
+  var ctx = ND.drawCtx;
 
   switch (ND.currentTool) {
     case 'eraser':
-      eraserEnd(ND.drawCtx);
+      eraserEnd(ctx);
       break;
-    // 形状：mouseup 时快照已包含最终形状（预览阶段已画）
     case 'shape-rect':
     case 'shape-ellipse':
     case 'shape-line':
     case 'shape-roundrect':
-      // 最终绘制（清预览残留，正式画到画布）
-      if (ND.previewSnapshot) ND.drawCtx.putImageData(ND.previewSnapshot, 0, 0);
+      if (ND.previewSnapshot) ctx.putImageData(ND.previewSnapshot, 0, 0);
       var pos = getCanvasPos(e);
       switch (ND.currentTool) {
         case 'shape-rect':
-          drawRect(ND.drawCtx, ND.drawStartX, ND.drawStartY, pos.x, pos.y,
+          drawRect(ctx, ND.drawStartX, ND.drawStartY, pos.x, pos.y,
             ND.primaryColor, ND.primaryColor, ND.shapeFill, ND.shapeStroke);
           break;
         case 'shape-ellipse':
-          drawEllipse(ND.drawCtx, ND.drawStartX, ND.drawStartY, pos.x, pos.y,
+          drawEllipse(ctx, ND.drawStartX, ND.drawStartY, pos.x, pos.y,
             ND.primaryColor, ND.primaryColor, ND.shapeFill, ND.shapeStroke);
           break;
         case 'shape-line':
-          drawLine(ND.drawCtx, ND.drawStartX, ND.drawStartY, pos.x, pos.y, ND.primaryColor);
+          drawLine(ctx, ND.drawStartX, ND.drawStartY, pos.x, pos.y, ND.primaryColor);
           break;
         case 'shape-roundrect':
-          drawRoundRect(ND.drawCtx, ND.drawStartX, ND.drawStartY, pos.x, pos.y,
+          drawRoundRect(ctx, ND.drawStartX, ND.drawStartY, pos.x, pos.y,
             12, ND.primaryColor, ND.primaryColor, ND.shapeFill, ND.shapeStroke);
           break;
       }
       ND.previewSnapshot = null;
-      pushSnapshot(ND.drawCtx);
+      pushSnapshot(ctx);
       break;
   }
-
   ND.isDrawing = false;
 }
 
 // ============================================================
-// 工具切换
+// 工具切换 + 光标
 // ============================================================
 
 function selectTool(toolId) {
@@ -294,57 +244,54 @@ function selectTool(toolId) {
   ND.previewSnapshot = null;
   updateActiveToolButton();
   updateCanvasCursor();
-
-  var names = {
-    'pencil': '铅笔', 'brush': '画笔', 'eraser': '橡皮', 'fill': '颜料桶',
-    'picker': '取色器', 'zoom-in': '放大', 'zoom-out': '缩小',
-    'shape-rect': '矩形', 'shape-ellipse': '圆形', 'shape-line': '直线',
-    'shape-roundrect': '圆角矩形'
-  };
-  ND.statusLeft.textContent = '绘图模式 — ' + (names[toolId] || toolId);
+  ND.statusLeft.textContent = '绘图模式 — ' + getToolName(toolId);
 }
 
 function updateActiveToolButton() {
   var btns = document.querySelectorAll('.draw-tool-btn');
   for (var i = 0; i < btns.length; i++) {
     var tool = btns[i].dataset.tool;
-    if (tool === ND.currentTool || (tool && ND.currentTool.indexOf(tool) === 0)) {
-      btns[i].classList.add('active');
-    } else {
-      btns[i].classList.remove('active');
-    }
+    var match = (tool === ND.currentTool) || (tool && ND.currentTool.indexOf(tool) === 0);
+    btns[i].classList.toggle('active', match);
   }
 }
 
 function updateCanvasCursor() {
   var canvas = ND.drawCanvas;
   if (!canvas) return;
-  // 清除所有光标类
-  var cursorClasses = ['cursor-eraser', 'cursor-fill', 'cursor-picker', 'cursor-zoom-in', 'cursor-zoom-out'];
-  for (var i = 0; i < cursorClasses.length; i++) {
-    canvas.classList.remove(cursorClasses[i]);
-  }
-  // 设置新光标
+  var classes = ['cursor-eraser', 'cursor-fill', 'cursor-picker', 'cursor-zoom-in', 'cursor-zoom-out'];
+  for (var i = 0; i < classes.length; i++) canvas.classList.remove(classes[i]);
   switch (ND.currentTool) {
     case 'eraser': canvas.classList.add('cursor-eraser'); break;
     case 'fill': canvas.classList.add('cursor-fill'); break;
     case 'picker': canvas.classList.add('cursor-picker'); break;
     case 'zoom-in': canvas.classList.add('cursor-zoom-in'); break;
     case 'zoom-out': canvas.classList.add('cursor-zoom-out'); break;
-    default: /* crosshair (CSS default) */ break;
   }
+}
+
+// ============================================================
+// 清空绘图层
+// ============================================================
+
+function clearDrawCanvas() {
+  if (!ND.drawCtx || !ND.drawCanvas) return;
+  ND.drawCtx.clearRect(0, 0, ND.drawCanvas.width, ND.drawCanvas.height);
+  pushSnapshot(ND.drawCtx);
+  ND.drawingCanvasData = null;
+  ND.statusLeft.textContent = '绘图模式 — 绘图层已清除';
 }
 
 // ============================================================
 // 事件绑定（加载时执行一次）
 // ============================================================
 
-// 绘图标签页点击 → 进入绘图模式
+// 绘图标签点击 → 切换绘图模式
 (function() {
   var drawTab = document.querySelector('.toolbar-tab[data-tab="draw"]');
   if (drawTab) {
     drawTab.addEventListener('click', function() {
-      if (!ND.drawingActive) enterDrawingMode();
+      toggleDrawingMode(!ND.drawingActive);
     });
   }
 })();
@@ -353,23 +300,41 @@ function updateCanvasCursor() {
 document.querySelector('.toolbar-tabs').addEventListener('click', function(e) {
   var tab = e.target.closest('.toolbar-tab');
   if (tab && tab.dataset.tab !== 'draw' && ND.drawingActive) {
-    exitDrawingMode();
+    ND.drawingPreviousTab = tab.dataset.tab;
+    toggleDrawingMode(false);
   }
 }, true);
 
-// 工具栏面板按钮点击委托
+// 工具栏面板按钮委托
 document.getElementById('toolbar-draw').addEventListener('click', function(e) {
   var btn = e.target.closest('.draw-tool-btn');
   if (btn && btn.dataset.tool) {
     selectTool(btn.dataset.tool);
     return;
   }
-  // 缩放按钮（不是 draw-tool-btn）
   if (e.target.id === 'btn-tool-zoom-in') { selectTool('zoom-in'); return; }
   if (e.target.id === 'btn-tool-zoom-out') { selectTool('zoom-out'); return; }
 });
 
-// 画笔/橡皮大小变化
+// 清除按钮：点击两次铅笔按钮触发清除（简化：用画笔大小选择器旁边的空间）
+// 添加清除按钮到绘图面板（通过 js 动态添加）
+(function() {
+  var panel = document.getElementById('toolbar-draw');
+  if (panel) {
+    var sep = document.createElement('span');
+    sep.className = 'separator';
+    panel.appendChild(sep);
+    var clearBtn = document.createElement('button');
+    clearBtn.id = 'btn-draw-clear';
+    clearBtn.className = 'style-btn';
+    clearBtn.setAttribute('data-tooltip', '清除绘图层');
+    clearBtn.textContent = '🗑';
+    clearBtn.addEventListener('click', clearDrawCanvas);
+    panel.appendChild(clearBtn);
+  }
+})();
+
+// 画笔/橡皮大小
 ND.btnBrushSize.addEventListener('change', function() {
   ND.brushSize = parseInt(ND.btnBrushSize.value, 10);
 });
@@ -406,9 +371,7 @@ document.getElementById('btn-color-swap').addEventListener('click', function() {
       e.stopPropagation();
       var tool = this.dataset.tool;
       selectTool(tool);
-      // 更新下拉主按钮 data-tool
       document.getElementById('btn-tool-shape').dataset.tool = tool;
-      // 更新菜单项 active 态
       var allItems = ND.btnShapeMenu.querySelectorAll('.menu-item');
       for (var j = 0; j < allItems.length; j++) {
         allItems[j].classList.toggle('active', allItems[j].dataset.tool === tool);
@@ -417,14 +380,10 @@ document.getElementById('btn-color-swap').addEventListener('click', function() {
   }
 })();
 
-// 完成/取消/清除
-ND.btnDrawDone.addEventListener('click', finalizeDrawing);
-ND.btnDrawCancel.addEventListener('click', exitDrawingMode);
-ND.btnDrawClear.addEventListener('click', clearCanvas);
-
-// Escape 关闭
+// Esc 退出绘图模式
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && ND.drawingActive) {
-    exitDrawingMode();
+    ND.drawingPreviousTab = 'file';
+    toggleDrawingMode(false);
   }
 });

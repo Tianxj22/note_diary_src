@@ -1,10 +1,10 @@
 /**
  * @file         css/drawing.css
- * @description  Note Diary — 绘图工具栏按钮样式 + 画布覆盖层 + 工具光标
+ * @description  Note Diary — 绘图工具栏按钮样式 + 嵌入画布样式 + 工具光标
  * @author       tianxj22
  * @created      2026-06-26
  * @updated      2026-06-26
- * @version      1.0.0
+ * @version      1.1.0
  */
 
 /* ===== 绘图工具栏按钮 ===== */
@@ -38,92 +38,29 @@
   padding: 2px 5px;
 }
 
-/* ===== 画布覆盖层 ===== */
-
-.draw-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 200;
-  display: none;
-  flex-direction: column;
-}
-
-.draw-overlay.active {
-  display: flex;
-}
-
-.draw-backdrop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.65);
-}
-
-.draw-workspace {
-  position: relative;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: auto;
-  padding: 16px;
-  z-index: 1;
-}
+/* ===== 嵌入画布（双层架构绘图层） ===== */
 
 #draw-canvas {
-  background: #fff;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  pointer-events: none;       /* 默认穿透，点击到文字层 */
+  background: transparent;    /* 透明，文字可见 */
+}
+
+/* 绘图模式激活：画布拦截点击 */
+#draw-canvas.drawing-active {
+  pointer-events: auto;
   cursor: crosshair;
-  /* 尺寸由 JS 动态设置 */
 }
 
 /* 工具光标 */
-#draw-canvas.cursor-eraser { cursor: cell; }
-#draw-canvas.cursor-fill { cursor: crosshair; }
-#draw-canvas.cursor-picker { cursor: crosshair; }
-#draw-canvas.cursor-zoom-in { cursor: zoom-in; }
-#draw-canvas.cursor-zoom-out { cursor: zoom-out; }
-
-.draw-toolbar {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  padding: 10px;
-  background: #fafafa;
-  border-top: 1px solid #e0e0e0;
-  z-index: 2;
-}
-
-.draw-toolbar button {
-  padding: 6px 18px;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  background: #fff;
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: #444;
-  transition: background 0.1s, border-color 0.1s;
-}
-
-.draw-toolbar button:hover {
-  background: #eee;
-  border-color: #bbb;
-}
-
-#btn-draw-done {
-  background: #6c9fff;
-  border-color: #5a8eeb;
-  color: #fff;
-}
-
-#btn-draw-done:hover {
-  background: #5a8eeb;
-}
+#draw-canvas.cursor-eraser    { cursor: cell; }
+#draw-canvas.cursor-fill      { cursor: crosshair; }
+#draw-canvas.cursor-picker    { cursor: crosshair; }
+#draw-canvas.cursor-zoom-in   { cursor: zoom-in; }
+#draw-canvas.cursor-zoom-out  { cursor: zoom-out; }
 
 /* 缩放标签 */
 #draw-zoom-label {

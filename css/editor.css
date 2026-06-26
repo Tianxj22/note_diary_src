@@ -81,13 +81,21 @@
   user-select: none;
 }
 
+/* 滚动容器：包裹文字层 + 绘图层 */
+.editor-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  position: relative;
+}
+
 .editor-area .editor-content {
   flex: 1;
   border: none;
   outline: none;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow-y: visible;
   padding: 20px 24px;
+  min-height: 100%;
   font-size: 0.95rem;
   line-height: 1.8;
   font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;

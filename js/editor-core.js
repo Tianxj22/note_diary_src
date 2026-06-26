@@ -26,14 +26,17 @@ async function selectNote(note) {
     }
   }
   ND.currentNote = note;
-  ND.currentContent = await window.electronAPI.readNote(note.filePath);
+  var raw = await window.electronAPI.readNote(note.filePath);
+  var decoded = decodeNoteContent(raw);
+  ND.drawingCanvasData = decoded.drawing;
+  ND.currentContent = decoded.text;
   // 兼容旧纯文本笔记：将换行转换为 HTML <br>
   if (!/^\s*</.test(ND.currentContent)) {
-    ND.currentContent = ND.currentContent.split('\n').map(line =>
-      line ? escapeHtml(line) : '<br>'
-    ).join('<br>');
+    ND.currentContent = ND.currentContent.split('\n').map(function(line) {
+      return line ? escapeHtml(line) : '<br>';
+    }).join('<br>');
   }
-  ND.lastSavedContent = ND.currentContent;
+  ND.lastSavedContent = raw;
   showEditor();
   ND.editorTitleInput.value = note.displayName;
   ND.editorDiv.innerHTML = ND.currentContent;
@@ -63,14 +66,17 @@ async function createNewNote() {
 // ---- 保存当前笔记 ----
 async function saveCurrentNote() {
   if (!ND.currentNote || !ND.editorDiv) return;
-  const content = ND.editorDiv.innerHTML;
+  var textHtml = ND.editorDiv.innerHTML;
+  saveDrawCanvasData();
+  var drawingData = ND.drawingCanvasData || '';
+  var content = encodeNoteContent(textHtml, drawingData);
   if (content === ND.lastSavedContent) return;
-  const ok = await window.electronAPI.saveNote(ND.currentNote.filePath, content);
+  var ok = await window.electronAPI.saveNote(ND.currentNote.filePath, content);
   if (ok) {
     ND.lastSavedContent = content;
     ND.currentNote.mtime = Date.now();
     ND.statusLeft.textContent = '已保存';
-    setTimeout(() => { if (ND.statusLeft.textContent === '已保存') updateStatus(); }, 1500);
+    setTimeout(function() { if (ND.statusLeft.textContent === '已保存') updateStatus(); }, 1500);
   }
 }
 
@@ -90,14 +96,17 @@ async function saveCurrentNote() {
 // ---- 手动保存 ----
 async function manualSave() {
   if (!ND.currentNote || !ND.editorDiv) return;
-  const content = ND.editorDiv.innerHTML;
+  var textHtml = ND.editorDiv.innerHTML;
+  saveDrawCanvasData();
+  var drawingData = ND.drawingCanvasData || '';
+  var content = encodeNoteContent(textHtml, drawingData);
   if (content === ND.lastSavedContent) return;
-  const ok = await window.electronAPI.saveNote(ND.currentNote.filePath, content);
+  var ok = await window.electronAPI.saveNote(ND.currentNote.filePath, content);
   if (ok) {
     ND.lastSavedContent = content;
     ND.currentNote.mtime = Date.now();
     ND.statusLeft.textContent = '已保存';
-    setTimeout(() => { if (ND.statusLeft.textContent === '已保存') updateStatus(); }, 1500);
+    setTimeout(function() { if (ND.statusLeft.textContent === '已保存') updateStatus(); }, 1500);
     await loadNoteList();
     renderNoteList();
   }
@@ -108,7 +117,10 @@ async function closeCurrentNote() {
   if (!ND.currentNote) return;
   // 先保存当前内容
   if (ND.editorDiv) {
-    const content = ND.editorDiv.innerHTML;
+    saveDrawCanvasData();
+    var textHtml = ND.editorDiv.innerHTML;
+    var drawingData = ND.drawingCanvasData || '';
+    var content = encodeNoteContent(textHtml, drawingData);
     if (content !== ND.lastSavedContent) {
       await window.electronAPI.saveNote(ND.currentNote.filePath, content);
     }
@@ -118,6 +130,7 @@ async function closeCurrentNote() {
   ND.currentNote = null;
   ND.currentContent = '';
   ND.lastSavedContent = '';
+  ND.drawingCanvasData = null;
   hideEditor();
   updateStatus();
 }
@@ -125,23 +138,27 @@ async function closeCurrentNote() {
 // ---- 编辑器显示 ----
 function showEditor() {
   ND.editorArea.innerHTML = '';
+
+  // 关闭按钮
   const closeBtn = document.createElement('button');
   closeBtn.className = 'btn-close-note';
   closeBtn.textContent = '×';
   closeBtn.title = '关闭当前笔记';
-  closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeCurrentNote(); });
+  closeBtn.addEventListener('click', function(e) { e.stopPropagation(); closeCurrentNote(); });
   ND.editorArea.appendChild(closeBtn);
+
+  // 标题输入
   ND.editorTitleInput = document.createElement('input');
   ND.editorTitleInput.type = 'text';
   ND.editorTitleInput.className = 'editor-title-input';
   ND.editorTitleInput.placeholder = '笔记标题...';
-  ND.editorTitleInput.addEventListener('keydown', async (e) => {
+  ND.editorTitleInput.addEventListener('keydown', async function(e) {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (ND.currentNote) {
-        const newTitle = ND.editorTitleInput.value.trim();
+        var newTitle = ND.editorTitleInput.value.trim();
         if (newTitle && newTitle !== ND.currentNote.displayName) {
-          const result = await window.electronAPI.renameNote(ND.currentNote.filePath, newTitle);
+          var result = await window.electronAPI.renameNote(ND.currentNote.filePath, newTitle);
           if (result) {
             ND.currentNote.filePath = result.filePath;
             ND.currentNote.fileName = result.fileName;
@@ -157,27 +174,139 @@ function showEditor() {
     }
   });
   ND.editorArea.appendChild(ND.editorTitleInput);
+
+  // 滚动容器（包裹文字层 + 绘图层）
+  var scrollDiv = document.createElement('div');
+  scrollDiv.className = 'editor-scroll';
+  ND.editorScroll = scrollDiv;
+
+  // 文字层
   ND.editorDiv = document.createElement('div');
   ND.editorDiv.className = 'editor-content';
   ND.editorDiv.contentEditable = 'true';
   ND.editorDiv.addEventListener('input', onEditorInput);
   ND.editorDiv.addEventListener('keydown', onEditorKeydown);
   ND.editorDiv.addEventListener('paste', onEditorPaste);
-  ND.editorArea.appendChild(ND.editorDiv);
+  scrollDiv.appendChild(ND.editorDiv);
+
+  // 绘图层（透明 canvas，覆盖在文字上方）
+  var canvas = document.createElement('canvas');
+  canvas.id = 'draw-canvas';
+  ND.drawCanvas = canvas;
+  ND.drawCtx = canvas.getContext('2d');
+  scrollDiv.appendChild(canvas);
+
+  ND.editorArea.appendChild(scrollDiv);
+
   // 图片缩放手柄容器
-  const resizeCtn = document.createElement('div');
+  var resizeCtn = document.createElement('div');
   resizeCtn.className = 'image-resize-container';
   resizeCtn.id = 'image-resize-container';
   ND.editorArea.appendChild(resizeCtn);
+
+  // 绑定画布鼠标事件 + 初始化画布尺寸
+  initDrawCanvas();
 }
 
 // ---- 编辑器隐藏 ----
 function hideEditor() {
+  // 保存绘图层数据
+  saveDrawCanvasData();
   ND.editorArea.innerHTML = '<div class="no-note">选择或新建一篇笔记开始编辑</div>';
   ND.editorDiv = null;
   ND.editorTitleInput = null;
   ND.selectedImage = null;
   ND.resizeHandles = [];
+  ND.drawCanvas = null;
+  ND.drawCtx = null;
+  ND.editorScroll = null;
+  // 退出手绘模式
+  if (ND.drawingActive) {
+    ND.drawingActive = false;
+    ND.switchToolbarTab('file');
+  }
+}
+
+// ---- 绘图层数据管理 ----
+
+/**
+ * 保存当前绘图层数据到 ND.drawingCanvasData
+ */
+function saveDrawCanvasData() {
+  if (ND.drawCanvas && ND.drawCtx) {
+    var dataUrl = ND.drawCanvas.toDataURL('image/png');
+    // 如果画布完全空白，不保存
+    ND.drawingCanvasData = dataUrl;
+  }
+}
+
+/**
+ * 初始化画布尺寸 + 恢复保存的绘图层数据 + 绑定鼠标事件
+ */
+function initDrawCanvas() {
+  if (!ND.drawCanvas || !ND.editorScroll) return;
+  var scrollEl = ND.editorScroll;
+  var contentEl = ND.editorDiv;
+  // 画布尺寸跟随滚动容器内容
+  var resizeCanvas = function() {
+    ND.drawCanvas.width = scrollEl.clientWidth;
+    ND.drawCanvas.height = Math.max(scrollEl.clientHeight, contentEl.scrollHeight);
+    ND.drawCanvas.style.width = ND.drawCanvas.width + 'px';
+    ND.drawCanvas.style.height = ND.drawCanvas.height + 'px';
+  };
+  resizeCanvas();
+
+  // 内容变化时重设画布高度
+  if (ND.editorDiv) {
+    ND.editorDiv.addEventListener('input', function() {
+      setTimeout(resizeCanvas, 0);
+    });
+  }
+
+  // 恢复绘图层数据
+  if (ND.drawingCanvasData) {
+    var img = new Image();
+    img.onload = function() {
+      if (ND.drawCtx) {
+        ND.drawCtx.clearRect(0, 0, ND.drawCanvas.width, ND.drawCanvas.height);
+        ND.drawCtx.drawImage(img, 0, 0);
+      }
+    };
+    img.src = ND.drawingCanvasData;
+  }
+
+  // 绑定画布鼠标事件
+  bindCanvasEvents();
+}
+
+// ---- 组合格式：---DRAWING--- / ---TEXT--- ----
+
+var DRAWING_SEP = '\n---DRAWING---\n';
+var TEXT_SEP = '\n---TEXT---\n';
+
+/**
+ * 编码笔记内容为持久化格式
+ */
+function encodeNoteContent(textHtml, drawingDataUrl) {
+  var d = drawingDataUrl || '';
+  var t = textHtml || '';
+  return DRAWING_SEP.trim() + '\n' + d + '\n' + TEXT_SEP.trim() + '\n' + t;
+}
+
+/**
+ * 解码笔记内容
+ * @returns {{ drawing: string|null, text: string }}
+ */
+function decodeNoteContent(raw) {
+  var dIdx = raw.indexOf(DRAWING_SEP.trim());
+  var tIdx = raw.indexOf(TEXT_SEP.trim());
+  if (dIdx === -1 || tIdx === -1) {
+    // 旧格式：整个内容作为文本
+    return { drawing: null, text: raw };
+  }
+  var drawing = raw.substring(dIdx + DRAWING_SEP.trim().length + 1, tIdx).trim();
+  var text = raw.substring(tIdx + TEXT_SEP.trim().length + 1);
+  return { drawing: drawing || null, text: text };
 }
 
 // ---- 状态栏 ----

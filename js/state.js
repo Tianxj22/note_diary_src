@@ -104,12 +104,11 @@ ND.drawingPreviousTab = 'file';         // 进入绘图前的标签页
 ND.zoomLevel = 1;                       // 缩放倍率
 ND.previewSnapshot = null;              // 形状预览用的快照（mousemove 恢复用）
 
+ND.drawingCanvasData = null;             // string|null: 持久化的绘图层 base64
+ND.editorScroll = null;                  // .editor-scroll 滚动容器（showEditor 时创建）
+
 // ---- 绘图 DOM ----
 ND.toolButtons = null;                  // 运行时填充：.draw-tool-btn 列表
-ND.drawOverlay = document.getElementById('draw-overlay');
-ND.btnDrawDone = document.getElementById('btn-draw-done');
-ND.btnDrawCancel = document.getElementById('btn-draw-cancel');
-ND.btnDrawClear = document.getElementById('btn-draw-clear');
 ND.swatchPrimary = document.getElementById('swatch-primary');
 ND.swatchSecondary = document.getElementById('swatch-secondary');
 ND.btnPrimaryColor = document.getElementById('btn-primary-color');
