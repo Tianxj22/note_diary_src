@@ -83,3 +83,38 @@ ND.cropRect = document.getElementById('crop-rect');
 ND.btnCropConfirm = document.getElementById('btn-crop-confirm');
 ND.btnCropCancel = document.getElementById('btn-crop-cancel');
 ND.btnRestoreImage = document.getElementById('btn-restore-image');
+
+// ---- 绘图状态 ----
+ND.drawingActive = false;               // 是否处于绘图模式
+ND.drawCanvas = null;                   // HTMLCanvasElement
+ND.drawCtx = null;                      // CanvasRenderingContext2D
+ND.currentTool = 'pencil';              // 当前工具标识
+ND.primaryColor = '#000000';            // 主颜色
+ND.secondaryColor = '#ffffff';          // 副颜色
+ND.brushSize = 6;                       // 画笔大小
+ND.eraserSize = 20;                     // 橡皮大小
+ND.isDrawing = false;                   // 鼠标按下中
+ND.drawStartX = 0;                      // 绘制起始 X
+ND.drawStartY = 0;                      // 绘制起始 Y
+ND.drawingSnapshots = [];               // ImageData[] 快照栈
+ND.drawingSnapshotIndex = -1;           // 当前快照位置
+ND.shapeFill = true;                    // 形状填充
+ND.shapeStroke = true;                  // 形状描边
+ND.drawingPreviousTab = 'file';         // 进入绘图前的标签页
+ND.zoomLevel = 1;                       // 缩放倍率
+ND.previewSnapshot = null;              // 形状预览用的快照（mousemove 恢复用）
+
+// ---- 绘图 DOM ----
+ND.toolButtons = null;                  // 运行时填充：.draw-tool-btn 列表
+ND.drawOverlay = document.getElementById('draw-overlay');
+ND.btnDrawDone = document.getElementById('btn-draw-done');
+ND.btnDrawCancel = document.getElementById('btn-draw-cancel');
+ND.btnDrawClear = document.getElementById('btn-draw-clear');
+ND.swatchPrimary = document.getElementById('swatch-primary');
+ND.swatchSecondary = document.getElementById('swatch-secondary');
+ND.btnPrimaryColor = document.getElementById('btn-primary-color');
+ND.btnSecondaryColor = document.getElementById('btn-secondary-color');
+ND.btnBrushSize = document.getElementById('btn-brush-size');
+ND.btnEraserSize = document.getElementById('btn-eraser-size');
+ND.btnShapeMenu = document.getElementById('dropdown-shape-menu');
+ND.drawZoomLabel = document.getElementById('draw-zoom-label');

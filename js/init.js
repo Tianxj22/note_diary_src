@@ -27,6 +27,16 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     manualSave();
   }
+  // 绘图模式下 Ctrl+Z/Ctrl+Y → 快照撤销/重做
+  if (ND.drawingActive && ND.drawCtx && (e.ctrlKey || e.metaKey)) {
+    if (e.key === 'z' || e.key === 'Z') {
+      e.preventDefault();
+      undoSnapshot(ND.drawCtx);
+    } else if (e.key === 'y' || e.key === 'Y') {
+      e.preventDefault();
+      redoSyncShot(ND.drawCtx);
+    }
+  }
 });
 
 // ---- 防御：点击编辑区任意位置自动聚焦到 editorDiv ----
@@ -38,12 +48,20 @@ ND.editorArea.addEventListener('click', (e) => {
 
 // ---- 撤销/重做按钮 ----
 ND.btnUndo.addEventListener('click', () => {
+  if (ND.drawingActive && ND.drawCtx) {
+    undoSnapshot(ND.drawCtx);
+    return;
+  }
   if (ND.editorDiv) {
     ND.editorDiv.focus();
     document.execCommand('undo');
   }
 });
 ND.btnRedo.addEventListener('click', () => {
+  if (ND.drawingActive && ND.drawCtx) {
+    redoSyncShot(ND.drawCtx);
+    return;
+  }
   if (ND.editorDiv) {
     ND.editorDiv.focus();
     document.execCommand('redo');

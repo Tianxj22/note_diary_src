@@ -291,6 +291,18 @@
       "verification": "排序下拉 + 方向切换正常工作"
     },
     {
+      "id": "F-025",
+      "name": "绘图功能（铅笔/画笔/橡皮/颜料桶/取色器/图形/缩放）",
+      "description": "在笔记中通过类似于画图的方式绘制图像，支持核心绘制工具和形状",
+      "status": "done",
+      "priority": "P1",
+      "milestone": "M2",
+      "dependencies": ["F-013", "F-015"],
+      "estimatedEffort": "4d",
+      "completedAt": "2026-06-26",
+      "verification": "绘图标签页可切换，各工具正常绘制，完成插入编辑器，撤销/重做工作正常"
+    },
+    {
       "id": "F-030",
       "name": "导出 (PDF/Markdown)",
       "description": "将笔记导出为 PDF 和 Markdown 格式文件",

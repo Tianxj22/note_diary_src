@@ -1,0 +1,143 @@
+/**
+ * @file         css/drawing.css
+ * @description  Note Diary — 绘图工具栏按钮样式 + 画布覆盖层 + 工具光标
+ * @author       tianxj22
+ * @created      2026-06-26
+ * @updated      2026-06-26
+ * @version      1.0.0
+ */
+
+/* ===== 绘图工具栏按钮 ===== */
+
+.draw-tool-btn.active {
+  background: #d6e4f0;
+  border-color: #6c9fff;
+  color: #1a56b0;
+}
+
+/* ===== 重叠颜色色板 ===== */
+
+#swatch-primary {
+  position: relative;
+  z-index: 2;
+}
+
+.color-swatch.secondary-swatch {
+  position: absolute;
+  top: 4px;
+  left: 10px;
+  width: 12px;
+  height: 12px;
+  border: 1px solid #ccc;
+  z-index: 1;
+  border-radius: 2px;
+}
+
+#btn-color-swap {
+  font-size: 0.85rem;
+  padding: 2px 5px;
+}
+
+/* ===== 画布覆盖层 ===== */
+
+.draw-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+}
+
+.draw-overlay.active {
+  display: flex;
+}
+
+.draw-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.draw-workspace {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 16px;
+  z-index: 1;
+}
+
+#draw-canvas {
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  cursor: crosshair;
+  /* 尺寸由 JS 动态设置 */
+}
+
+/* 工具光标 */
+#draw-canvas.cursor-eraser { cursor: cell; }
+#draw-canvas.cursor-fill { cursor: crosshair; }
+#draw-canvas.cursor-picker { cursor: crosshair; }
+#draw-canvas.cursor-zoom-in { cursor: zoom-in; }
+#draw-canvas.cursor-zoom-out { cursor: zoom-out; }
+
+.draw-toolbar {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px;
+  background: #fafafa;
+  border-top: 1px solid #e0e0e0;
+  z-index: 2;
+}
+
+.draw-toolbar button {
+  padding: 6px 18px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #444;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.draw-toolbar button:hover {
+  background: #eee;
+  border-color: #bbb;
+}
+
+#btn-draw-done {
+  background: #6c9fff;
+  border-color: #5a8eeb;
+  color: #fff;
+}
+
+#btn-draw-done:hover {
+  background: #5a8eeb;
+}
+
+/* 缩放标签 */
+#draw-zoom-label {
+  font-size: 0.78rem;
+  color: #666;
+  user-select: none;
+  min-width: 40px;
+  text-align: center;
+  align-self: center;
+}
+
+/* ===== 绘图工具栏下拉菜单适配 ===== */
+
+#dropdown-shape .menu-item.active {
+  background: #e8f0fe;
+  color: #1a56b0;
+}

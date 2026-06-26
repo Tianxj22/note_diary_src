@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/editor.css">
   <link rel="stylesheet" href="css/image-resize.css">
   <link rel="stylesheet" href="css/overlays.css">
+  <link rel="stylesheet" href="css/drawing.css">
 </head>
 <body>
   <!-- 侧边栏 -->
@@ -57,6 +58,7 @@
         <button class="toolbar-tab active" data-tab="file">📁 文件</button>
         <button class="toolbar-tab" data-tab="style">🎨 样式</button>
         <button class="toolbar-tab" data-tab="insert">📥 插入</button>
+        <button class="toolbar-tab" data-tab="draw">✏️ 绘图</button>
         <button class="toolbar-tab toolbar-tab-image" data-tab="image-edit" id="tab-image-edit" style="display:none">🖼 图片编辑</button>
       </div>
       <div class="toolbar-actions" id="toolbar-file">
@@ -136,6 +138,56 @@
           </div>
         </div>
       </div>
+      <div class="toolbar-actions" id="toolbar-draw" style="display:none">
+        <!-- 核心绘制工具 -->
+        <button id="btn-tool-pencil" class="style-btn draw-tool-btn active" data-tooltip="铅笔" data-tool="pencil">✏</button>
+        <button id="btn-tool-brush" class="style-btn draw-tool-btn" data-tooltip="画笔" data-tool="brush">🖌</button>
+        <select id="btn-brush-size" title="画笔大小">
+          <option value="2">2px</option>
+          <option value="4">4px</option>
+          <option value="6" selected>6px</option>
+          <option value="10">10px</option>
+          <option value="16">16px</option>
+          <option value="24">24px</option>
+        </select>
+        <button id="btn-tool-eraser" class="style-btn draw-tool-btn" data-tooltip="橡皮" data-tool="eraser">🧹</button>
+        <select id="btn-eraser-size" title="橡皮大小">
+          <option value="10">10px</option>
+          <option value="20" selected>20px</option>
+          <option value="30">30px</option>
+          <option value="40">40px</option>
+        </select>
+        <button id="btn-tool-fill" class="style-btn draw-tool-btn" data-tooltip="颜料桶" data-tool="fill">🪣</button>
+        <span class="separator"></span>
+
+        <!-- 颜色工具 -->
+        <span class="color-btn" title="主/副颜色">
+          <span class="color-swatch" id="swatch-primary" style="background:#000000"></span>
+          <span class="color-swatch secondary-swatch" id="swatch-secondary" style="background:#ffffff"></span>
+          <input type="color" id="btn-primary-color" value="#000000">
+        </span>
+        <input type="color" id="btn-secondary-color" value="#ffffff" style="display:none">
+        <button id="btn-color-swap" class="style-btn" data-tooltip="交换主副颜色">⇄</button>
+        <button id="btn-tool-picker" class="style-btn draw-tool-btn" data-tooltip="取色器" data-tool="picker">💉</button>
+        <span class="separator"></span>
+
+        <!-- 形状工具 -->
+        <div class="dropdown-wrapper" id="dropdown-shape">
+          <button id="btn-tool-shape" class="style-btn draw-tool-btn" data-tooltip="图形" data-tool="shape-rect">▭ ▾</button>
+          <div class="dropdown-menu" id="dropdown-shape-menu">
+            <div class="menu-item active" data-tool="shape-rect">▭ 矩形</div>
+            <div class="menu-item" data-tool="shape-ellipse">○ 圆形</div>
+            <div class="menu-item" data-tool="shape-line">╱ 直线</div>
+            <div class="menu-item" data-tool="shape-roundrect">▢ 圆角矩形</div>
+          </div>
+        </div>
+        <span class="separator"></span>
+
+        <!-- 缩放 -->
+        <button id="btn-tool-zoom-in" class="style-btn" data-tooltip="放大">🔍+</button>
+        <button id="btn-tool-zoom-out" class="style-btn" data-tooltip="缩小">🔍-</button>
+        <span class="image-dim-label" id="draw-zoom-label">100%</span>
+      </div>
       <div class="toolbar-actions" id="toolbar-image-edit" style="display:none">
         <span class="image-dim-label">宽:</span>
         <input type="number" id="img-width" class="dim-input" min="1" step="1" title="图片宽度 (px)">
@@ -151,6 +203,18 @@
 
     <div class="editor-area" id="editor-area">
       <div class="no-note">选择或新建一篇笔记开始编辑</div>
+      <!-- 绘图覆盖层 -->
+      <div class="draw-overlay" id="draw-overlay">
+        <div class="draw-backdrop"></div>
+        <div class="draw-workspace">
+          <canvas id="draw-canvas"></canvas>
+        </div>
+        <div class="draw-toolbar">
+          <button id="btn-draw-done">完成</button>
+          <button id="btn-draw-clear">清除</button>
+          <button id="btn-draw-cancel">取消</button>
+        </div>
+      </div>
     </div>
 
     <div class="status-bar">
@@ -221,6 +285,8 @@
   <script src="js/style-toolbar.js"></script>
   <script src="js/context-menus.js"></script>
   <script src="js/view-switching.js"></script>
+  <script src="js/drawing-tools.js"></script>
+  <script src="js/drawing-ui.js"></script>
   <script src="js/init.js"></script>
 </body>
 </html>
