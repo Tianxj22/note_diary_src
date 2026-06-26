@@ -160,6 +160,17 @@
         <button id="btn-tool-fill" class="style-btn draw-tool-btn" data-tooltip="颜料桶" data-tool="fill">🪣</button>
         <span class="separator"></span>
 
+        <!-- 选区工具 -->
+        <div class="dropdown-wrapper" id="dropdown-select">
+          <button id="btn-tool-select" class="style-btn draw-tool-btn" data-tooltip="选区" data-tool="select-rect">⬜ ▾</button>
+          <div class="dropdown-menu" id="dropdown-select-menu">
+            <div class="menu-item active" data-tool="select-rect">⬜ 矩形选框</div>
+            <div class="menu-item" data-tool="select-lasso">〰 套索</div>
+            <div class="menu-item" data-tool="select-wand">🪄 魔术棒</div>
+          </div>
+        </div>
+        <span class="separator"></span>
+
         <!-- 颜色工具 -->
         <span class="color-btn" title="主/副颜色">
           <span class="color-swatch" id="swatch-primary" style="background:#000000"></span>
@@ -183,10 +194,7 @@
         </div>
         <span class="separator"></span>
 
-        <!-- 缩放 -->
-        <button id="btn-tool-zoom-in" class="style-btn" data-tooltip="放大">🔍+</button>
-        <button id="btn-tool-zoom-out" class="style-btn" data-tooltip="缩小">🔍-</button>
-        <span class="image-dim-label" id="draw-zoom-label">100%</span>
+        <button id="btn-tool-text" class="style-btn draw-tool-btn" data-tooltip="文字工具" data-tool="text"><b>T</b></button>
       </div>
       <div class="toolbar-actions" id="toolbar-image-edit" style="display:none">
         <span class="image-dim-label">宽:</span>
@@ -203,6 +211,12 @@
 
     <div class="editor-area" id="editor-area">
       <div class="no-note">选择或新建一篇笔记开始编辑</div>
+      <!-- 缩放控件（右下角浮动） -->
+      <div class="zoom-controls" id="zoom-controls">
+        <button id="btn-zoom-out" class="style-btn" title="缩小">−</button>
+        <span id="zoom-label">100%</span>
+        <button id="btn-zoom-in" class="style-btn" title="放大">+</button>
+      </div>
     </div>
 
     <div class="status-bar">

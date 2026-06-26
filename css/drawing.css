@@ -59,18 +59,6 @@
 #draw-canvas.cursor-eraser    { cursor: cell; }
 #draw-canvas.cursor-fill      { cursor: crosshair; }
 #draw-canvas.cursor-picker    { cursor: crosshair; }
-#draw-canvas.cursor-zoom-in   { cursor: zoom-in; }
-#draw-canvas.cursor-zoom-out  { cursor: zoom-out; }
-
-/* 缩放标签 */
-#draw-zoom-label {
-  font-size: 0.78rem;
-  color: #666;
-  user-select: none;
-  min-width: 40px;
-  text-align: center;
-  align-self: center;
-}
 
 /* ===== 绘图工具栏下拉菜单适配 ===== */
 

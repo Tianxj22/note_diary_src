@@ -131,3 +131,47 @@
   background: #e0e0e0;
   color: #555;
 }
+
+/* 缩放控件（编辑区右下角浮动） */
+.zoom-controls {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 2px 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  user-select: none;
+}
+
+.zoom-controls button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #666;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoom-controls button:hover {
+  background: #e8e8e8;
+  color: #333;
+}
+
+#zoom-label {
+  font-size: 0.78rem;
+  color: #888;
+  min-width: 38px;
+  text-align: center;
+}

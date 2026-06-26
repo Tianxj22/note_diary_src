@@ -400,3 +400,57 @@ describe('形状辅助', () => {
     expect(pixel[0]).toBe(255); // 内部是红色
   });
 });
+
+// ---- 7. 选区工具测试 ----
+
+describe('选区工具', () => {
+  // 模拟 drawing-tools.js 的选区函数
+
+  function createMaskFromBounds(w, h, bounds) {
+    var data = new Uint8ClampedArray(w * h * 4);
+    for (var y = bounds.y; y < bounds.y + bounds.h && y < h; y++) {
+      for (var x = bounds.x; x < bounds.x + bounds.w && x < w; x++) {
+        var i = (y * w + x) * 4;
+        data[i] = 255; data[i+1] = 255; data[i+2] = 255; data[i+3] = 255;
+      }
+    }
+    return { data: data, width: w, height: h };
+  }
+
+  function pointInPolygon(x, y, points) {
+    var inside = false;
+    for (var i = 0, j = points.length - 1; i < points.length; j = i++) {
+      var xi = points[i].x, yi = points[i].y;
+      var xj = points[j].x, yj = points[j].y;
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
+  it('DRW-21: createMaskFromBounds 在指定矩形内创建遮罩', () => {
+    var mask = createMaskFromBounds(10, 10, {x: 2, y: 3, w: 4, h: 3});
+    // (5,4) 在矩形 (2,3)-(6,6) 内 → alpha=255
+    var i = (4 * 10 + 5) * 4;
+    expect(mask.data[i + 3]).toBe(255);
+    // (0,0) 在矩形外 → alpha=0
+    expect(mask.data[3]).toBe(0);
+  });
+
+  it('DRW-22: pointInPolygon 矩形内点返回 true', () => {
+    var rect = [{x: 0, y: 0}, {x: 10, y: 0}, {x: 10, y: 10}, {x: 0, y: 10}];
+    expect(pointInPolygon(5, 5, rect)).toBe(true);
+  });
+
+  it('DRW-23: pointInPolygon 矩形外点返回 false', () => {
+    var rect = [{x: 0, y: 0}, {x: 10, y: 0}, {x: 10, y: 10}, {x: 0, y: 10}];
+    expect(pointInPolygon(15, 5, rect)).toBe(false);
+  });
+
+  it('DRW-24: pointInPolygon 三角形内/外点正确', () => {
+    var tri = [{x: 0, y: 0}, {x: 10, y: 0}, {x: 5, y: 10}];
+    expect(pointInPolygon(5, 3, tri)).toBe(true);   // 内部
+    expect(pointInPolygon(0, 10, tri)).toBe(false);  // 外部
+  });
+});

@@ -374,9 +374,176 @@ function redoSyncShot(ctx) {
 // ============================================================
 
 /**
- * 缩放画布（CSS transform）
+ * 缩放编辑器滚动容器（文字 + 绘图层同步缩放）
  */
-function zoomCanvas(canvas, level) {
-  canvas.style.transform = 'scale(' + level + ')';
-  canvas.style.transformOrigin = 'center center';
+function applyZoom(level) {
+  if (!ND.editorScroll) return;
+  ND.zoomLevel = level;
+  ND.editorScroll.style.transform = 'scale(' + level + ')';
+  ND.editorScroll.style.transformOrigin = 'top left';
+  var label = document.getElementById('zoom-label');
+  if (label) label.textContent = Math.round(level * 100) + '%';
+}
+
+// ============================================================
+// 选区工具
+// ============================================================
+
+/**
+ * 基于 floodFill 的魔术棒选区
+ * @returns {{ mask: ImageData, bounds: {x,y,w,h} }}
+ */
+function magicWandSelect(imageData, startX, startY, tolerance) {
+  var width = imageData.width, height = imageData.height;
+  var data = new Uint8ClampedArray(imageData.data);
+  startX = Math.floor(startX); startY = Math.floor(startY);
+  if (startX < 0 || startX >= width || startY < 0 || startY >= height) return null;
+
+  var targetColor = getPixel(data, width, startX, startY);
+  // mask: alpha=255 for selected pixels
+  var maskData = new Uint8ClampedArray(width * height * 4);
+  var stack = [[startX, startY]];
+  var minX = startX, maxX = startX, minY = startY, maxY = startY;
+
+  while (stack.length > 0) {
+    var pt = stack.pop();
+    var sx = pt[0], sy = pt[1];
+    var i = (sy * width + sx) * 4;
+    if (maskData[i + 3] !== 0) continue;
+    if (!colorsMatch(getPixel(data, width, sx, sy), targetColor, tolerance)) continue;
+
+    maskData[i] = 255; maskData[i+1] = 255; maskData[i+2] = 255; maskData[i+3] = 255;
+    if (sx < minX) minX = sx; if (sx > maxX) maxX = sx;
+    if (sy < minY) minY = sy; if (sy > maxY) maxY = sy;
+
+    if (sx > 0) stack.push([sx-1, sy]);
+    if (sx < width-1) stack.push([sx+1, sy]);
+    if (sy > 0) stack.push([sx, sy-1]);
+    if (sy < height-1) stack.push([sx, sy+1]);
+  }
+
+  return {
+    mask: new ImageData(maskData, width, height),
+    bounds: { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 }
+  };
+}
+
+/**
+ * 从矩形边界创建遮罩
+ */
+function createMaskFromBounds(w, h, bounds) {
+  var data = new Uint8ClampedArray(w * h * 4);
+  for (var y = bounds.y; y < bounds.y + bounds.h && y < h; y++) {
+    for (var x = bounds.x; x < bounds.x + bounds.w && x < w; x++) {
+      var i = (y * w + x) * 4;
+      data[i] = 255; data[i+1] = 255; data[i+2] = 255; data[i+3] = 255;
+    }
+  }
+  return new ImageData(data, w, h);
+}
+
+/**
+ * 套索多边形遮罩（射线法判断点是否在多边形内）
+ */
+function createLassoMask(w, h, points) {
+  var data = new Uint8ClampedArray(w * h * 4);
+  var minX = w, maxX = 0, minY = h, maxY = 0;
+  for (var y = 0; y < h; y++) {
+    for (var x = 0; x < w; x++) {
+      if (pointInPolygon(x, y, points)) {
+        var i = (y * w + x) * 4;
+        data[i] = 255; data[i+1] = 255; data[i+2] = 255; data[i+3] = 255;
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+      }
+    }
+  }
+  return new ImageData(data, w, h);
+}
+
+function pointInPolygon(x, y, points) {
+  var inside = false;
+  for (var i = 0, j = points.length - 1; i < points.length; j = i++) {
+    var xi = points[i].x, yi = points[i].y;
+    var xj = points[j].x, yj = points[j].y;
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+function getMaskBounds(mask) {
+  var w = mask.width, h = mask.height, d = mask.data;
+  var minX = w, maxX = 0, minY = h, maxY = 0, found = false;
+  for (var y = 0; y < h; y++) {
+    for (var x = 0; x < w; x++) {
+      if (d[(y * w + x) * 4 + 3] > 0) {
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+        found = true;
+      }
+    }
+  }
+  return found ? { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 } : null;
+}
+
+/**
+ * 删除选区内容（设为透明）
+ */
+function deleteSelection(ctx, mask) {
+  var imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+  var d = imageData.data, m = mask.data;
+  for (var i = 3; i < d.length; i += 4) {
+    if (m[i] > 0) { d[i-3] = 0; d[i-2] = 0; d[i-1] = 0; d[i] = 0; }
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// ============================================================
+// 选区虚线框绘制
+// ============================================================
+
+function drawDashedRect(ctx, x1, y1, x2, y2) {
+  var r = normalRect(x1, y1, x2, y2);
+  ctx.save();
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([5, 3]);
+  ctx.strokeRect(r.x, r.y, r.w, r.h);
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawLassoPreview(ctx, points) {
+  if (points.length < 2) return;
+  ctx.save();
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([5, 3]);
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (var i = 1; i < points.length; i++) {
+    ctx.lineTo(points[i].x, points[i].y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawSelectionOutline(ctx, mask) {
+  var bounds = getMaskBounds(mask);
+  if (!bounds) return;
+  ctx.save();
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([5, 3]);
+  ctx.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function clearSelectionOutline(ctx) {
+  if (!ND.previewSnapshot) return;
+  ctx.putImageData(ND.previewSnapshot, 0, 0);
 }

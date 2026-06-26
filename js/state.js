@@ -116,4 +116,11 @@ ND.btnSecondaryColor = document.getElementById('btn-secondary-color');
 ND.btnBrushSize = document.getElementById('btn-brush-size');
 ND.btnEraserSize = document.getElementById('btn-eraser-size');
 ND.btnShapeMenu = document.getElementById('dropdown-shape-menu');
-ND.drawZoomLabel = document.getElementById('draw-zoom-label');
+ND.btnSelectMenu = document.getElementById('dropdown-select-menu');
+ND.zoomLabel = document.getElementById('zoom-label');
+
+// ---- 选区状态 ----
+ND.selectionMask = null;                // ImageData|null: 选区遮罩
+ND.selectionBounds = null;              // {x,y,w,h}|null: 选区边界
+ND.selectionMode = 'idle';             // 'idle'|'moving'|'resizing'
+ND.lassoPoints = [];                   // 套索路径点

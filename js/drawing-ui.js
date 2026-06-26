@@ -49,7 +49,7 @@ function toggleDrawingMode(active) {
     ND.statusLeft.textContent = '绘图模式 — ' + getToolName(ND.currentTool);
   } else {
     canvas.classList.remove('drawing-active');
-    canvas.classList.remove('cursor-eraser', 'cursor-fill', 'cursor-picker', 'cursor-zoom-in', 'cursor-zoom-out');
+    canvas.classList.remove('cursor-eraser', 'cursor-fill', 'cursor-picker');
     // 恢复文字编辑
     if (ND.editorDiv) ND.editorDiv.contentEditable = 'true';
     ND.isDrawing = false;
@@ -64,9 +64,11 @@ function toggleDrawingMode(active) {
 function getToolName(tool) {
   var names = {
     'pencil': '铅笔', 'brush': '画笔', 'eraser': '橡皮', 'fill': '颜料桶',
-    'picker': '取色器', 'zoom-in': '放大', 'zoom-out': '缩小',
+    'picker': '取色器',
     'shape-rect': '矩形', 'shape-ellipse': '圆形', 'shape-line': '直线',
-    'shape-roundrect': '圆角矩形'
+    'shape-roundrect': '圆角矩形',
+    'select-rect': '矩形选框', 'select-lasso': '套索', 'select-wand': '魔术棒',
+    'text': '文字工具'
   };
   return names[tool] || tool;
 }
@@ -105,8 +107,8 @@ function onCanvasMouseDown(e) {
   var ctx = ND.drawCtx;
   if (!ctx) return;
 
-  // 形状工具：保存快照用于预览
-  if (ND.currentTool.indexOf('shape-') === 0) {
+  // 形状/选框工具：保存快照用于预览
+  if (ND.currentTool.indexOf('shape-') === 0 || ND.currentTool === 'select-rect') {
     pushSnapshot(ctx);
     ND.previewSnapshot = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
   }
@@ -132,7 +134,7 @@ function onCanvasMouseDown(e) {
       var imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
       var filled = floodFill(imageData, pos.x, pos.y, ND.primaryColor, 10);
       ctx.putImageData(filled, 0, 0);
-      pushSnapshot(ctx); // post-fill snapshot for redo
+      pushSnapshot(ctx);
       ND.statusLeft.textContent = '绘图模式 — 颜料桶';
       break;
     case 'picker':
@@ -142,15 +144,38 @@ function onCanvasMouseDown(e) {
       ND.swatchPrimary.style.background = color;
       ND.statusLeft.textContent = '绘图模式 — 取色: ' + color;
       break;
-    case 'zoom-in':
-      ND.zoomLevel = Math.min(3, ND.zoomLevel + 0.25);
-      ND.drawZoomLabel.textContent = Math.round(ND.zoomLevel * 100) + '%';
-      zoomCanvas(ND.drawCanvas, ND.zoomLevel);
+    // 选区工具
+    case 'select-wand':
+      pushSnapshot(ctx);
+      var idata = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+      var sel = magicWandSelect(idata, pos.x, pos.y, 20);
+      if (sel) {
+        ND.selectionMask = sel.mask;
+        ND.selectionBounds = sel.bounds;
+        drawSelectionOutline(ctx, sel.mask);
+        ND.statusLeft.textContent = '绘图模式 — 魔术棒选区已创建';
+      }
       break;
-    case 'zoom-out':
-      ND.zoomLevel = Math.max(0.25, ND.zoomLevel - 0.25);
-      ND.drawZoomLabel.textContent = Math.round(ND.zoomLevel * 100) + '%';
-      zoomCanvas(ND.drawCanvas, ND.zoomLevel);
+    case 'select-lasso':
+      ND.lassoPoints = [{x: pos.x, y: pos.y}];
+      ND.isDrawing = true;
+      break;
+    case 'select-rect':
+      ND.drawStartX = pos.x;
+      ND.drawStartY = pos.y;
+      ND.isDrawing = true;
+      break;
+    // 文字工具
+    case 'text':
+      pushSnapshot(ctx);
+      var txt = prompt('输入文字:', '');
+      if (txt && ND.drawCtx) {
+        ND.drawCtx.font = '18px sans-serif';
+        ND.drawCtx.fillStyle = ND.primaryColor;
+        ND.drawCtx.fillText(txt, pos.x, pos.y);
+        pushSnapshot(ctx);
+      }
+      ND.statusLeft.textContent = '绘图模式 — 文字';
       break;
     case 'shape-rect':
     case 'shape-ellipse':
@@ -177,6 +202,15 @@ function onCanvasMouseMove(e) {
       break;
     case 'eraser':
       eraserMove(ctx, pos.x, pos.y);
+      break;
+    case 'select-rect':
+      if (ND.previewSnapshot) ctx.putImageData(ND.previewSnapshot, 0, 0);
+      drawDashedRect(ctx, ND.drawStartX, ND.drawStartY, pos.x, pos.y);
+      break;
+    case 'select-lasso':
+      ND.lassoPoints.push({x: pos.x, y: pos.y});
+      if (ND.previewSnapshot) ctx.putImageData(ND.previewSnapshot, 0, 0);
+      drawLassoPreview(ctx, ND.lassoPoints);
       break;
     case 'shape-rect':
       if (ND.previewSnapshot) ctx.putImageData(ND.previewSnapshot, 0, 0);
@@ -207,6 +241,28 @@ function onCanvasMouseUp(e) {
   switch (ND.currentTool) {
     case 'eraser':
       eraserEnd(ctx);
+      break;
+    case 'select-rect':
+      if (ND.previewSnapshot) ctx.putImageData(ND.previewSnapshot, 0, 0);
+      var rpos = getCanvasPos(e);
+      drawDashedRect(ctx, ND.drawStartX, ND.drawStartY, rpos.x, rpos.y);
+      var rb = normalRect(ND.drawStartX, ND.drawStartY, rpos.x, rpos.y);
+      ND.selectionBounds = rb;
+      ND.selectionMask = createMaskFromBounds(ctx.canvas.width, ctx.canvas.height, rb);
+      ND.previewSnapshot = null;
+      ND.statusLeft.textContent = '绘图模式 — 矩形选区已创建';
+      break;
+    case 'select-lasso':
+      if (ND.previewSnapshot) ctx.putImageData(ND.previewSnapshot, 0, 0);
+      if (ND.lassoPoints.length > 2) {
+        var mask = createLassoMask(ctx.canvas.width, ctx.canvas.height, ND.lassoPoints);
+        ND.selectionMask = mask;
+        ND.selectionBounds = getMaskBounds(mask);
+        drawSelectionOutline(ctx, mask);
+      }
+      ND.lassoPoints = [];
+      ND.previewSnapshot = null;
+      ND.statusLeft.textContent = '绘图模式 — 套索选区已创建';
       break;
     case 'shape-rect':
     case 'shape-ellipse':
@@ -263,14 +319,12 @@ function updateActiveToolButton() {
 function updateCanvasCursor() {
   var canvas = ND.drawCanvas;
   if (!canvas) return;
-  var classes = ['cursor-eraser', 'cursor-fill', 'cursor-picker', 'cursor-zoom-in', 'cursor-zoom-out'];
+  var classes = ['cursor-eraser', 'cursor-fill', 'cursor-picker'];
   for (var i = 0; i < classes.length; i++) canvas.classList.remove(classes[i]);
   switch (ND.currentTool) {
     case 'eraser': canvas.classList.add('cursor-eraser'); break;
     case 'fill': canvas.classList.add('cursor-fill'); break;
     case 'picker': canvas.classList.add('cursor-picker'); break;
-    case 'zoom-in': canvas.classList.add('cursor-zoom-in'); break;
-    case 'zoom-out': canvas.classList.add('cursor-zoom-out'); break;
   }
 }
 
@@ -316,8 +370,6 @@ document.getElementById('toolbar-draw').addEventListener('click', function(e) {
     selectTool(btn.dataset.tool);
     return;
   }
-  if (e.target.id === 'btn-tool-zoom-in') { selectTool('zoom-in'); return; }
-  if (e.target.id === 'btn-tool-zoom-out') { selectTool('zoom-out'); return; }
 });
 
 // 清除按钮：点击两次铅笔按钮触发清除（简化：用画笔大小选择器旁边的空间）
@@ -384,10 +436,57 @@ document.getElementById('btn-color-swap').addEventListener('click', function() {
   }
 })();
 
-// Esc 退出绘图模式
+// Esc 退出绘图模式（若有选区则先取消选区）
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && ND.drawingActive) {
+    if (ND.selectionMask) {
+      clearSelectionOutline(ND.drawCtx);
+      ND.selectionMask = null;
+      ND.selectionBounds = null;
+      ND.statusLeft.textContent = '绘图模式 — 选区已取消';
+      return;
+    }
     ND.drawingPreviousTab = 'file';
     toggleDrawingMode(false);
   }
+  // Delete 键删除选区内容
+  if (e.key === 'Delete' && ND.drawingActive && ND.selectionMask && ND.drawCtx) {
+    pushSnapshot(ND.drawCtx);
+    deleteSelection(ND.drawCtx, ND.selectionMask);
+    ND.selectionMask = null;
+    ND.selectionBounds = null;
+    ND.statusLeft.textContent = '绘图模式 — 选区已删除';
+  }
 });
+
+// 选区下拉菜单
+(function() {
+  if (!ND.btnSelectMenu) return;
+  var items = ND.btnSelectMenu.querySelectorAll('.menu-item');
+  for (var i = 0; i < items.length; i++) {
+    items[i].addEventListener('click', function(e) {
+      e.stopPropagation();
+      var tool = this.dataset.tool;
+      selectTool(tool);
+      document.getElementById('btn-tool-select').dataset.tool = tool;
+      var allItems = ND.btnSelectMenu.querySelectorAll('.menu-item');
+      for (var j = 0; j < allItems.length; j++) {
+        allItems[j].classList.toggle('active', allItems[j].dataset.tool === tool);
+      }
+    });
+  }
+})();
+
+// 缩放控件（通用，右下角浮动）
+(function() {
+  var btnZoomIn = document.getElementById('btn-zoom-in');
+  var btnZoomOut = document.getElementById('btn-zoom-out');
+  if (btnZoomIn) btnZoomIn.addEventListener('click', function() {
+    var lv = Math.min(3, ND.zoomLevel + 0.25);
+    applyZoom(lv);
+  });
+  if (btnZoomOut) btnZoomOut.addEventListener('click', function() {
+    var lv = Math.max(0.25, ND.zoomLevel - 0.25);
+    applyZoom(lv);
+  });
+})();
