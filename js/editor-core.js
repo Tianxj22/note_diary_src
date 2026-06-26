@@ -18,11 +18,14 @@ async function selectNote(note) {
   const prevNote = ND.currentNote;
   ND.currentNote = null;
   if (ND.saveTimer) { clearTimeout(ND.saveTimer); ND.saveTimer = null; }
-  // 保存上一个笔记（此时 textarea 仍有效）
+  // 保存上一个笔记（含绘图层数据）
   if (prevNote && ND.editorDiv) {
-    const content = ND.editorDiv.innerHTML;
-    if (content !== ND.lastSavedContent) {
-      await window.electronAPI.saveNote(prevNote.filePath, content);
+    saveDrawCanvasData();
+    var prevDrawing = ND.drawingCanvasData || '';
+    var prevText = ND.editorDiv.innerHTML;
+    var prevContent = encodeNoteContent(prevText, prevDrawing);
+    if (prevContent !== ND.lastSavedContent) {
+      await window.electronAPI.saveNote(prevNote.filePath, prevContent);
     }
   }
   ND.currentNote = note;
@@ -41,6 +44,12 @@ async function selectNote(note) {
   ND.editorTitleInput.value = note.displayName;
   ND.editorDiv.innerHTML = ND.currentContent;
   ND.editorDiv.focus();
+  // 恢复绘图模式
+  if (ND.drawingActive && ND.drawCanvas) {
+    ND.drawCanvas.classList.add('drawing-active');
+    updateCanvasCursor();
+    ND.switchToolbarTab('draw');
+  }
   renderNoteList();
   updateStatus();
 }
@@ -58,6 +67,12 @@ async function createNewNote() {
   ND.editorTitleInput.value = title;
   ND.editorDiv.innerHTML = '';
   ND.editorDiv.focus();
+  // 恢复绘图模式
+  if (ND.drawingActive && ND.drawCanvas) {
+    ND.drawCanvas.classList.add('drawing-active');
+    updateCanvasCursor();
+    ND.switchToolbarTab('draw');
+  }
   await loadNoteList();
   renderNoteList();
   updateStatus();
@@ -220,11 +235,7 @@ function hideEditor() {
   ND.drawCanvas = null;
   ND.drawCtx = null;
   ND.editorScroll = null;
-  // 退出手绘模式
-  if (ND.drawingActive) {
-    ND.drawingActive = false;
-    ND.switchToolbarTab('file');
-  }
+  // 保留 drawingActive 状态，以便新笔记恢复
 }
 
 // ---- 绘图层数据管理 ----
@@ -249,17 +260,29 @@ function initDrawCanvas() {
   var contentEl = ND.editorDiv;
   // 画布尺寸跟随滚动容器内容
   var resizeCanvas = function() {
-    ND.drawCanvas.width = scrollEl.clientWidth;
-    ND.drawCanvas.height = Math.max(scrollEl.clientHeight, contentEl.scrollHeight);
-    ND.drawCanvas.style.width = ND.drawCanvas.width + 'px';
-    ND.drawCanvas.style.height = ND.drawCanvas.height + 'px';
+    var newW = scrollEl.clientWidth;
+    var newH = Math.max(scrollEl.clientHeight, contentEl.scrollHeight);
+    if (newW === ND.drawCanvas.width && newH === ND.drawCanvas.height) return;
+    // 保存当前像素，resize 会清空画布
+    var savedData = null;
+    if (ND.drawCtx && ND.drawCanvas.width > 0 && ND.drawCanvas.height > 0) {
+      savedData = ND.drawCtx.getImageData(0, 0, ND.drawCanvas.width, ND.drawCanvas.height);
+    }
+    ND.drawCanvas.width = newW;
+    ND.drawCanvas.height = newH;
+    ND.drawCanvas.style.width = newW + 'px';
+    ND.drawCanvas.style.height = newH + 'px';
+    // 恢复像素
+    if (savedData && ND.drawCtx) {
+      ND.drawCtx.putImageData(savedData, 0, 0);
+    }
   };
   resizeCanvas();
 
   // 内容变化时重设画布高度
   if (ND.editorDiv) {
     ND.editorDiv.addEventListener('input', function() {
-      setTimeout(resizeCanvas, 0);
+      setTimeout(resizeCanvas, 10);
     });
   }
 
@@ -268,7 +291,6 @@ function initDrawCanvas() {
     var img = new Image();
     img.onload = function() {
       if (ND.drawCtx) {
-        ND.drawCtx.clearRect(0, 0, ND.drawCanvas.width, ND.drawCanvas.height);
         ND.drawCtx.drawImage(img, 0, 0);
       }
     };

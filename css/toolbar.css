@@ -31,9 +31,11 @@
 }
 
 .toolbar-tab.active {
-  color: #333;
+  color: #1a56b0;
+  background: #fff;
   border-bottom-color: #6c9fff;
   font-weight: 600;
+  border-radius: 6px 6px 0 0;
 }
 
 .toolbar-actions {
