@@ -213,6 +213,11 @@ function showEditor() {
   ND.drawCtx = canvas.getContext('2d');
   scrollDiv.appendChild(canvas);
 
+  // 选区边框 overlay（不绘入画布）
+  var selOverlay = document.createElement('div');
+  selOverlay.id = 'selection-overlay';
+  scrollDiv.appendChild(selOverlay);
+
   ND.editorArea.appendChild(scrollDiv);
 
   // 图片缩放手柄容器

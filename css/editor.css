@@ -132,12 +132,12 @@
   color: #555;
 }
 
-/* 缩放控件（编辑区右下角浮动） */
+/* 缩放控件（main-area 右下角浮动，不受 showEditor 影响） */
 .zoom-controls {
-  position: absolute;
-  bottom: 10px;
-  right: 14px;
-  z-index: 15;
+  position: fixed;
+  bottom: 28px;
+  right: 24px;
+  z-index: 100;
   display: flex;
   align-items: center;
   gap: 4px;

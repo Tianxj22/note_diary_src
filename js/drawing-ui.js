@@ -40,6 +40,9 @@ function toggleDrawingMode(active) {
     canvas.classList.add('drawing-active');
     updateCanvasCursor();
     ND.switchToolbarTab('draw');
+    hideSelectionOverlay();
+    ND.selectionMask = null;
+    ND.selectionBounds = null;
     // 禁止编辑文字
     if (ND.editorDiv) ND.editorDiv.contentEditable = 'false';
     // 初始化快照（如果没有）
@@ -102,15 +105,23 @@ function unbindCanvasEvents() {
 
 function onCanvasMouseDown(e) {
   if (!ND.drawingActive || e.button !== 0) return;
+  // 只响应直接点击画布的事件，忽略工具栏等区域的点击
+  if (e.target !== ND.drawCanvas) return;
   e.preventDefault();
   var pos = getCanvasPos(e);
   var ctx = ND.drawCtx;
   if (!ctx) return;
 
-  // 形状/选框工具：保存快照用于预览
-  if (ND.currentTool.indexOf('shape-') === 0 || ND.currentTool === 'select-rect') {
+  // 形状工具：保存快照用于预览（选区用 overlay，不需要快照）
+  if (ND.currentTool.indexOf('shape-') === 0) {
     pushSnapshot(ctx);
     ND.previewSnapshot = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+  }
+  // 选区工具：清除旧选区
+  if (ND.currentTool.indexOf('select-') === 0) {
+    hideSelectionOverlay();
+    ND.selectionMask = null;
+    ND.selectionBounds = null;
   }
 
   switch (ND.currentTool) {
@@ -146,13 +157,12 @@ function onCanvasMouseDown(e) {
       break;
     // 选区工具
     case 'select-wand':
-      pushSnapshot(ctx);
       var idata = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
       var sel = magicWandSelect(idata, pos.x, pos.y, 20);
       if (sel) {
         ND.selectionMask = sel.mask;
         ND.selectionBounds = sel.bounds;
-        drawSelectionOutline(ctx, sel.mask);
+        showSelectionOverlay(sel.bounds);
         ND.statusLeft.textContent = '绘图模式 — 魔术棒选区已创建';
       }
       break;
@@ -204,13 +214,11 @@ function onCanvasMouseMove(e) {
       eraserMove(ctx, pos.x, pos.y);
       break;
     case 'select-rect':
-      if (ND.previewSnapshot) ctx.putImageData(ND.previewSnapshot, 0, 0);
-      drawDashedRect(ctx, ND.drawStartX, ND.drawStartY, pos.x, pos.y);
+      drawDashedRect(null, ND.drawStartX, ND.drawStartY, pos.x, pos.y);
       break;
     case 'select-lasso':
       ND.lassoPoints.push({x: pos.x, y: pos.y});
-      if (ND.previewSnapshot) ctx.putImageData(ND.previewSnapshot, 0, 0);
-      drawLassoPreview(ctx, ND.lassoPoints);
+      drawLassoPreview(null, ND.lassoPoints);
       break;
     case 'shape-rect':
       if (ND.previewSnapshot) ctx.putImageData(ND.previewSnapshot, 0, 0);
@@ -243,25 +251,21 @@ function onCanvasMouseUp(e) {
       eraserEnd(ctx);
       break;
     case 'select-rect':
-      if (ND.previewSnapshot) ctx.putImageData(ND.previewSnapshot, 0, 0);
       var rpos = getCanvasPos(e);
-      drawDashedRect(ctx, ND.drawStartX, ND.drawStartY, rpos.x, rpos.y);
       var rb = normalRect(ND.drawStartX, ND.drawStartY, rpos.x, rpos.y);
       ND.selectionBounds = rb;
       ND.selectionMask = createMaskFromBounds(ctx.canvas.width, ctx.canvas.height, rb);
-      ND.previewSnapshot = null;
+      showSelectionOverlay(rb);
       ND.statusLeft.textContent = '绘图模式 — 矩形选区已创建';
       break;
     case 'select-lasso':
-      if (ND.previewSnapshot) ctx.putImageData(ND.previewSnapshot, 0, 0);
       if (ND.lassoPoints.length > 2) {
         var mask = createLassoMask(ctx.canvas.width, ctx.canvas.height, ND.lassoPoints);
         ND.selectionMask = mask;
         ND.selectionBounds = getMaskBounds(mask);
-        drawSelectionOutline(ctx, mask);
+        showSelectionOverlay(ND.selectionBounds);
       }
       ND.lassoPoints = [];
-      ND.previewSnapshot = null;
       ND.statusLeft.textContent = '绘图模式 — 套索选区已创建';
       break;
     case 'shape-rect':
@@ -467,7 +471,7 @@ document.getElementById('btn-color-swap').addEventListener('click', function() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && ND.drawingActive) {
     if (ND.selectionMask) {
-      clearSelectionOutline(ND.drawCtx);
+      hideSelectionOverlay();
       ND.selectionMask = null;
       ND.selectionBounds = null;
       ND.statusLeft.textContent = '绘图模式 — 选区已取消';
@@ -480,6 +484,7 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Delete' && ND.drawingActive && ND.selectionMask && ND.drawCtx) {
     pushSnapshot(ND.drawCtx);
     deleteSelection(ND.drawCtx, ND.selectionMask);
+    hideSelectionOverlay();
     ND.selectionMask = null;
     ND.selectionBounds = null;
     ND.statusLeft.textContent = '绘图模式 — 选区已删除';

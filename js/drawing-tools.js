@@ -501,49 +501,50 @@ function deleteSelection(ctx, mask) {
 }
 
 // ============================================================
-// 选区虚线框绘制
+// 选区 overlay 操作（不绘入画布）
 // ============================================================
+
+function getSelOverlay() {
+  return document.getElementById('selection-overlay');
+}
+
+function showSelectionOverlay(bounds) {
+  var ov = getSelOverlay();
+  if (!ov || !bounds) return;
+  ov.style.left = bounds.x + 'px';
+  ov.style.top = bounds.y + 'px';
+  ov.style.width = bounds.w + 'px';
+  ov.style.height = bounds.h + 'px';
+  ov.style.display = 'block';
+}
+
+function hideSelectionOverlay() {
+  var ov = getSelOverlay();
+  if (ov) ov.style.display = 'none';
+}
 
 function drawDashedRect(ctx, x1, y1, x2, y2) {
   var r = normalRect(x1, y1, x2, y2);
-  ctx.save();
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([5, 3]);
-  ctx.strokeRect(r.x, r.y, r.w, r.h);
-  ctx.setLineDash([]);
-  ctx.restore();
+  showSelectionOverlay(r);
 }
 
 function drawLassoPreview(ctx, points) {
   if (points.length < 2) return;
-  ctx.save();
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([5, 3]);
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  for (var i = 1; i < points.length; i++) {
-    ctx.lineTo(points[i].x, points[i].y);
+  var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (var i = 0; i < points.length; i++) {
+    if (points[i].x < minX) minX = points[i].x;
+    if (points[i].y < minY) minY = points[i].y;
+    if (points[i].x > maxX) maxX = points[i].x;
+    if (points[i].y > maxY) maxY = points[i].y;
   }
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
+  showSelectionOverlay({ x: minX, y: minY, w: maxX - minX, h: maxY - minY });
 }
 
 function drawSelectionOutline(ctx, mask) {
   var bounds = getMaskBounds(mask);
-  if (!bounds) return;
-  ctx.save();
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([5, 3]);
-  ctx.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
-  ctx.setLineDash([]);
-  ctx.restore();
+  showSelectionOverlay(bounds);
 }
 
 function clearSelectionOutline(ctx) {
-  if (!ND.previewSnapshot) return;
-  ctx.putImageData(ND.previewSnapshot, 0, 0);
+  hideSelectionOverlay();
 }

@@ -114,3 +114,19 @@
   background: #e8f0fe;
   color: #1a56b0;
 }
+
+/* ===== 选区边框 overlay（不绘入画布） ===== */
+#selection-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  border: 1px dashed #000;
+  pointer-events: none;
+  z-index: 6;
+  display: none;
+  animation: marching-ants 0.5s linear infinite;
+  background: rgba(100, 150, 255, 0.08);
+}
+
+@keyframes marching-ants {
+  to { border-color: #000; }
+}
