@@ -297,7 +297,7 @@
       <div class="settings-body">
         <!-- 云同步 -->
         <div class="settings-section">
-          <h3 class="settings-section-title">☁ 云同步</h3>
+          <h3 class="settings-section-title">☁ Git 云端同步</h3>
           <div class="toggle-row">
             <span class="toggle-label">启用云同步</span>
             <label class="toggle-switch">
@@ -306,17 +306,10 @@
               <span class="toggle-thumb"></span>
             </label>
           </div>
-          <div class="settings-row">
-            <label>同步模式</label>
-            <div class="radio-group">
-              <label><input type="radio" name="sync-mode" value="git" checked> Git 仓库</label>
-              <label><input type="radio" name="sync-mode" value="cloudDrive"> 云盘文件夹</label>
-            </div>
-          </div>
 
           <!-- Git 配置组 -->
           <div class="settings-group" id="settings-git-group">
-            <p class="settings-group-title">Git 配置</p>
+            <p class="settings-group-title">Git 仓库配置</p>
             <div class="settings-row">
               <label>远程仓库 URL</label>
               <input type="url" id="settings-git-remote-url" placeholder="https://github.com/user/repo.git">
@@ -340,16 +333,6 @@
             <div class="settings-row">
               <button class="btn-test-connection" id="btn-test-connection">测试连接</button>
               <span class="test-result" id="test-connection-result"></span>
-            </div>
-          </div>
-
-          <!-- 云盘配置组 -->
-          <div class="settings-group hidden" id="settings-cloud-group">
-            <p class="settings-group-title">云盘配置</p>
-            <div class="settings-row">
-              <label>同步文件夹</label>
-              <input type="text" id="settings-cloud-folder-path" placeholder="C:\Users\xxx\Dropbox\Notes">
-              <button class="btn-inline" id="btn-browse-folder">浏览...</button>
             </div>
           </div>
 

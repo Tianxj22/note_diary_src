@@ -26,7 +26,6 @@
     }
 
     populateSettingsForm(cachedSettings);
-    updateSyncModeUI(cachedSettings.sync.mode);
     updateAutoSyncUI(cachedSettings.sync.autoSync);
 
     ND.settingsOverlay.classList.add('visible');
@@ -54,9 +53,6 @@
     document.getElementById('settings-auto-sync').checked = s.sync.autoSync;
     document.getElementById('settings-sync-interval').value = s.sync.autoSyncIntervalMinutes;
 
-    // 模式 radio
-    document.querySelector(`input[name="sync-mode"][value="${s.sync.mode}"]`).checked = true;
-
     // Git 配置
     document.getElementById('settings-git-remote-url').value = s.sync.git.remoteUrl || '';
     document.getElementById('settings-git-branch').value = s.sync.git.branch || 'main';
@@ -73,28 +69,8 @@
       tokenInput.dataset.hasExisting = 'false';
     }
 
-    // 云盘配置
-    document.getElementById('settings-cloud-folder-path').value = s.sync.cloudDrive.folderPath || '';
-
     // 通用
     document.getElementById('settings-file-extension').value = s.general.fileExtension;
-  }
-
-  /**
-   * 根据同步模式显示/隐藏对应的配置组
-   * @param {string} mode - 'git' | 'cloudDrive'
-   */
-  function updateSyncModeUI(mode) {
-    const gitGroup = document.getElementById('settings-git-group');
-    const cloudGroup = document.getElementById('settings-cloud-group');
-
-    if (mode === 'git') {
-      gitGroup.classList.remove('hidden');
-      cloudGroup.classList.add('hidden');
-    } else {
-      gitGroup.classList.add('hidden');
-      cloudGroup.classList.remove('hidden');
-    }
   }
 
   /**
@@ -111,13 +87,12 @@
    * @returns {object}
    */
   function collectFormData() {
-    const syncMode = document.querySelector('input[name="sync-mode"]:checked').value;
     const tokenInput = document.getElementById('settings-git-token');
 
     const partial = {
       sync: {
         enabled: document.getElementById('settings-sync-enabled').checked,
-        mode: syncMode,
+        mode: 'git',
         autoSync: document.getElementById('settings-auto-sync').checked,
         autoSyncIntervalMinutes: parseInt(document.getElementById('settings-sync-interval').value) || 15,
         git: {
@@ -125,9 +100,6 @@
           branch: document.getElementById('settings-git-branch').value.trim() || 'main',
           authorName: document.getElementById('settings-git-author-name').value.trim(),
           authorEmail: document.getElementById('settings-git-author-email').value.trim(),
-        },
-        cloudDrive: {
-          folderPath: document.getElementById('settings-cloud-folder-path').value.trim(),
         },
       },
       general: {
@@ -220,20 +192,6 @@
     }
   }
 
-  /**
-   * 选择云盘文件夹
-   */
-  async function selectCloudFolder() {
-    try {
-      const result = await window.electronAPI.selectFolder();
-      if (result) {
-        document.getElementById('settings-cloud-folder-path').value = result;
-      }
-    } catch (e) {
-      console.error('Failed to select folder:', e);
-    }
-  }
-
   // ---- 事件绑定 ----
   document.addEventListener('DOMContentLoaded', function () {
     // 关闭按钮
@@ -264,13 +222,6 @@
       });
     }
 
-    // 同步模式 radio 切换
-    document.querySelectorAll('input[name="sync-mode"]').forEach(function (radio) {
-      radio.addEventListener('change', function () {
-        updateSyncModeUI(this.value);
-      });
-    });
-
     // 自动同步开关切换
     const autoSyncCheckbox = document.getElementById('settings-auto-sync');
     if (autoSyncCheckbox) {
@@ -283,12 +234,6 @@
     const testBtn = document.getElementById('btn-test-connection');
     if (testBtn) {
       testBtn.addEventListener('click', testGitConnection);
-    }
-
-    // 浏览文件夹按钮
-    const browseBtn = document.getElementById('btn-browse-folder');
-    if (browseBtn) {
-      browseBtn.addEventListener('click', selectCloudFolder);
     }
 
     // Token 输入框聚焦时清除掩码
