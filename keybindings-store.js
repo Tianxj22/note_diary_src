@@ -71,22 +71,34 @@ function parseShortcut(shortcut) {
  */
 function loadKeybindings(userDataPath) {
   var filePath = path.join(userDataPath, KEYBINDINGS_FILE);
+  var defaults = getDefaultBindings();
   try {
     if (fs.existsSync(filePath)) {
       var stored = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       if (stored && stored.bindings) {
         // 合并默认值（补充新增的快捷键）
-        var defaults = getDefaultBindings().bindings;
-        for (var key in defaults) {
+        var defBindings = defaults.bindings;
+        var changed = false;
+        for (var key in defBindings) {
           if (!(key in stored.bindings)) {
-            stored.bindings[key] = defaults[key];
+            stored.bindings[key] = defBindings[key];
+            changed = true;
           }
+        }
+        // 有新增项时写回磁盘
+        if (changed) {
+          fs.writeFileSync(filePath, JSON.stringify(stored, null, 2), 'utf-8');
         }
         return stored;
       }
     }
   } catch (_) { /* ignore */ }
-  return getDefaultBindings();
+  // 文件不存在或损坏 → 生成默认配置
+  if (!fs.existsSync(userDataPath)) {
+    fs.mkdirSync(userDataPath, { recursive: true });
+  }
+  fs.writeFileSync(filePath, JSON.stringify(defaults, null, 2), 'utf-8');
+  return defaults;
 }
 
 /**

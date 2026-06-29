@@ -624,6 +624,7 @@ app.whenReady().then(() => {
   const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
   notesDir = fileStore.ensureNotesDir(userDataPath);
   appSettings = settingsStore.getSettings(userDataPath); // 加载持久化设置
+  keybindingsStore.loadKeybindings(userDataPath); // 首次运行自动生成 keybindings.json
 
   // 检查是否需要文件格式迁移（.txt → .html）
   const targetExt = getNoteExtension();
