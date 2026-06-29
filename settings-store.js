@@ -37,6 +37,8 @@ function getDefaults() {
     },
     general: {
       fileExtension: '.html',    // '.html' | '.txt'
+      fontSize: '0.95',          // rem
+      lineHeight: '1.8',         // unitless
     },
   };
 }

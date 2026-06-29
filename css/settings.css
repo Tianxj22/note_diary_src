@@ -298,6 +298,42 @@
   border-color: #bbb;
 }
 
+/* ===== 快捷键参考表 ===== */
+.keybinding-table {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.kb-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.kb-row:last-child {
+  border-bottom: none;
+}
+
+.kb-action {
+  color: #555;
+}
+
+.kb-key {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.78rem;
+  color: #1a56b0;
+  background: #e8f0ff;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid #c0d8f0;
+  white-space: nowrap;
+}
+
 /* ===== 内联按钮 ===== */
 .btn-inline {
   padding: 6px 12px;

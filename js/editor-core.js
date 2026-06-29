@@ -223,6 +223,9 @@ function showEditor() {
   ND.editorDiv = document.createElement('div');
   ND.editorDiv.className = 'editor-content';
   ND.editorDiv.contentEditable = 'true';
+  // 应用首选项中的字体大小和行高
+  if (ND.prefFontSize) ND.editorDiv.style.fontSize = ND.prefFontSize + 'rem';
+  if (ND.prefLineHeight) ND.editorDiv.style.lineHeight = ND.prefLineHeight;
   ND.editorDiv.addEventListener('input', onEditorInput);
   ND.editorDiv.addEventListener('keydown', onEditorKeydown);
   ND.editorDiv.addEventListener('paste', onEditorPaste);

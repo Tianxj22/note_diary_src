@@ -212,4 +212,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @returns {Promise<{success: boolean, fileName?: string, message?: string}>}
    */
   gitCheckoutTheirs: (fileName) => ipcRenderer.invoke('sync:git-checkout-theirs', fileName),
+  /**
+   * 获取快捷键配置
+   * @returns {Promise<object>}
+   */
+  getKeybindings: () => ipcRenderer.invoke('keybindings:get'),
+  /**
+   * 保存快捷键配置
+   * @param {object} bindings - 完整快捷键映射
+   * @returns {Promise<boolean>}
+   */
+  updateKeybindings: (bindings) => ipcRenderer.invoke('keybindings:update', bindings),
 });

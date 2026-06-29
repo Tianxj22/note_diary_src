@@ -14,6 +14,7 @@ const fileStore = require('./file-store');
 const settingsStore = require('./settings-store');
 const formatMigration = require('./format-migration');
 const gitSync = require('./git-sync');
+const keybindingsStore = require('./keybindings-store');
 
 let notesDir = '';
 let appSettings = settingsStore.getDefaults();
@@ -361,6 +362,19 @@ function registerIpcHandlers() {
     });
     if (result.canceled || result.filePaths.length === 0) return null;
     return result.filePaths[0];
+  });
+
+  // ---- 快捷键配置 ----
+
+  ipcMain.handle('keybindings:get', () => {
+    const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
+    return keybindingsStore.loadKeybindings(userDataPath);
+  });
+
+  ipcMain.handle('keybindings:update', (_event, bindings) => {
+    const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
+    keybindingsStore.saveKeybindings(userDataPath, bindings);
+    return true;
   });
 
   // ---- Git 同步 ----

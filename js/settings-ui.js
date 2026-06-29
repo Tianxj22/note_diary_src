@@ -26,10 +26,45 @@
     }
 
     populateSettingsForm(cachedSettings);
+    populateKeybindingTable();
     updateAutoSyncUI(cachedSettings.sync.autoSync);
 
     ND.settingsOverlay.classList.add('visible');
   };
+
+  /**
+   * 填充快捷键参考表
+   */
+  async function populateKeybindingTable() {
+    var table = document.getElementById('keybinding-table');
+    if (!table) return;
+    try {
+      var kb = await window.electronAPI.getKeybindings();
+      var bindings = kb.bindings;
+      // 分类标签
+      var groups = [
+        { label: '文件', prefix: 'file.' },
+        { label: '编辑', prefix: 'edit.' },
+        { label: '格式', prefix: 'format.' },
+        { label: '插入', prefix: 'insert.' },
+        { label: '视图', prefix: 'view.' },
+      ];
+      var html = '';
+      groups.forEach(function (g) {
+        html += '<div class="kb-row" style="color:#999;font-size:0.72rem;padding:4px 12px;background:#fafafa">' + g.label + '</div>';
+        Object.keys(bindings).forEach(function (id) {
+          if (id.startsWith(g.prefix)) {
+            var name = id.replace(g.prefix, '').replace(/([A-Z])/g, ' $1').replace(/^./, function (c) { return c.toUpperCase(); });
+            var key = bindings[id] || '—';
+            html += '<div class="kb-row"><span class="kb-action">' + name + '</span><span class="kb-key">' + key + '</span></div>';
+          }
+        });
+      });
+      table.innerHTML = html;
+    } catch (_) {
+      table.innerHTML = '<div class="kb-row"><span class="kb-action">无法加载快捷键</span></div>';
+    }
+  }
 
   /**
    * 隐藏设置弹窗（不保存）
@@ -71,6 +106,12 @@
 
     // 通用
     document.getElementById('settings-file-extension').value = s.general.fileExtension;
+
+    // 首选项
+    var fontSizeEl = document.getElementById('settings-font-size');
+    if (fontSizeEl) fontSizeEl.value = (s.general && s.general.fontSize) || '0.95';
+    var lineHeightEl = document.getElementById('settings-line-height');
+    if (lineHeightEl) lineHeightEl.value = (s.general && s.general.lineHeight) || '1.8';
   }
 
   /**
@@ -104,6 +145,8 @@
       },
       general: {
         fileExtension: document.getElementById('settings-file-extension').value,
+        fontSize: document.getElementById('settings-font-size').value,
+        lineHeight: document.getElementById('settings-line-height').value,
       },
     };
 

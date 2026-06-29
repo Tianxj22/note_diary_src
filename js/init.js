@@ -13,8 +13,90 @@ document.getElementById('btn-new').addEventListener('click', createNewNote);
 document.getElementById('btn-save').addEventListener('click', () => manualSave());
 document.getElementById('btn-settings').addEventListener('click', () => ND.showSettingsModal());
 
+// ---- 快捷键动作分发表 ----
+var shortcutActions = {
+  'file.new':       function () { createNewNote(); },
+  'file.save':      function () { manualSave(); },
+  'file.close':     function () { if (ND.editorDiv) closeCurrentNote(); },
+  'file.import':    null,
+  'edit.undo':      function () { if (ND.editorDiv) document.execCommand('undo'); },
+  'edit.redo':      function () { if (ND.editorDiv) document.execCommand('redo'); },
+  'edit.find':      function () { if (ND.editorDiv) ND.toggleFindBar(); },
+  'edit.replace':   function () {
+    if (!ND.editorDiv) return;
+    var bar = document.getElementById('find-bar');
+    if (bar && !bar.classList.contains('visible')) ND.toggleFindBar();
+    var ri = document.getElementById('replace-input');
+    if (ri) setTimeout(function () { ri.focus(); ri.select(); }, 50);
+  },
+  'edit.selectAll': function () { if (ND.editorDiv) document.execCommand('selectAll'); },
+  'format.bold':        function () { if (ND.editorDiv) document.execCommand('bold'); },
+  'format.italic':      function () { if (ND.editorDiv) document.execCommand('italic'); },
+  'format.underline':   function () { if (ND.editorDiv) document.execCommand('underline'); },
+  'format.strikethrough': function () { if (ND.editorDiv) document.execCommand('strikeThrough'); },
+  'format.removeFormat':  function () { if (ND.editorDiv) document.execCommand('removeFormat'); },
+  'format.orderedList':   function () { if (ND.editorDiv) document.execCommand('insertOrderedList'); },
+  'format.unorderedList': function () { if (ND.editorDiv) document.execCommand('insertUnorderedList'); },
+  'format.indent':    function () { if (ND.editorDiv) document.execCommand('indent'); },
+  'format.outdent':   function () { if (ND.editorDiv) document.execCommand('outdent'); },
+  'insert.checklist': function () { if (ND.editorDiv) insertChecklist(); },
+  'insert.timestamp': function () { if (ND.editorDiv) insertTimestamp(); },
+  'insert.image':     function () { if (ND.editorDiv) insertImageFromFile(); },
+  'view.toggleDraw':  function () { if (ND.editorDiv) toggleDrawingMode(); },
+};
+
+/** 解析后的快捷键映射: shortcutString → actionId */
+var parsedBindings = {};
+
+/**
+ * 解析快捷键字符串为 keydown 匹配参数
+ */
+function parseShortcut(s) {
+  if (!s) return null;
+  var parts = s.split('+');
+  var r = { ctrl: false, shift: false, alt: false, key: '' };
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i].trim();
+    if (p === 'Ctrl' || p === 'Control') r.ctrl = true;
+    else if (p === 'Shift') r.shift = true;
+    else if (p === 'Alt') r.alt = true;
+    else r.key = p;
+  }
+  return r;
+}
+
+/**
+ * 匹配按键组合
+ */
+function matchShortcut(e, parsed) {
+  if (!parsed) return false;
+  if (parsed.ctrl !== (e.ctrlKey || e.metaKey)) return false;
+  if (parsed.shift !== e.shiftKey) return false;
+  if (parsed.alt !== e.altKey) return false;
+  var ek = e.key;
+  // 字母大小写不敏感
+  if (parsed.key.toLowerCase() === ek.toLowerCase()) return true;
+  // 处理特殊键名
+  if (parsed.key === 'Tab' && ek === 'Tab') return true;
+  return false;
+}
+
+/**
+ * 重新加载快捷键映射
+ */
+async function reloadBindings() {
+  try {
+    var kb = await window.electronAPI.getKeybindings();
+    parsedBindings = {};
+    var b = kb.bindings;
+    for (var id in b) {
+      if (b[id]) parsedBindings[b[id]] = id;
+    }
+  } catch (_) { /* 使用空映射，快捷键不生效 */ }
+}
+
 // ---- 全局快捷键 ----
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', function (e) {
   var ctrl = e.ctrlKey || e.metaKey;
 
   // Escape: 关闭所有弹出层
@@ -25,53 +107,22 @@ document.addEventListener('keydown', (e) => {
     ND.contextMenuTrash.classList.remove('visible');
   }
 
-  // 仅在有编辑器时生效的快捷键
-  if (ND.editorDiv) {
-    // 文本格式
-    if (ctrl && e.key === 'd') { e.preventDefault(); document.execCommand('strikeThrough'); return; }
-    if (ctrl && e.key === '\\') { e.preventDefault(); document.execCommand('removeFormat'); return; }
-    if (ctrl && e.shiftKey && (e.key === 'o' || e.key === 'O')) { e.preventDefault(); document.execCommand('insertOrderedList'); return; }
-    if (ctrl && e.shiftKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); document.execCommand('insertUnorderedList'); return; }
+  // 跳过在输入框中的快捷键（除了 Escape）
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-    // 插入
-    if (ctrl && e.shiftKey && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); insertChecklist(); return; }
-    if (ctrl && e.shiftKey && (e.key === 't' || e.key === 'T')) { e.preventDefault(); insertTimestamp(); return; }
-    if (ctrl && e.shiftKey && (e.key === 'i' || e.key === 'I')) { e.preventDefault(); insertImageFromFile(); return; }
-
-    // 绘图切换
-    if (ctrl && e.shiftKey && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); toggleDrawingMode(); return; }
-
-    // 查找替换
-    if (ctrl && e.key === 'h') {
+  // 动态快捷键匹配
+  for (var shortcut in parsedBindings) {
+    var parsed = parseShortcut(shortcut);
+    if (matchShortcut(e, parsed)) {
       e.preventDefault();
-      var bar = document.getElementById('find-bar');
-      if (bar && !bar.classList.contains('visible')) ND.toggleFindBar();
-      var repInput = document.getElementById('replace-input');
-      if (repInput) setTimeout(function () { repInput.focus(); repInput.select(); }, 50);
-      return;
-    }
-
-    // 关闭当前笔记
-    if (ctrl && e.key === 'w') { e.preventDefault(); closeCurrentNote(); return; }
-
-    // Tab/Shift+Tab 缩进
-    if (e.key === 'Tab' && !ctrl) {
-      e.preventDefault();
-      if (e.shiftKey) document.execCommand('outdent');
-      else document.execCommand('indent');
+      var actionId = parsedBindings[shortcut];
+      var fn = shortcutActions[actionId];
+      if (fn) fn();
       return;
     }
   }
 
-  if (ctrl && e.key === 'n') {
-    e.preventDefault();
-    createNewNote();
-  }
-  if (ctrl && e.key === 's') {
-    e.preventDefault();
-    manualSave();
-  }
-  // 绘图模式下 Ctrl+Z/Ctrl+Y → 快照撤销/重做
+  // 绘图模式下 Ctrl+Z/Ctrl+Y → 快照撤销/重做（不受 keybindings 影响）
   if (ND.drawingActive && ND.drawCtx && ctrl) {
     if (e.key === 'z' || e.key === 'Z') {
       e.preventDefault();
@@ -82,6 +133,21 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
+
+// 页面加载时加载快捷键配置 + 首选项
+reloadBindings();
+(async function loadPreferences() {
+  try {
+    var settings = await window.electronAPI.getSettings();
+    if (settings && settings.general) {
+      ND.prefFontSize = settings.general.fontSize || '0.95';
+      ND.prefLineHeight = settings.general.lineHeight || '1.8';
+    }
+  } catch (_) {
+    ND.prefFontSize = '0.95';
+    ND.prefLineHeight = '1.8';
+  }
+})();
 
 // ---- 防御：点击编辑区任意位置自动聚焦到 editorDiv ----
 ND.editorArea.addEventListener('click', (e) => {
