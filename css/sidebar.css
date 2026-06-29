@@ -6,6 +6,7 @@
   color: #ccc;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   border-right: 1px solid #1a1a1a;
 }
 

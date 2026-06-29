@@ -90,3 +90,36 @@ describe('scroll-layout', () => {
     expect(bodyStyle.overflow).toBe('hidden');
   });
 });
+
+describe('sidebar-scroll', () => {
+  function buildSidebarLayout(noteCount) {
+    var items = '';
+    for (var i = 0; i < noteCount; i++) {
+      items += '<div class="note-item"><div class="title">笔记 ' + i + '</div></div>';
+    }
+    var dom = new JSDOM(
+      '<!DOCTYPE html><html><head><style>' +
+      '* { margin:0; padding:0; box-sizing:border-box; }' +
+      'html,body { height:100%; overflow:hidden; }' +
+      'body { display:grid; grid-template-columns:240px 1fr; grid-template-rows:1fr; }' +
+      '.sidebar { display:flex; flex-direction:column; overflow:hidden; background:#2c2c2c; }' +
+      '.note-list { flex:1; overflow-y:auto; }' +
+      '</style></head><body>' +
+      '<div class="sidebar" id="sidebar"><div class="note-list" id="note-list">' + items + '</div></div>' +
+      '<div class="main-area"></div>' +
+      '</body></html>',
+      { url: 'http://localhost' }
+    );
+    return {
+      doc: dom.window.document,
+      noteList: dom.window.document.getElementById('note-list'),
+    };
+  }
+
+  it('U-133: sidebar overflow:hidden 下 .note-list 仍 overflow-y:auto', () => {
+    var layout = buildSidebarLayout(50);
+    var noteList = layout.noteList;
+    var style = layout.doc.defaultView.getComputedStyle(noteList);
+    expect(style.overflowY).toBe('auto');
+  });
+});
