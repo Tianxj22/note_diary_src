@@ -287,37 +287,59 @@ function updateUndoRedoButtons() {
 // ---- 行号（纯视觉，不保存到文件） ----
 
 /**
- * 更新编辑区左侧行号
- * 基于 .editor-content 的实际渲染高度和 line-height 计算行数
+ * 更新编辑区左侧逻辑行号
+ *
+ * 每个块级元素（<div>/<p>/<li>/heading）的第一个字符处标注一个行号；
+ * <br> 产生额外行号；自动换行不标注。
+ * 行号通过 getBoundingClientRect 计算绝对位置，对齐段落顶部。
  */
 function updateLineNumbers() {
   var gutter = document.getElementById('line-gutter');
-  if (!gutter || !ND.editorDiv) return;
+  if (!gutter || !ND.editorDiv || !ND.editorScroll) return;
 
   var contentEl = ND.editorDiv;
-  var lineHeight = 1.8; // 与 CSS 中的 line-height 保持一致
-  var fontSize = 0.95;  // rem，CSS 中 font-size
-  // 计算行高像素值：获取 contentEl 的 computed style 更准确
-  var computedStyle = window.getComputedStyle(contentEl);
-  var actualLineHeight = parseFloat(computedStyle.lineHeight);
-  if (isNaN(actualLineHeight) || actualLineHeight === 0) {
-    actualLineHeight = parseFloat(computedStyle.fontSize) * lineHeight;
+  var scrollEl = ND.editorScroll;
+  var scrollRect = scrollEl.getBoundingClientRect();
+  var scrollTop = scrollEl.scrollTop;
+
+  var fragments = [];
+  var lineNum = 0;
+
+  // 遍历 editor-content 的直接子元素
+  var children = contentEl.children;
+  for (var i = 0; i < children.length; i++) {
+    var child = children[i];
+
+    // 跳过空的文本节点和不可见元素
+    if (!child.tagName) continue;
+
+    // 该块的第一个逻辑行：标注行号
+    lineNum++;
+    var childRect = child.getBoundingClientRect();
+    var childTop = childRect.top - scrollRect.top + scrollTop;
+    fragments.push({ num: lineNum, top: childTop });
+
+    // 块内 <br>：每个产生额外行号
+    var brs = child.querySelectorAll('br');
+    for (var b = 0; b < brs.length; b++) {
+      lineNum++;
+      var range = document.createRange();
+      range.setStartBefore(brs[b]);
+      var brRect = range.getBoundingClientRect();
+      var brTop = brRect.top - scrollRect.top + scrollTop;
+      fragments.push({ num: lineNum, top: brTop });
+    }
   }
 
-  // 计算内容区需要的行数
-  var contentHeight = contentEl.scrollHeight;
-  var paddingTop = parseFloat(computedStyle.paddingTop) || 20;
-  var paddingBottom = parseFloat(computedStyle.paddingBottom) || 20;
-  var visibleHeight = contentHeight - paddingTop - paddingBottom;
-  var lineCount = Math.max(1, Math.ceil(visibleHeight / actualLineHeight));
+  // 如果连一个块都没有，至少显示行号 1
+  if (fragments.length === 0 && contentEl.textContent.trim()) {
+    fragments.push({ num: 1, top: 0 });
+  }
 
-  // 如果行数不变，跳过更新
-  if (gutter.dataset.lastCount === String(lineCount)) return;
-  gutter.dataset.lastCount = String(lineCount);
-
+  // 构建行号 HTML
   var html = '';
-  for (var i = 1; i <= lineCount; i++) {
-    html += '<span class="line-num">' + i + '</span>';
+  for (var f = 0; f < fragments.length; f++) {
+    html += '<span class="line-num" style="top:' + fragments[f].top + 'px">' + fragments[f].num + '</span>';
   }
   gutter.innerHTML = html;
 }
