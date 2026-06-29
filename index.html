@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="css/drawing.css">
   <link rel="stylesheet" href="css/settings.css">
   <link rel="stylesheet" href="css/conflict.css">
+  <link rel="stylesheet" href="css/edit-toolbar.css">
 </head>
 <body>
   <!-- 侧边栏 -->
@@ -66,6 +67,7 @@
         <button class="toolbar-tab active" data-tab="file">📁 文件</button>
         <button class="toolbar-tab" data-tab="style">🎨 样式</button>
         <button class="toolbar-tab" data-tab="insert">📥 插入</button>
+        <button class="toolbar-tab" data-tab="edit">✂️ 编辑</button>
         <button class="toolbar-tab" data-tab="draw">✏️ 绘图</button>
         <button class="toolbar-tab toolbar-tab-image" data-tab="image-edit" id="tab-image-edit" style="display:none">🖼 图片编辑</button>
         <button class="toolbar-tab" data-tab="sync">☁ 同步</button>
@@ -148,6 +150,19 @@
           </div>
         </div>
       </div>
+      <div class="toolbar-actions" id="toolbar-edit" style="display:none">
+        <button id="btn-find-open" class="style-btn" data-tooltip="查找替换 (Ctrl+F)">🔍</button>
+        <span class="separator"></span>
+        <button id="btn-strikethrough" class="style-btn" data-tooltip="删除线"><s>S</s></button>
+        <button id="btn-remove-format" class="style-btn" data-tooltip="清除格式">⎚</button>
+        <span class="separator"></span>
+        <button id="btn-ordered-list" class="style-btn" data-tooltip="有序列表">≡</button>
+        <button id="btn-unordered-list" class="style-btn" data-tooltip="无序列表">•</button>
+        <button id="btn-indent" class="style-btn" data-tooltip="增加缩进">→</button>
+        <button id="btn-outdent" class="style-btn" data-tooltip="减少缩进">←</button>
+        <span class="separator"></span>
+        <button id="btn-select-all" class="style-btn" data-tooltip="全选 (Ctrl+A)">▦</button>
+      </div>
       <div class="toolbar-actions" id="toolbar-draw" style="display:none">
         <!-- 核心绘制工具 -->
         <button id="btn-tool-pencil" class="style-btn draw-tool-btn active" data-tooltip="铅笔" data-tool="pencil">✏</button>
@@ -229,6 +244,21 @@
         <span class="separator"></span>
         <span id="sync-status-text" class="sync-status-label">未配置</span>
       </div>
+    </div>
+
+    <!-- 查找替换栏（在 editor-area 外部，不受 showEditor/hideEditor 影响） -->
+    <div class="find-bar" id="find-bar">
+      <input type="text" id="find-input" placeholder="查找...">
+      <span class="find-count" id="find-count"></span>
+      <button id="btn-find-prev" title="上一个 (Shift+Enter)">▲</button>
+      <button id="btn-find-next" title="下一个 (Enter)">▼</button>
+      <button id="btn-find-case" title="大小写敏感">Aa</button>
+      <span class="find-separator"></span>
+      <input type="text" id="replace-input" class="replace-input" placeholder="替换为...">
+      <button id="btn-replace" title="替换当前">替换</button>
+      <button id="btn-replace-all" title="全部替换">全部替换</button>
+      <span class="find-separator"></span>
+      <button class="find-close" id="btn-find-close" title="关闭 (Escape)">✕</button>
     </div>
 
     <div class="editor-area" id="editor-area">
@@ -416,6 +446,7 @@
   <script src="js/settings-ui.js"></script>
   <script src="js/sync-ui.js"></script>
   <script src="js/conflict-ui.js"></script>
+  <script src="js/edit-toolbar.js"></script>
   <script src="js/init.js"></script>
 </body>
 </html>

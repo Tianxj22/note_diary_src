@@ -1,0 +1,97 @@
+/**
+ * @file         css/edit-toolbar.css
+ * @description  Note Diary — 编辑标签页按钮样式 + 查找替换栏
+ * @author       tianxj22
+ * @created      2026-06-29
+ * @updated      2026-06-29
+ * @version      1.0.0
+ */
+
+/* ===== 查找替换栏 ===== */
+.find-bar {
+  display: none;
+  background: #2c2c2c;
+  border-bottom: 1px solid #444;
+  padding: 6px 12px;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  z-index: 50;
+}
+
+.find-bar.visible {
+  display: flex;
+}
+
+.find-bar input {
+  padding: 4px 8px;
+  border: 1px solid #555;
+  border-radius: 3px;
+  background: #3a3a3a;
+  color: #ddd;
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.15s;
+  min-width: 140px;
+}
+
+.find-bar input:focus {
+  border-color: #6c9fff;
+}
+
+.find-bar input.replace-input {
+  min-width: 120px;
+}
+
+.find-bar button {
+  padding: 3px 10px;
+  border: 1px solid #555;
+  border-radius: 3px;
+  background: #3a3a3a;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  transition: background 0.1s, border-color 0.1s;
+  min-width: 26px;
+  text-align: center;
+}
+
+.find-bar button:hover {
+  background: #4a4a4a;
+  border-color: #777;
+}
+
+.find-bar button.active-toggle {
+  border-color: #6c9fff;
+  background: #3a4a6a;
+  color: #8cf;
+}
+
+.find-bar .find-separator {
+  width: 1px;
+  height: 18px;
+  background: #555;
+  margin: 0 2px;
+}
+
+.find-bar .find-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1rem;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+.find-bar .find-close:hover {
+  color: #fff;
+}
+
+.find-bar .find-count {
+  font-size: 0.72rem;
+  color: #888;
+  min-width: 40px;
+  text-align: center;
+  white-space: nowrap;
+}

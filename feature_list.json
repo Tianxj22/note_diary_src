@@ -339,6 +339,18 @@
       "verification": "制造冲突后侧边栏显示冲突列表，可逐文件或批量选择保留策略解决"
     },
     {
+      "id": "F-046",
+      "name": "编辑标签页（搜索替换+文本编辑增强）",
+      "description": "查找替换栏（Ctrl+F/导航/替换/全部替换）+ 删除线/清除格式/有序无序列表/缩进/全选",
+      "status": "done",
+      "priority": "P1",
+      "milestone": "M3",
+      "dependencies": ["F-013"],
+      "estimatedEffort": "1d",
+      "completedAt": "2026-06-29",
+      "verification": "Ctrl+F 打开查找栏，Enter 导航，替换/全部替换正常；execCommand 按钮可用"
+    },
+    {
       "id": "F-025",
       "name": "绘图功能（铅笔/画笔/橡皮/颜料桶/取色器/图形/缩放）",
       "description": "在笔记中通过类似于画图的方式绘制图像，支持核心绘制工具和形状",
@@ -390,7 +402,7 @@
   "milestones": [
     { "id": "M1", "name": "Hello World", "targetDate": "2024-06-24", "status": "done" },
     { "id": "M2", "name": "基础编辑", "targetDate": "2024-06-24", "status": "done" },
-    { "id": "M3", "name": "体验版", "targetDate": "TBD", "status": "pending" },
+    { "id": "M3", "name": "体验版", "targetDate": "TBD", "status": "in-progress" },
     { "id": "M4", "name": "正式版", "targetDate": "TBD", "status": "pending" },
     { "id": "M5", "name": "云端同步", "targetDate": "2026-06-29", "status": "done" }
   ]
