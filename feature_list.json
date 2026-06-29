@@ -399,6 +399,18 @@
       "verification": "绘图标签页可切换，各工具正常绘制，完成插入编辑器，撤销/重做工作正常"
     },
     {
+      "id": "F-050",
+      "name": "Electron-builder 跨平台打包与快捷方式生成",
+      "description": "基于 electron-builder 实现 Windows/macOS/Linux 跨平台打包，NSIS 安装器自动创建桌面和开始菜单快捷方式",
+      "status": "done",
+      "priority": "P1",
+      "milestone": "M3",
+      "dependencies": ["F-002"],
+      "estimatedEffort": "0.5d",
+      "completedAt": "2026-06-29",
+      "verification": "npm run build:win 生成 NSIS 安装器 + 便携版，安装后桌面和开始菜单快捷方式正常"
+    },
+    {
       "id": "F-030",
       "name": "导出 (PDF/Markdown)",
       "description": "将笔记导出为 PDF 和 Markdown 格式文件",

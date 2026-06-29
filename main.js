@@ -16,6 +16,12 @@ const formatMigration = require('./format-migration');
 const gitSync = require('./git-sync');
 const keybindingsStore = require('./keybindings-store');
 
+// 必须在 app.whenReady() 之前设置，否则 Windows 任务栏图标与快捷方式无法正确关联
+app.setName('Note Diary');
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.tianxj22.note-diary');
+}
+
 let notesDir = '';
 let appSettings = settingsStore.getDefaults();
 let isQuitting = false;
@@ -83,6 +89,7 @@ function createWindow() {
     minWidth: 720,
     minHeight: 480,
     title: 'Note Diary',
+    icon: path.join(__dirname, 'build', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -587,13 +594,13 @@ function toggleWindow() {
 }
 
 /**
- * 创建托盘图标（16x16 蓝色方块，内嵌 base64 PNG）
+ * 创建托盘图标（从 build/icon.png 加载并缩放至 16x16）
  * @returns {Electron.NativeImage}
  */
 function createTrayIcon() {
-  // 16x16 蓝色方块 PNG 的 base64
-  const base64 = 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAK0lEQVQ4T2NkYPj/n4EBBhgZqYQYqYQYqYQYRv0w6gcq+oERAPljPCF52xJpAAAAAElFTkSuQmCC';
-  return nativeImage.createFromDataURL('data:image/png;base64,' + base64);
+  const iconPath = path.join(__dirname, 'build', 'icon.png');
+  const img = nativeImage.createFromPath(iconPath);
+  return img.resize({ width: 16, height: 16 });
 }
 
 /**
@@ -619,37 +626,53 @@ function createTray() {
   tray.on('double-click', () => toggleWindow());
 }
 
-app.whenReady().then(() => {
-  Menu.setApplicationMenu(null);
-  const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
-  notesDir = fileStore.ensureNotesDir(userDataPath);
-  appSettings = settingsStore.getSettings(userDataPath); // 加载持久化设置
-  keybindingsStore.loadKeybindings(userDataPath); // 首次运行自动生成 keybindings.json
+// 单实例锁：防止多开，第二次启动时聚焦已有窗口
+const gotTheLock = app.requestSingleInstanceLock();
 
-  // 检查是否需要文件格式迁移（.txt → .html）
-  const targetExt = getNoteExtension();
-  if (formatMigration.needsMigration(notesDir, targetExt)) {
-    const result = formatMigration.migrateNotesToFormat(notesDir, targetExt);
-    console.log('Format migration completed:', result);
-  }
-
-  // 启动时初始化 Git 同步（如果已配置）
-  setupGitSync();
-
-  registerIpcHandlers();
-  createWindow();
-
-  // E2E 测试模式下跳过托盘和全局快捷键（它们会干扰测试清理）
-  if (!isE2E) {
-    createTray();
-    const registered = globalShortcut.register('CommandOrControl+Shift+N', () => {
-      toggleWindow();
-    });
-    if (!registered) {
-      console.error('全局快捷键 CommandOrControl+Shift+N 注册失败');
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.show();
+      win.focus();
     }
-  }
-});
+  });
+
+  app.whenReady().then(() => {
+    Menu.setApplicationMenu(null);
+    const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
+    notesDir = fileStore.ensureNotesDir(userDataPath);
+    appSettings = settingsStore.getSettings(userDataPath); // 加载持久化设置
+    keybindingsStore.loadKeybindings(userDataPath); // 首次运行自动生成 keybindings.json
+
+    // 检查是否需要文件格式迁移（.txt → .html）
+    const targetExt = getNoteExtension();
+    if (formatMigration.needsMigration(notesDir, targetExt)) {
+      const result = formatMigration.migrateNotesToFormat(notesDir, targetExt);
+      console.log('Format migration completed:', result);
+    }
+
+    // 启动时初始化 Git 同步（如果已配置）
+    setupGitSync();
+
+    registerIpcHandlers();
+    createWindow();
+
+    // E2E 测试模式下跳过托盘和全局快捷键（它们会干扰测试清理）
+    if (!isE2E) {
+      createTray();
+      const registered = globalShortcut.register('CommandOrControl+Shift+N', () => {
+        toggleWindow();
+      });
+      if (!registered) {
+        console.error('全局快捷键 CommandOrControl+Shift+N 注册失败');
+      }
+    }
+  });
+}
 
 app.on('before-quit', () => {
   isQuitting = true;

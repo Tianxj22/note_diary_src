@@ -5,6 +5,13 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:win:portable": "electron-builder --win portable",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "dist": "electron-builder",
+    "icon:prepare": "node scripts/resize-icon.js",
     "test": "vitest run test/unit/",
     "test:unit": "vitest run test/unit/",
     "test:e2e": "vitest run test/e2e/",
@@ -13,10 +20,79 @@
   },
   "author": "tianxj22",
   "license": "MIT",
+  "build": {
+    "appId": "com.tianxj22.note-diary",
+    "productName": "Note Diary",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "file-store.js",
+      "settings-store.js",
+      "format-migration.js",
+      "git-sync.js",
+      "keybindings-store.js",
+      "crypto-utils.js",
+      "index.html",
+      "css/**/*",
+      "js/**/*",
+      "build/icon.png",
+      "build/icons/**/*",
+      "node_modules/simple-git/**/*"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Note Diary",
+      "uninstallDisplayName": "Note Diary"
+    },
+    "portable": {
+      "artifactName": "Note-Diary-${version}-portable.exe"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity"
+    },
+    "dmg": {
+      "title": "Note Diary ${version}",
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    },
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb", "arch": ["x64"] }
+      ],
+      "icon": "build/icons",
+      "category": "Office"
+    },
+    "fileAssociations": [
+      { "ext": "html", "name": "Note Diary HTML Note", "role": "Editor" },
+      { "ext": "txt", "name": "Note Diary Text Note", "role": "Editor" }
+    ]
+  },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "canvas": "^3.2.3",
     "electron": "^33.0.0",
+    "electron-builder": "^26.15.3",
     "jsdom": "^29.1.1",
     "vitest": "^4.1.9"
   },

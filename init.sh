@@ -16,7 +16,7 @@ echo ""
 
 # 2. 检查关键源文件 / Static check — verify source files exist (no build/compile step — plain JavaScript)
 echo "[2/5] Static & lint check — verify source files..."
-for f in main.js preload.js index.html package.json file-store.js; do
+for f in main.js preload.js index.html package.json file-store.js build/icon.png; do
   if [ -f "$f" ]; then
     echo "  PASS $f"
   else
