@@ -317,11 +317,8 @@ function updateLineNumbers() {
     // 跳过列表容器（<ol>/<ul>）
     if (skipTags[child.tagName]) continue;
 
-    // 跳过清单/日志时间标记块（块内仅有 check-box 或 log-stamp，无正文）
-    var firstEl = child.querySelector('.check-box, .log-stamp');
-    if (firstEl && firstEl.parentElement === child && !child.textContent.replace(/\s/g, '').replace(/[☐☑]/g, '').replace(/\d{2}:\d{2}:\d{2}/, '').trim()) {
-      continue;
-    }
+    // 跳过含清单或日志时间标记的块（无论有无额外内容）
+    if (child.querySelector('.check-box, .log-stamp')) continue;
 
     // 该块的第一个逻辑行：标注行号
     lineNum++;
