@@ -32,11 +32,32 @@ describe('git-sync', () => {
   });
 
   describe('buildAuthUrl', () => {
-    it('U-91: 应在 HTTPS URL 中嵌入 Token', () => {
+    it('U-91: GitHub URL 应使用 token:x-oauth-basic 认证格式', () => {
       const url = gitSync.buildAuthUrl('https://github.com/user/repo.git', 'ghp_token123');
       expect(url).toContain('ghp_token123');
       expect(url).toContain('x-oauth-basic');
       expect(url).toContain('github.com');
+    });
+
+    it('U-91a: GitLab URL 应使用 oauth2:token 认证格式', () => {
+      const url = gitSync.buildAuthUrl('https://gitlab.com/user/repo.git', 'glpat-abc123');
+      expect(url).toContain('oauth2');
+      expect(url).toContain('glpat-abc123');
+      expect(url).toContain('gitlab.com');
+    });
+
+    it('U-91b: 自托管 GitLab URL 应使用 oauth2:token 认证格式', () => {
+      const url = gitSync.buildAuthUrl('https://gitlab.example.com/user/repo.git', 'glpat-xyz');
+      expect(url).toContain('oauth2');
+      expect(url).toContain('glpat-xyz');
+      expect(url).toContain('gitlab.example.com');
+    });
+
+    it('U-91c: 通用 Git 托管应使用 token:token 格式', () => {
+      const url = gitSync.buildAuthUrl('https://gitee.com/user/repo.git', 'my-token');
+      expect(url).toContain('token');
+      expect(url).toContain('my-token');
+      expect(url).toContain('gitee.com');
     });
 
     it('U-92: 无 Token 时应返回原 URL', () => {

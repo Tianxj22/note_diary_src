@@ -26,12 +26,40 @@ settings.json
  * @param {string} token - Access Token
  * @returns {string}
  */
+/**
+ * 根据远程 URL 判断 Git 托管平台
+ * @param {string} remoteUrl
+ * @returns {'github'|'gitlab'|'generic'}
+ */
+function detectProvider(remoteUrl) {
+  const host = (new URL(remoteUrl)).hostname.toLowerCase();
+  if (host.includes('github.com')) return 'github';
+  if (host.includes('gitlab.com') || host.includes('gitlab.')) return 'gitlab';
+  return 'generic';
+}
+
 function buildAuthUrl(remoteUrl, token) {
   if (!token || !remoteUrl.startsWith('https://')) return remoteUrl;
-  // https://github.com/user/repo.git → https://{token}:x-oauth-basic@github.com/user/repo.git
   const urlObj = new URL(remoteUrl);
-  urlObj.username = token;
-  urlObj.password = 'x-oauth-basic';
+  const provider = detectProvider(remoteUrl);
+
+  switch (provider) {
+    case 'github':
+      // GitHub: token 作为用户名，x-oauth-basic 作为密码
+      urlObj.username = token;
+      urlObj.password = 'x-oauth-basic';
+      break;
+    case 'gitlab':
+      // GitLab: oauth2 作为用户名，token 作为密码
+      urlObj.username = 'oauth2';
+      urlObj.password = token;
+      break;
+    default:
+      // 通用: token 作为密码，用户名任意
+      urlObj.username = 'token';
+      urlObj.password = token;
+      break;
+  }
   return urlObj.toString();
 }
 
@@ -355,4 +383,5 @@ module.exports = {
   initRepo, setRemote, configureUser, getStatus, commit,
   pull, push, hasConflicts, resolveConflict, getHistory,
   fullSync, getSyncState, updateSyncState, buildAuthUrl,
+  detectProvider,
 };
