@@ -29,6 +29,49 @@ function getNoteExtension() {
 }
 
 /**
+ * 获取 Git Token 明文（仅主进程内存中，不发送给渲染进程）
+ * @returns {string}
+ */
+function getGitToken() {
+  return (appSettings && appSettings.sync && appSettings.sync.git && appSettings.sync.git._tokenPlain) || '';
+}
+
+/** 自动同步定时器引用 */
+let autoSyncTimer = null;
+
+/**
+ * 初始化/配置 Git 同步（设置保存后或启动时调用）
+ */
+function setupGitSync() {
+  const gitCfg = appSettings.sync.git;
+  if (!appSettings.sync.enabled || appSettings.sync.mode !== 'git' || !gitCfg.remoteUrl) {
+    // 条件不满足：清除自动同步定时器
+    if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
+    return;
+  }
+
+  // 初始化 Git 仓库 + 远程配置
+  gitSync.initRepo(notesDir).then(() => {
+    gitSync.setRemote(notesDir, gitCfg.remoteUrl);
+    if (gitCfg.authorName || gitCfg.authorEmail) {
+      gitSync.configureUser(notesDir, gitCfg.authorName, gitCfg.authorEmail);
+    }
+    console.log('Git sync initialized:', gitCfg.remoteUrl);
+  }).catch(err => console.error('Git init error:', err.message));
+
+  // 自动同步定时器
+  if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
+  if (appSettings.sync.autoSync) {
+    autoSyncTimer = setInterval(() => {
+      const token = getGitToken();
+      const branch = gitCfg.branch || 'main';
+      gitSync.pull(notesDir, branch, token)
+        .catch(err => console.error('Auto pull error:', err.message));
+    }, appSettings.sync.autoSyncIntervalMinutes * 60 * 1000);
+  }
+}
+
+/**
  * 创建并配置主窗口
  * @returns {BrowserWindow}
  */
@@ -258,6 +301,8 @@ function registerIpcHandlers() {
   ipcMain.handle('settings:update', (_event, partial, newToken) => {
     const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
     appSettings = settingsStore.updateSettings(userDataPath, partial, newToken);
+    // 设置变更后立即同步 Git 配置（运行时生效，无需重启）
+    setupGitSync();
     return true;
   });
 
@@ -321,14 +366,6 @@ function registerIpcHandlers() {
   });
 
   // ---- Git 同步 ----
-
-  /**
-   * 获取 Git Token 明文（仅主进程内存中）
-   * @returns {string}
-   */
-  function getGitToken() {
-    return (appSettings && appSettings.sync && appSettings.sync.git && appSettings.sync.git._tokenPlain) || '';
-  }
 
   ipcMain.handle('sync:git-init', async () => {
     const settings = appSettings.sync.git;
@@ -534,28 +571,8 @@ app.whenReady().then(() => {
     console.log('Format migration completed:', result);
   }
 
-  // 启动 Git 同步（如果已配置）
-  if (appSettings.sync.enabled && appSettings.sync.mode === 'git') {
-    const gitCfg = appSettings.sync.git;
-    if (gitCfg.remoteUrl) {
-      gitSync.initRepo(notesDir).then(() => {
-        gitSync.setRemote(notesDir, gitCfg.remoteUrl);
-        if (gitCfg.authorName || gitCfg.authorEmail) {
-          gitSync.configureUser(notesDir, gitCfg.authorName, gitCfg.authorEmail);
-        }
-      }).catch(err => console.error('Git init error:', err.message));
-    }
-
-    // 自动同步定时器
-    if (appSettings.sync.autoSync) {
-      setInterval(() => {
-        const token = getGitToken();
-        const branch = gitCfg.branch || 'main';
-        gitSync.pull(notesDir, branch, token)
-          .catch(err => console.error('Auto pull error:', err.message));
-      }, appSettings.sync.autoSyncIntervalMinutes * 60 * 1000);
-    }
-  }
+  // 启动时初始化 Git 同步（如果已配置）
+  setupGitSync();
 
   registerIpcHandlers();
   createWindow();

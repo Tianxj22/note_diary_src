@@ -63,9 +63,9 @@
     document.getElementById('settings-git-author-name').value = s.sync.git.authorName || '';
     document.getElementById('settings-git-author-email').value = s.sync.git.authorEmail || '';
 
-    // Token 字段：如果有已存的 token，显示掩码占位符
+    // Token 字段：_tokenMasked 是 IPC 返回的掩码标记（tokenEncrypted 已从渲染进程响应中删除）
     const tokenInput = document.getElementById('settings-git-token');
-    if (s.sync.git.tokenEncrypted && s.sync.git.tokenEncrypted.data) {
+    if (s.sync.git._tokenMasked) {
       tokenInput.value = '••••••••••••••••';
       tokenInput.dataset.hasExisting = 'true';
     } else {
