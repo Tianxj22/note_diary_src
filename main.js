@@ -301,8 +301,6 @@ function registerIpcHandlers() {
   ipcMain.handle('settings:update', (_event, partial, newToken) => {
     const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
     appSettings = settingsStore.updateSettings(userDataPath, partial, newToken);
-    // 设置变更后立即同步 Git 配置（运行时生效，无需重启）
-    setupGitSync();
     return true;
   });
 
