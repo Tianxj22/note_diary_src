@@ -315,6 +315,18 @@
       "verification": "新笔记默认 .html 扩展名并包含元数据头；旧 .txt 笔记可正常读取和迁移"
     },
     {
+      "id": "F-042",
+      "name": "Git 云端同步",
+      "description": "基于 simple-git 的笔记 Git 仓库同步，支持 GitHub/GitLab，init/pull/push/status/conflict 检测",
+      "status": "done",
+      "priority": "P1",
+      "milestone": "M5",
+      "dependencies": ["F-040", "F-041"],
+      "estimatedEffort": "2d",
+      "completedAt": "2026-06-29",
+      "verification": "工具栏同步标签页可 pull/push/commit；Git 初始化、状态检测、冲突检测正常"
+    },
+    {
       "id": "F-025",
       "name": "绘图功能（铅笔/画笔/橡皮/颜料桶/取色器/图形/缩放）",
       "description": "在笔记中通过类似于画图的方式绘制图像，支持核心绘制工具和形状",

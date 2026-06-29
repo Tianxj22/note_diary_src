@@ -61,6 +61,7 @@
         <button class="toolbar-tab" data-tab="insert">📥 插入</button>
         <button class="toolbar-tab" data-tab="draw">✏️ 绘图</button>
         <button class="toolbar-tab toolbar-tab-image" data-tab="image-edit" id="tab-image-edit" style="display:none">🖼 图片编辑</button>
+        <button class="toolbar-tab" data-tab="sync">☁ 同步</button>
       </div>
       <div class="toolbar-actions" id="toolbar-file">
         <button id="btn-new" class="style-btn" data-tooltip="新建笔记 (Ctrl+N)">📝</button>
@@ -212,6 +213,14 @@
         <button id="btn-crop-image" class="style-btn" data-tooltip="裁剪图片">✂️ 裁剪</button>
         <span class="separator"></span>
         <button id="btn-restore-image" class="style-btn" data-tooltip="恢复原图" style="display:none">🔄 恢复</button>
+      </div>
+      <div class="toolbar-actions" id="toolbar-sync" style="display:none">
+        <button id="btn-sync-pull" class="style-btn" data-tooltip="拉取远程更新">↓ 拉取</button>
+        <button id="btn-sync-push" class="style-btn" data-tooltip="推送本地更改">↑ 推送</button>
+        <span class="separator"></span>
+        <button id="btn-sync-commit" class="style-btn" data-tooltip="提交本地变更">✓ 提交</button>
+        <span class="separator"></span>
+        <span id="sync-status-text" class="sync-status-label">未配置</span>
       </div>
     </div>
 
@@ -398,6 +407,7 @@
   <script src="js/drawing-tools.js"></script>
   <script src="js/drawing-ui.js"></script>
   <script src="js/settings-ui.js"></script>
+  <script src="js/sync-ui.js"></script>
   <script src="js/init.js"></script>
 </body>
 </html>

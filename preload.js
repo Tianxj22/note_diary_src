@@ -151,4 +151,47 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @returns {Promise<string|null>}
    */
   selectFolder: () => ipcRenderer.invoke('dialog:select-folder'),
+  /**
+   * 初始化 Git 仓库 + 远程配置
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  gitInit: () => ipcRenderer.invoke('sync:git-init'),
+  /**
+   * 获取 Git 工作树状态
+   * @returns {Promise<object>}
+   */
+  gitStatus: () => ipcRenderer.invoke('sync:git-status'),
+  /**
+   * 提交本地变更
+   * @param {string} message - 提交信息
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  gitCommit: (message) => ipcRenderer.invoke('sync:git-commit', message),
+  /**
+   * 从远程拉取
+   * @returns {Promise<{success: boolean, message: string, hasConflicts: boolean}>}
+   */
+  gitPull: () => ipcRenderer.invoke('sync:git-pull'),
+  /**
+   * 推送到远程
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  gitPush: () => ipcRenderer.invoke('sync:git-push'),
+  /**
+   * 检查是否有合并冲突
+   * @returns {Promise<{hasConflicts: boolean, conflictFiles: string[]}>}
+   */
+  gitHasConflicts: () => ipcRenderer.invoke('sync:git-has-conflicts'),
+  /**
+   * 解决冲突
+   * @param {string} strategy - 'local' | 'remote'
+   * @param {string} [fileName]
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  gitResolve: (strategy, fileName) => ipcRenderer.invoke('sync:git-resolve', strategy, fileName),
+  /**
+   * 获取提交历史
+   * @returns {Promise<Array>}
+   */
+  gitHistory: () => ipcRenderer.invoke('sync:git-history'),
 });

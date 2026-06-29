@@ -246,3 +246,32 @@
 #btn-crop-image {
   white-space: nowrap;
 }
+
+/* ---- 同步状态标签 ---- */
+.sync-status-label {
+  font-size: 0.8rem;
+  color: #888;
+  user-select: none;
+  padding: 4px 8px;
+  border-radius: 3px;
+}
+
+.sync-status-label.sync-ok {
+  color: #2a7d2a;
+  background: #e8f5e9;
+}
+
+.sync-status-label.sync-pending {
+  color: #e67e22;
+  background: #fef3e8;
+}
+
+.sync-status-label.sync-warning {
+  color: #c62828;
+  background: #ffebee;
+}
+
+.sync-status-label.sync-error {
+  color: #c62828;
+  background: #ffebee;
+}

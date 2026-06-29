@@ -13,6 +13,7 @@ const fs = require('fs');
 const fileStore = require('./file-store');
 const settingsStore = require('./settings-store');
 const formatMigration = require('./format-migration');
+const gitSync = require('./git-sync');
 
 let notesDir = '';
 let appSettings = settingsStore.getDefaults();
@@ -318,6 +319,66 @@ function registerIpcHandlers() {
     if (result.canceled || result.filePaths.length === 0) return null;
     return result.filePaths[0];
   });
+
+  // ---- Git 同步 ----
+
+  /**
+   * 获取 Git Token 明文（仅主进程内存中）
+   * @returns {string}
+   */
+  function getGitToken() {
+    return (appSettings && appSettings.sync && appSettings.sync.git && appSettings.sync.git._tokenPlain) || '';
+  }
+
+  ipcMain.handle('sync:git-init', async () => {
+    const settings = appSettings.sync.git;
+    await gitSync.initRepo(notesDir);
+    if (settings.remoteUrl) {
+      await gitSync.setRemote(notesDir, settings.remoteUrl);
+    }
+    if (settings.authorName || settings.authorEmail) {
+      await gitSync.configureUser(notesDir, settings.authorName, settings.authorEmail);
+    }
+    return { success: true, message: 'Git 仓库已初始化' };
+  });
+
+  ipcMain.handle('sync:git-status', async () => {
+    return gitSync.getStatus(notesDir);
+  });
+
+  ipcMain.handle('sync:git-commit', async (_event, message) => {
+    return gitSync.commit(notesDir, message);
+  });
+
+  ipcMain.handle('sync:git-pull', async () => {
+    const token = getGitToken();
+    const branch = (appSettings.sync.git && appSettings.sync.git.branch) || 'main';
+    const result = await gitSync.pull(notesDir, branch, token);
+    if (result.success) gitSync.updateSyncState(notesDir, 'pull');
+    return result;
+  });
+
+  ipcMain.handle('sync:git-push', async () => {
+    const token = getGitToken();
+    const branch = (appSettings.sync.git && appSettings.sync.git.branch) || 'main';
+    // 先提交再推送
+    await gitSync.commit(notesDir, 'sync: auto commit');
+    const result = await gitSync.push(notesDir, branch, token);
+    if (result.success) gitSync.updateSyncState(notesDir, 'push');
+    return result;
+  });
+
+  ipcMain.handle('sync:git-has-conflicts', async () => {
+    return gitSync.hasConflicts(notesDir);
+  });
+
+  ipcMain.handle('sync:git-resolve', async (_event, strategy, fileName) => {
+    return gitSync.resolveConflict(notesDir, strategy, fileName);
+  });
+
+  ipcMain.handle('sync:git-history', async () => {
+    return gitSync.getHistory(notesDir);
+  });
 }
 
 /**
@@ -471,6 +532,29 @@ app.whenReady().then(() => {
   if (formatMigration.needsMigration(notesDir, targetExt)) {
     const result = formatMigration.migrateNotesToFormat(notesDir, targetExt);
     console.log('Format migration completed:', result);
+  }
+
+  // 启动 Git 同步（如果已配置）
+  if (appSettings.sync.enabled && appSettings.sync.mode === 'git') {
+    const gitCfg = appSettings.sync.git;
+    if (gitCfg.remoteUrl) {
+      gitSync.initRepo(notesDir).then(() => {
+        gitSync.setRemote(notesDir, gitCfg.remoteUrl);
+        if (gitCfg.authorName || gitCfg.authorEmail) {
+          gitSync.configureUser(notesDir, gitCfg.authorName, gitCfg.authorEmail);
+        }
+      }).catch(err => console.error('Git init error:', err.message));
+    }
+
+    // 自动同步定时器
+    if (appSettings.sync.autoSync) {
+      setInterval(() => {
+        const token = getGitToken();
+        const branch = gitCfg.branch || 'main';
+        gitSync.pull(notesDir, branch, token)
+          .catch(err => console.error('Auto pull error:', err.message));
+      }, appSettings.sync.autoSyncIntervalMinutes * 60 * 1000);
+    }
   }
 
   registerIpcHandlers();
