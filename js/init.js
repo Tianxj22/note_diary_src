@@ -91,15 +91,28 @@ document.addEventListener('selectionchange', () => {
   if (!ND.formatPainterActive) updateStyleToolbar();
 });
 
-// ---- 猴子补丁：showEditor 中追加 style toolbar 事件绑定 ----
-const origShowEditor = showEditor;
+// ---- 猴子补丁：showEditor 中追加 style toolbar + 行号事件绑定 ----
+var origShowEditor = showEditor;
 showEditor = function () {
   origShowEditor();
   if (ND.editorDiv) {
     ND.editorDiv.addEventListener('click', updateStyleToolbar);
     ND.editorDiv.addEventListener('keyup', updateStyleToolbar);
+    // 行号更新
+    setTimeout(updateLineNumbers, 50);
+  }
+  if (ND.editorScroll) {
+    ND.editorScroll.addEventListener('scroll', updateLineNumbers);
   }
 };
+
+// ---- 行号随编辑更新 ----
+document.addEventListener('input', function (e) {
+  if (ND.editorDiv && ND.editorDiv.contains(e.target)) {
+    updateLineNumbers();
+  }
+});
+window.addEventListener('resize', updateLineNumbers);
 
 // ---- 启动 ----
 loadNoteList();

@@ -4,13 +4,13 @@
 
 > **Startup Workflow**: 新会话从此处开始。Read this section to resume work.
 
-- **Current Objective / 当前活跃功能**: M3 体验版进行中 (F-046 编辑标签页已完成)；下一步可继续 M3 或 M4 功能
-- **Current State**: M1/M2/M2-ext 完成 (100%), M3 进行中 (1/4 完成), M4 未开始 (0%), M5 完成 (100%)
+- **Current Objective / 当前活跃功能**: M3 体验版进行中 (F-046 编辑标签页 + F-047 行号列表对齐 已完成)
+- **Current State**: M1/M2/M2-ext 完成 (100%), M3 进行中 (2/5 完成), M4 未开始 (0%), M5 完成 (100%)
 - **Blockers / 阻塞项**: 无
 - **Recommended Next Step / 下一步操作**:
   1. M3: F-020 日记日历视图 / F-021 全文搜索 / F-022 标签系统
   2. M4: F-030 导出 PDF/Markdown / F-031 主题切换 / F-032 自动保存增强
-- **Files Modified / 最近修改文件**: `js/edit-toolbar.js`, `css/edit-toolbar.css`, `index.html`
+- **Files Modified / 最近修改文件**: `css/editor.css`, `js/editor-core.js`, `js/editor-events.js`, `js/init.js`
 - **Last Updated / 最后更新**: 2026-06-29
 
 ---

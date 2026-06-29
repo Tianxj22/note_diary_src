@@ -213,6 +213,12 @@ function showEditor() {
   scrollDiv.className = 'editor-scroll';
   ND.editorScroll = scrollDiv;
 
+  // 行号栏（纯视觉，不保存到文件）
+  var lineGutter = document.createElement('div');
+  lineGutter.className = 'line-gutter';
+  lineGutter.id = 'line-gutter';
+  scrollDiv.appendChild(lineGutter);
+
   // 文字层
   ND.editorDiv = document.createElement('div');
   ND.editorDiv.className = 'editor-content';

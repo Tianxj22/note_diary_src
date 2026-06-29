@@ -283,3 +283,42 @@ function updateUndoRedoButtons() {
     // queryCommandEnabled 可能抛异常，忽略
   }
 }
+
+// ---- 行号（纯视觉，不保存到文件） ----
+
+/**
+ * 更新编辑区左侧行号
+ * 基于 .editor-content 的实际渲染高度和 line-height 计算行数
+ */
+function updateLineNumbers() {
+  var gutter = document.getElementById('line-gutter');
+  if (!gutter || !ND.editorDiv) return;
+
+  var contentEl = ND.editorDiv;
+  var lineHeight = 1.8; // 与 CSS 中的 line-height 保持一致
+  var fontSize = 0.95;  // rem，CSS 中 font-size
+  // 计算行高像素值：获取 contentEl 的 computed style 更准确
+  var computedStyle = window.getComputedStyle(contentEl);
+  var actualLineHeight = parseFloat(computedStyle.lineHeight);
+  if (isNaN(actualLineHeight) || actualLineHeight === 0) {
+    actualLineHeight = parseFloat(computedStyle.fontSize) * lineHeight;
+  }
+
+  // 计算内容区需要的行数
+  var contentHeight = contentEl.scrollHeight;
+  var paddingTop = parseFloat(computedStyle.paddingTop) || 20;
+  var paddingBottom = parseFloat(computedStyle.paddingBottom) || 20;
+  var visibleHeight = contentHeight - paddingTop - paddingBottom;
+  var lineCount = Math.max(1, Math.ceil(visibleHeight / actualLineHeight));
+
+  // 如果行数不变，跳过更新
+  if (gutter.dataset.lastCount === String(lineCount)) return;
+  gutter.dataset.lastCount = String(lineCount);
+
+  var html = '';
+  for (var i = 1; i <= lineCount; i++) {
+    html += '<span class="line-num">' + i + '</span>';
+  }
+  gutter.innerHTML = html;
+}
+

@@ -351,6 +351,18 @@
       "verification": "Ctrl+F 打开查找栏，Enter 导航，替换/全部替换正常；execCommand 按钮可用"
     },
     {
+      "id": "F-047",
+      "name": "编辑器行号 + 列表对齐",
+      "description": "编辑区左侧显示浅色行号（纯视觉，不修改文件）；有序/无序列表标记与正文对齐",
+      "status": "done",
+      "priority": "P2",
+      "milestone": "M3",
+      "dependencies": ["F-013"],
+      "estimatedEffort": "0.5d",
+      "completedAt": "2026-06-29",
+      "verification": "编辑区左侧显示行号，随输入/滚动/窗口变化动态更新；列表缩进正常"
+    },
+    {
       "id": "F-025",
       "name": "绘图功能（铅笔/画笔/橡皮/颜料桶/取色器/图形/缩放）",
       "description": "在笔记中通过类似于画图的方式绘制图像，支持核心绘制工具和形状",
