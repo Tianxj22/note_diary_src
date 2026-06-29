@@ -27,17 +27,43 @@ npm run test:watch
 ```
 test/
 ├── unit/
-│   └── file-store.test.mjs   # 笔记文件读写模块单元测试（45 条）
+│   ├── file-store.test.mjs       # 笔记文件读写模块（45 条）
+│   ├── utils.test.mjs            # 工具函数（16 条）
+│   ├── image-resize.test.mjs     # 图片缩放编辑（33 条）
+│   └── drawing-tools.test.mjs    # 绘图算法（24 条）
+├── integration/                  # ★ 集成测试（64 条，详见 docs/integration_test.md）
+│   ├── helpers.mjs               # 共享环境
+│   ├── full-workflow.test.mjs    # 全功能端到端流程
+│   ├── drawing-shapes-workflow.test.mjs # 全形状工具切换
+│   ├── serialization.test.mjs    # 内容编解码往返
+│   ├── image-lifecycle.test.mjs  # 图片完整生命周期
+│   ├── marker-richtext.test.mjs  # 标记+富文本共存
+│   ├── drawing-mode.test.mjs     # 绘图模式状态机
+│   ├── mixed-content-save-load.test.mjs # 混合内容持久化
+│   ├── undo-redo-cross-content.test.mjs # 跨内容撤销重做
+│   ├── format-painter.test.mjs   # 格式刷跨类型
+│   ├── cross-tab-workflow.test.mjs # 标签切换工作流
+│   └── state-cleanup.test.mjs    # 状态清理验证
 ├── e2e/
-│   ├── editor.test.mjs       # 编辑器 UI 端到端测试（15 条）
-│   ├── delete-edit.test.mjs  # 删除后编辑专项测试（12 条）
-│   ├── editor-title.test.mjs # 标题栏同步测试（8 条）
-│   ├── editor-style.test.mjs # 富文本样式工具栏测试（15 条）
-│   ├── checklist-log.test.mjs # 清单复选框 + 日志时间戳测试（14 条）
-│   └── image-insert.test.mjs # 图片插入与窗口选择器测试（22 条）
-├── vitest.config.mjs         # Vitest 配置
-└── README.md                 # 本文件
+│   ├── editor.test.mjs           # 编辑器 UI（15 条）
+│   ├── delete-edit.test.mjs      # 删除后编辑专项（12 条）
+│   ├── editor-title.test.mjs     # 标题栏同步（8 条）
+│   ├── editor-style.test.mjs     # 富文本样式工具栏（15 条）
+│   ├── checklist-log.test.mjs    # 清单+时间戳（14 条）
+│   └── image-insert.test.mjs     # 图片插入（22 条）
+├── vitest.config.mjs             # Vitest 配置
+└── README.md                     # 本文件
 ```
+
+### 集成测试
+
+运行集成测试（无需桌面环境，使用 jsdom 模拟）：
+
+```bash
+npx vitest run test/integration/
+```
+
+集成测试模拟真实用户工作流，覆盖多模块协作、工具切换、状态传递等场景。详细文档见 [`docs/integration_test.md`](../docs/integration_test.md)。
 
 ## 测试用例索引
 

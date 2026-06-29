@@ -94,6 +94,32 @@ function bindCanvasEvents() {
   ND.drawCanvas.addEventListener('mousedown', _boundMouseDown);
   document.addEventListener('mousemove', _boundMouseMove);
   document.addEventListener('mouseup', _boundMouseUp);
+
+  // 在非编辑区 mousedown 时中止选区/形状拖拽流程
+  document.addEventListener('mousedown', function(e) {
+    if (!ND.drawingActive || !ND.isDrawing) return;
+    // 形状和选区工具才需要中止
+    if (ND.currentTool.indexOf('shape-') !== 0 && ND.currentTool.indexOf('select-') !== 0) return;
+    // 点击在编辑区内 → 正常流程
+    if (e.target.closest('.editor-area')) return;
+
+    var ctx = ND.drawCtx;
+
+    // 形状工具：还原预览快照，画布回到拖拽前状态
+    if (ND.currentTool.indexOf('shape-') === 0 && ND.previewSnapshot && ctx) {
+      ctx.putImageData(ND.previewSnapshot, 0, 0);
+    }
+
+    // 选区工具：隐藏 overlay，清除中间状态
+    if (ND.currentTool.indexOf('select-') === 0) {
+      hideSelectionOverlay();
+    }
+
+    // 统一重置
+    ND.isDrawing = false;
+    ND.previewSnapshot = null;
+    ND.lassoPoints = [];
+  }, true);
 }
 
 function unbindCanvasEvents() {
