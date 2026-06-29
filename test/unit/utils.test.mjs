@@ -159,3 +159,95 @@ describe('parseDefaultNameNumber', () => {
     expect(parseDefaultNameNumber('新建笔记本 ()')).toBeNull();
   });
 });
+
+describe('diffLines', () => {
+  /**
+   * LCS diff — 复制自 js/utils.js 以支持纯 Node.js 测试
+   */
+  function diffLines(localText, remoteText) {
+    var localLines = localText.split('\n');
+    var remoteLines = remoteText.split('\n');
+    var m = localLines.length;
+    var n = remoteLines.length;
+    var dp = [];
+    for (var i = 0; i <= m; i++) {
+      dp[i] = [];
+      for (var j = 0; j <= n; j++) {
+        if (i === 0 || j === 0) {
+          dp[i][j] = 0;
+        } else if (localLines[i - 1] === remoteLines[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+        } else {
+          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+    }
+    var localResult = [];
+    var remoteResult = [];
+    var i = m, j = n;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && localLines[i - 1] === remoteLines[j - 1]) {
+        localResult.unshift({ text: localLines[i - 1], type: 'same' });
+        remoteResult.unshift({ text: remoteLines[j - 1], type: 'same' });
+        i--; j--;
+      } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+        localResult.unshift({ text: '', type: 'empty' });
+        remoteResult.unshift({ text: remoteLines[j - 1], type: 'added' });
+        j--;
+      } else {
+        localResult.unshift({ text: localLines[i - 1], type: 'removed' });
+        remoteResult.unshift({ text: '', type: 'empty' });
+        i--;
+      }
+    }
+    return { local: localResult, remote: remoteResult };
+  }
+
+  it('U-106: 相同文本应全部标记为 same', () => {
+    var result = diffLines('hello\nworld', 'hello\nworld');
+    expect(result.local.length).toBe(2);
+    expect(result.local[0].type).toBe('same');
+    expect(result.local[1].type).toBe('same');
+    expect(result.remote[0].type).toBe('same');
+  });
+
+  it('U-107: 新增行应标记为 added', () => {
+    var result = diffLines('line1\nline2', 'line1\nline2\nline3');
+    expect(result.local.length).toBe(3);
+    expect(result.local[2].type).toBe('empty');
+    expect(result.remote[2].type).toBe('added');
+    expect(result.remote[2].text).toBe('line3');
+  });
+
+  it('U-108: 删除行应标记为 removed', () => {
+    var result = diffLines('line1\nline2\nline3', 'line1\nline3');
+    expect(result.local.length).toBe(3);
+    expect(result.local[1].type).toBe('removed');
+    expect(result.local[1].text).toBe('line2');
+  });
+
+  it('U-109: 完全不同的文本（各自一行，diff 结果各两行）', () => {
+    var result = diffLines('aaa', 'bbb');
+    // LCS: local 'aaa' removed + empty placeholder for remote 'bbb' = 2 entries
+    expect(result.local.length).toBe(2);
+    expect(result.local[0].type).toBe('removed');
+    expect(result.local[0].text).toBe('aaa');
+    expect(result.remote.length).toBe(2);
+    expect(result.remote[1].type).toBe('added');
+    expect(result.remote[1].text).toBe('bbb');
+  });
+
+  it('U-110: 空文本对比', () => {
+    var result = diffLines('', '');
+    expect(result.local.length).toBe(1);
+    expect(result.local[0].type).toBe('same');
+    expect(result.local[0].text).toBe('');
+  });
+
+  it('U-111: 单行 vs 多行', () => {
+    var result = diffLines('single', 'single\nnew line');
+    expect(result.local.length).toBe(2);
+    expect(result.local[0].type).toBe('same');
+    expect(result.remote[1].type).toBe('added');
+  });
+});

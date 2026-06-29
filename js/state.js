@@ -123,6 +123,11 @@ ND.zoomLabel = document.getElementById('zoom-label');
 ND.settingsOverlay = document.getElementById('settings-overlay');
 ND.btnSettings = document.getElementById('btn-settings');
 
+// ---- 冲突 DOM ----
+ND.tabConflicts = document.getElementById('tab-conflicts');
+ND.conflictBulkActions = document.getElementById('conflict-bulk-actions');
+ND.conflictPreviewOverlay = document.getElementById('conflict-preview-overlay');
+
 // ---- 选区状态 ----
 ND.selectionMask = null;                // ImageData|null: 选区遮罩
 ND.selectionBounds = null;              // {x,y,w,h}|null: 选区边界

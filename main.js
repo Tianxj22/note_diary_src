@@ -414,6 +414,55 @@ function registerIpcHandlers() {
   ipcMain.handle('sync:git-history', async () => {
     return gitSync.getHistory(notesDir);
   });
+
+  /**
+   * 获取冲突文件中本地版本的内容（git show :2:file）
+   */
+  ipcMain.handle('sync:git-show-local', async (_event, fileName) => {
+    try {
+      const git = require('simple-git')(notesDir);
+      return await git.show([':2:' + fileName]);
+    } catch (_) {
+      // 如果 stage 2 不存在，返回文件当前内容
+      try {
+        const filePath = require('path').join(notesDir, fileName);
+        return require('fs').readFileSync(filePath, 'utf-8');
+      } catch (_) { return ''; }
+    }
+  });
+
+  /**
+   * 获取冲突文件中远程版本的内容（git show :3:file）
+   */
+  ipcMain.handle('sync:git-show-remote', async (_event, fileName) => {
+    try {
+      const git = require('simple-git')(notesDir);
+      return await git.show([':3:' + fileName]);
+    } catch (_) {
+      return '';
+    }
+  });
+
+  /**
+   * 检出远程版本文件（用于"保留双方"策略）
+   */
+  ipcMain.handle('sync:git-checkout-theirs', async (_event, fileName) => {
+    try {
+      const git = require('simple-git')(notesDir);
+      const remoteContent = await git.show([':3:' + fileName]);
+      const fs = require('fs');
+      const p = require('path');
+      const ext = p.extname(fileName);
+      const base = fileName.replace(new RegExp(ext.replace('.', '\\.') + '$'), '');
+      const remoteFileName = base + '.remote-' + Date.now() + ext;
+      fs.writeFileSync(p.join(notesDir, remoteFileName), remoteContent, 'utf-8');
+      // 暂存以便提交
+      await git.add(remoteFileName);
+      return { success: true, fileName: remoteFileName };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  });
 }
 
 /**

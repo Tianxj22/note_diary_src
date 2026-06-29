@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="css/overlays.css">
   <link rel="stylesheet" href="css/drawing.css">
   <link rel="stylesheet" href="css/settings.css">
+  <link rel="stylesheet" href="css/conflict.css">
 </head>
 <body>
   <!-- 侧边栏 -->
@@ -28,6 +29,7 @@
     <div class="sidebar-tabs">
       <button class="sidebar-tab active" data-view="workspace" id="tab-workspace">📁 工作区</button>
       <button class="sidebar-tab" data-view="trash" id="tab-trash">🗑 回收站</button>
+      <button class="sidebar-tab conflict-tab" data-view="conflicts" id="tab-conflicts">⚠ 冲突<span class="badge hidden">0</span></button>
     </div>
     <!-- 工作区页眉 -->
     <div class="sidebar-header" id="sidebar-header-workspace">
@@ -46,6 +48,11 @@
     <!-- 回收站页眉 -->
     <div class="trash-actions" id="trash-actions" style="display:none">
       <button class="btn-empty-trash" id="btn-empty-trash">🗑 清空回收站</button>
+    </div>
+    <!-- 冲突批量操作栏 -->
+    <div class="conflict-bulk-actions" id="conflict-bulk-actions">
+      <button class="btn-bulk-local" id="btn-bulk-local">全部保留本地</button>
+      <button class="btn-bulk-remote" id="btn-bulk-remote">全部保留远程</button>
     </div>
     <div class="note-list" id="note-list">
       <div class="empty">暂无笔记<br>点击上方按钮创建</div>
@@ -287,6 +294,23 @@
     </div>
   </div>
 
+  <!-- 冲突对比预览 -->
+  <div class="conflict-preview-overlay" id="conflict-preview-overlay">
+    <div class="conflict-preview-header">
+      <span id="conflict-preview-title">对比冲突</span>
+      <div class="conflict-preview-actions">
+        <button class="resolve-btn local" data-strategy="local">保留本地</button>
+        <button class="resolve-btn remote" data-strategy="remote">保留远程</button>
+        <button class="resolve-btn both" data-strategy="both">保留双方</button>
+        <button class="conflict-preview-close" id="conflict-preview-close">&times;</button>
+      </div>
+    </div>
+    <div class="conflict-diff-panels">
+      <div class="conflict-diff-panel local-panel" id="conflict-local-panel"></div>
+      <div class="conflict-diff-panel remote-panel" id="conflict-remote-panel"></div>
+    </div>
+  </div>
+
   <!-- 设置弹窗 -->
   <div class="settings-overlay" id="settings-overlay">
     <div class="settings-dialog">
@@ -391,6 +415,7 @@
   <script src="js/drawing-ui.js"></script>
   <script src="js/settings-ui.js"></script>
   <script src="js/sync-ui.js"></script>
+  <script src="js/conflict-ui.js"></script>
   <script src="js/init.js"></script>
 </body>
 </html>

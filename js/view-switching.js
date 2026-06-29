@@ -15,22 +15,28 @@
 // ---- 侧边栏视图切换 ----
 document.getElementById('tab-workspace').addEventListener('click', () => switchView('workspace'));
 document.getElementById('tab-trash').addEventListener('click', () => switchView('trash'));
+document.getElementById('tab-conflicts').addEventListener('click', () => switchView('conflicts'));
 
 function switchView(view) {
   ND.activeView = view;
   document.getElementById('tab-workspace').classList.toggle('active', view === 'workspace');
   document.getElementById('tab-trash').classList.toggle('active', view === 'trash');
+  document.getElementById('tab-conflicts').classList.toggle('active', view === 'conflicts');
   document.getElementById('sidebar-header-workspace').style.display = view === 'workspace' ? '' : 'none';
   document.getElementById('sort-controls').style.display = view === 'workspace' ? '' : 'none';
   document.getElementById('trash-actions').style.display = view === 'trash' ? '' : 'none';
-  // 切换到回收站时，隐藏编辑区
-  if (view === 'trash' && ND.currentNote) {
+  var bulkBar = document.getElementById('conflict-bulk-actions');
+  if (bulkBar) bulkBar.style.display = view === 'conflicts' ? '' : 'none';
+  // 切换到回收站/冲突时，隐藏编辑区
+  if ((view === 'trash' || view === 'conflicts') && ND.currentNote) {
     closeCurrentNote();
   }
   if (view === 'workspace') {
     loadNoteList();
-  } else {
+  } else if (view === 'trash') {
     loadTrashList();
+  } else if (view === 'conflicts') {
+    if (ND.loadConflictList) ND.loadConflictList();
   }
 }
 

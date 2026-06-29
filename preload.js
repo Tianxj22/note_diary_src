@@ -194,4 +194,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @returns {Promise<Array>}
    */
   gitHistory: () => ipcRenderer.invoke('sync:git-history'),
+  /**
+   * 获取冲突文件本地版本内容
+   * @param {string} fileName
+   * @returns {Promise<string>}
+   */
+  gitShowLocal: (fileName) => ipcRenderer.invoke('sync:git-show-local', fileName),
+  /**
+   * 获取冲突文件远程版本内容
+   * @param {string} fileName
+   * @returns {Promise<string>}
+   */
+  gitShowRemote: (fileName) => ipcRenderer.invoke('sync:git-show-remote', fileName),
+  /**
+   * 检出远程版本文件（保留双方时使用）
+   * @param {string} fileName
+   * @returns {Promise<{success: boolean, fileName?: string, message?: string}>}
+   */
+  gitCheckoutTheirs: (fileName) => ipcRenderer.invoke('sync:git-checkout-theirs', fileName),
 });

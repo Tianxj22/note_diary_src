@@ -1,0 +1,253 @@
+/**
+ * @file         css/conflict.css
+ * @description  Note Diary — 冲突解决 UI 样式（侧边栏冲突列表 + 分栏对比预览）
+ * @author       tianxj22
+ * @created      2026-06-29
+ * @updated      2026-06-29
+ * @version      1.0.0
+ */
+
+/* ===== 侧边栏冲突标签页徽标 ===== */
+.sidebar-tab.conflict-tab .badge {
+  display: inline-block;
+  background: #c62828;
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 4px;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+.sidebar-tab.conflict-tab .badge.hidden {
+  display: none;
+}
+
+/* ===== 冲突列表项 ===== */
+.note-item.conflict-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.note-item.conflict-item .conflict-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.note-item.conflict-item .conflict-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.conflict-btn {
+  padding: 3px 8px;
+  border: 1px solid #555;
+  border-radius: 3px;
+  background: #3a3a3a;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.68rem;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
+}
+
+.conflict-btn:hover {
+  background: #5a5a5a;
+  color: #fff;
+}
+
+.conflict-btn.local {
+  border-color: #4a8a4a;
+  color: #8f8;
+}
+
+.conflict-btn.local:hover {
+  background: #3a5a3a;
+}
+
+.conflict-btn.remote {
+  border-color: #4a6a9a;
+  color: #8cf;
+}
+
+.conflict-btn.remote:hover {
+  background: #3a4a6a;
+}
+
+.conflict-btn.both {
+  border-color: #8a7a4a;
+  color: #fd8;
+}
+
+.conflict-btn.both:hover {
+  background: #5a4a3a;
+}
+
+/* ===== 冲突批量操作栏 ===== */
+.conflict-bulk-actions {
+  padding: 8px 16px;
+  border-bottom: 1px solid #3a3a3a;
+  display: none;
+  gap: 6px;
+}
+
+.conflict-bulk-actions.visible {
+  display: flex;
+}
+
+.btn-bulk-local,
+.btn-bulk-remote {
+  flex: 1;
+  padding: 5px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  border: none;
+  transition: background 0.15s;
+}
+
+.btn-bulk-local {
+  background: #3a5a3a;
+  color: #8f8;
+}
+
+.btn-bulk-local:hover {
+  background: #4a7a4a;
+}
+
+.btn-bulk-remote {
+  background: #3a4a6a;
+  color: #8cf;
+}
+
+.btn-bulk-remote:hover {
+  background: #4a6a9a;
+}
+
+/* ===== 编辑区冲突对比预览 ===== */
+.conflict-preview-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  flex-direction: column;
+}
+
+.conflict-preview-overlay.visible {
+  display: flex;
+}
+
+.conflict-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: #2c2c2c;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.conflict-preview-header span {
+  color: #ccc;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.conflict-preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.conflict-preview-actions button {
+  padding: 4px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  border: 1px solid;
+  transition: background 0.15s;
+}
+
+.conflict-preview-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #999;
+  cursor: pointer;
+}
+
+/* ===== 分栏对比视图 ===== */
+.conflict-diff-panels {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.conflict-diff-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.conflict-diff-panel.local-panel {
+  background: #1a2a1a;
+  border-right: 1px solid #3a3a3a;
+}
+
+.conflict-diff-panel.remote-panel {
+  background: #1a1a2a;
+}
+
+.conflict-diff-panel .panel-label {
+  font-size: 0.7rem;
+  color: #888;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #3a3a3a;
+  font-weight: 600;
+}
+
+.local-panel .panel-label {
+  color: #8f8;
+}
+
+.remote-panel .panel-label {
+  color: #8cf;
+}
+
+/* 行级 diff 着色 */
+.diff-line {
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diff-line.same {
+  color: #ccc;
+  background: transparent;
+}
+
+.diff-line.added {
+  color: #8f8;
+  background: #1a3a1a;
+}
+
+.diff-line.removed {
+  color: #f88;
+  background: #3a1a1a;
+}
+
+.diff-line.empty {
+  color: transparent;
+  background: #1a1a1a;
+}

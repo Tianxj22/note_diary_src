@@ -330,12 +330,12 @@
       "id": "F-045",
       "name": "统一冲突解决",
       "description": "冲突列表（侧边栏标签页）+ 差异对比预览 + 逐文件/批量解决（保留本地/保留远程/保留双方）",
-      "status": "pending",
+      "status": "done",
       "priority": "P1",
       "milestone": "M5",
       "dependencies": ["F-042"],
       "estimatedEffort": "1d",
-      "completedAt": null,
+      "completedAt": "2026-06-29",
       "verification": "制造冲突后侧边栏显示冲突列表，可逐文件或批量选择保留策略解决"
     },
     {
@@ -392,6 +392,6 @@
     { "id": "M2", "name": "基础编辑", "targetDate": "2024-06-24", "status": "done" },
     { "id": "M3", "name": "体验版", "targetDate": "TBD", "status": "pending" },
     { "id": "M4", "name": "正式版", "targetDate": "TBD", "status": "pending" },
-    { "id": "M5", "name": "云端同步", "targetDate": "TBD", "status": "in-progress" }
+    { "id": "M5", "name": "云端同步", "targetDate": "2026-06-29", "status": "done" }
   ]
 }
