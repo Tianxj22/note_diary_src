@@ -15,21 +15,64 @@ document.getElementById('btn-settings').addEventListener('click', () => ND.showS
 
 // ---- 全局快捷键 ----
 document.addEventListener('keydown', (e) => {
+  var ctrl = e.ctrlKey || e.metaKey;
+
+  // Escape: 关闭所有弹出层
   if (e.key === 'Escape') {
     hideContextMenu();
     hideEmptyContextMenu();
+    hideEditorContextMenu();
     ND.contextMenuTrash.classList.remove('visible');
   }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+
+  // 仅在有编辑器时生效的快捷键
+  if (ND.editorDiv) {
+    // 文本格式
+    if (ctrl && e.key === 'd') { e.preventDefault(); document.execCommand('strikeThrough'); return; }
+    if (ctrl && e.key === '\\') { e.preventDefault(); document.execCommand('removeFormat'); return; }
+    if (ctrl && e.shiftKey && (e.key === 'o' || e.key === 'O')) { e.preventDefault(); document.execCommand('insertOrderedList'); return; }
+    if (ctrl && e.shiftKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); document.execCommand('insertUnorderedList'); return; }
+
+    // 插入
+    if (ctrl && e.shiftKey && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); insertChecklist(); return; }
+    if (ctrl && e.shiftKey && (e.key === 't' || e.key === 'T')) { e.preventDefault(); insertTimestamp(); return; }
+    if (ctrl && e.shiftKey && (e.key === 'i' || e.key === 'I')) { e.preventDefault(); insertImageFromFile(); return; }
+
+    // 绘图切换
+    if (ctrl && e.shiftKey && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); toggleDrawingMode(); return; }
+
+    // 查找替换
+    if (ctrl && e.key === 'h') {
+      e.preventDefault();
+      var bar = document.getElementById('find-bar');
+      if (bar && !bar.classList.contains('visible')) ND.toggleFindBar();
+      var repInput = document.getElementById('replace-input');
+      if (repInput) setTimeout(function () { repInput.focus(); repInput.select(); }, 50);
+      return;
+    }
+
+    // 关闭当前笔记
+    if (ctrl && e.key === 'w') { e.preventDefault(); closeCurrentNote(); return; }
+
+    // Tab/Shift+Tab 缩进
+    if (e.key === 'Tab' && !ctrl) {
+      e.preventDefault();
+      if (e.shiftKey) document.execCommand('outdent');
+      else document.execCommand('indent');
+      return;
+    }
+  }
+
+  if (ctrl && e.key === 'n') {
     e.preventDefault();
     createNewNote();
   }
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+  if (ctrl && e.key === 's') {
     e.preventDefault();
     manualSave();
   }
   // 绘图模式下 Ctrl+Z/Ctrl+Y → 快照撤销/重做
-  if (ND.drawingActive && ND.drawCtx && (e.ctrlKey || e.metaKey)) {
+  if (ND.drawingActive && ND.drawCtx && ctrl) {
     if (e.key === 'z' || e.key === 'Z') {
       e.preventDefault();
       undoSnapshot(ND.drawCtx);

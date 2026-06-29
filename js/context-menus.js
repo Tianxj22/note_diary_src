@@ -275,6 +275,67 @@ ND.contextMenuTrash.querySelectorAll('.menu-item').forEach(item => {
   });
 });
 
+// ---- 编辑器右键菜单 ----
+
+/**
+ * 显示编辑器右键菜单
+ * @param {MouseEvent} e
+ */
+function showEditorContextMenu(e) {
+  if (!ND.editorDiv) return;
+  ND.editorDiv.focus();
+  var menu = ND.contextMenuEditor;
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+  menu.classList.add('visible');
+}
+
+function hideEditorContextMenu() {
+  ND.contextMenuEditor.classList.remove('visible');
+}
+
+// 编辑器右键菜单项绑定
+ND.contextMenuEditor.querySelectorAll('.menu-item').forEach(function (item) {
+  item.addEventListener('click', function () {
+    var action = item.dataset.action;
+    if (!ND.editorDiv) return;
+    ND.editorDiv.focus();
+
+    switch (action) {
+      case 'undo': document.execCommand('undo'); break;
+      case 'redo': document.execCommand('redo'); break;
+      case 'cut': document.execCommand('cut'); break;
+      case 'copy': document.execCommand('copy'); break;
+      case 'paste': document.execCommand('paste'); break;
+      case 'selectAll': document.execCommand('selectAll'); break;
+      case 'find': ND.toggleFindBar(); break;
+      case 'replace': ND.toggleFindBar(); if (document.getElementById('replace-input')) document.getElementById('replace-input').focus(); break;
+      case 'checklist': insertChecklist(); break;
+      case 'timestamp': insertTimestamp(); break;
+      case 'insert-image': insertImageFromFile(); break;
+      case 'bold': document.execCommand('bold'); break;
+      case 'italic': document.execCommand('italic'); break;
+      case 'underline': document.execCommand('underline'); break;
+    }
+    hideEditorContextMenu();
+  });
+});
+
+/**
+ * 从文件插入图片（右键菜单触发）
+ */
+async function insertImageFromFile() {
+  var dataUrl = await window.electronAPI.openImageFile();
+  if (dataUrl) insertImageAtCursor(dataUrl);
+}
+
+// 编辑器右键事件绑定
+ND.editorArea.addEventListener('contextmenu', function (e) {
+  if (e.target.closest('.no-note')) return; // 欢迎页不弹菜单
+  e.preventDefault();
+  showEditorContextMenu(e);
+});
+
 // ---- 点击菜单外部关闭 ----
 document.addEventListener('click', (e) => {
   if (!ND.contextMenu.contains(e.target)) {
@@ -285,6 +346,9 @@ document.addEventListener('click', (e) => {
   }
   if (!ND.contextMenuTrash.contains(e.target)) {
     ND.contextMenuTrash.classList.remove('visible');
+  }
+  if (!ND.contextMenuEditor.contains(e.target)) {
+    hideEditorContextMenu();
   }
   if (!e.target.closest('#dropdown-image')) {
     ND.dropdownImageMenu.classList.remove('visible');
