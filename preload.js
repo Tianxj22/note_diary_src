@@ -3,8 +3,8 @@
  * @description  预加载脚本，通过 contextBridge 向渲染进程暴露笔记操作及版本信息的 API
  * @author       tianxj22
  * @created      2024-06-24
- * @updated      2024-06-24
- * @version      1.1.0
+ * @updated      2026-06-29
+ * @version      1.2.0
  */
 
 const { contextBridge, ipcRenderer } = require('electron');
@@ -128,4 +128,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @returns {Promise<string|null>}
    */
   captureWindowById: (sourceId) => ipcRenderer.invoke('image:capture-window-by-id', sourceId),
+  /**
+   * 读取用户设置（Token 以掩码形式返回）
+   * @returns {Promise<object>}
+   */
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  /**
+   * 保存用户设置
+   * @param {object} partial - 部分设置对象
+   * @param {string|null} newToken - 新 Token（null 表示不更新）
+   * @returns {Promise<boolean>}
+   */
+  updateSettings: (partial, newToken) => ipcRenderer.invoke('settings:update', partial, newToken),
+  /**
+   * 测试 Git 连接
+   * @param {{ remoteUrl: string, token: string }} config
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  testGitConnection: (config) => ipcRenderer.invoke('settings:test-git-connection', config),
+  /**
+   * 打开原生文件夹选择对话框
+   * @returns {Promise<string|null>}
+   */
+  selectFolder: () => ipcRenderer.invoke('dialog:select-folder'),
 });

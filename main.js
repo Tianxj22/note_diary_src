@@ -11,10 +11,21 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, nativeImage, di
 const path = require('path');
 const fs = require('fs');
 const fileStore = require('./file-store');
+const settingsStore = require('./settings-store');
+const formatMigration = require('./format-migration');
 
 let notesDir = '';
+let appSettings = settingsStore.getDefaults();
 let isQuitting = false;
 const isE2E = !!process.env.NOTE_DIARY_E2E_DIR;
+
+/**
+ * 获取当前笔记文件扩展名（从设置中读取）
+ * @returns {string}
+ */
+function getNoteExtension() {
+  return (appSettings && appSettings.general && appSettings.general.fileExtension) || '.txt';
+}
 
 /**
  * 创建并配置主窗口
@@ -54,11 +65,12 @@ function createWindow() {
  */
 function registerIpcHandlers() {
   ipcMain.handle('note:create', (_event, title) => {
-    return fileStore.createNote(notesDir, title);
+    return fileStore.createNote(notesDir, title, getNoteExtension());
   });
 
   ipcMain.handle('note:list', (_event, opts) => {
-    return fileStore.listNotes(notesDir, opts);
+    const listOpts = Object.assign({}, opts || {}, { ext: getNoteExtension() });
+    return fileStore.listNotes(notesDir, listOpts);
   });
 
   ipcMain.handle('note:read', (_event, filePath) => {
@@ -95,7 +107,7 @@ function registerIpcHandlers() {
 
   // 回收站
   ipcMain.handle('trash:list', () => {
-    return fileStore.listTrash(notesDir);
+    return fileStore.listTrash(notesDir, getNoteExtension());
   });
 
   ipcMain.handle('trash:restore', (_event, fileName) => {
@@ -107,7 +119,7 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('trash:empty', () => {
-    return fileStore.emptyTrash(notesDir);
+    return fileStore.emptyTrash(notesDir, getNoteExtension());
   });
 
   // ---- 图片插入 ----
@@ -212,6 +224,99 @@ function registerIpcHandlers() {
     const found = sources.find(s => s.id === sourceId);
     if (!found) return null;
     return found.thumbnail.toDataURL();
+  });
+
+  // ---- 设置 ----
+
+  /**
+   * 获取当前设置（Token 明文仅在主进程内存中，不发送给渲染进程）
+   * 返回给渲染进程的设置中 Token 字段用掩码替代
+   */
+  ipcMain.handle('settings:get', () => {
+    const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
+    appSettings = settingsStore.getSettings(userDataPath);
+
+    // 构造发送给渲染进程的副本：掩码 token
+    const forRenderer = JSON.parse(JSON.stringify(appSettings));
+    if (forRenderer.sync.git.tokenEncrypted && forRenderer.sync.git.tokenEncrypted.data) {
+      forRenderer.sync.git._tokenMasked = true;  // 标记存在已存储 token
+    } else {
+      forRenderer.sync.git._tokenMasked = false;
+    }
+    delete forRenderer.sync.git._tokenPlain;
+    delete forRenderer.sync.git.tokenEncrypted;
+
+    return forRenderer;
+  });
+
+  /**
+   * 更新设置
+   * @param {object} partial - 部分设置
+   * @param {string|null} newToken - 新 Token 明文（null 表示不更新）
+   */
+  ipcMain.handle('settings:update', (_event, partial, newToken) => {
+    const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
+    appSettings = settingsStore.updateSettings(userDataPath, partial, newToken);
+    return true;
+  });
+
+  /**
+   * 测试 Git 连接（验证远程 URL + Token 是否有效）
+   * @param {{ remoteUrl: string, token: string }} config
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  ipcMain.handle('settings:test-git-connection', async (_event, config) => {
+    try {
+      // 使用 git ls-remote 验证连接（不克隆仓库）
+      const { execSync } = require('child_process');
+      const remoteUrl = config.remoteUrl.trim();
+
+      if (!remoteUrl) {
+        return { success: false, message: '远程仓库 URL 为空' };
+      }
+
+      // 构造带认证的 URL
+      let authUrl = remoteUrl;
+      if (config.token && remoteUrl.startsWith('https://')) {
+        const urlObj = new URL(remoteUrl);
+        urlObj.username = config.token;
+        urlObj.password = 'x-oauth-basic';
+        authUrl = urlObj.toString();
+      }
+
+      execSync(`git ls-remote "${authUrl}"`, {
+        timeout: 15000,
+        stdio: 'pipe',
+      });
+      return { success: true, message: '连接成功' };
+    } catch (err) {
+      const stderr = (err.stderr || '').toString().toLowerCase();
+      let message = '连接失败';
+      if (stderr.includes('authentication') || stderr.includes('401') || stderr.includes('403')) {
+        message = '认证失败，请检查 Token';
+      } else if (stderr.includes('not found') || stderr.includes('404')) {
+        message = '仓库未找到，请检查 URL';
+      } else if (stderr.includes('could not resolve host') || stderr.includes('timeout')) {
+        message = '网络连接失败，请检查 URL';
+      } else if (stderr) {
+        message = stderr.split('\n')[0].substring(0, 100);
+      }
+      return { success: false, message };
+    }
+  });
+
+  /**
+   * 打开原生文件夹选择对话框
+   * @returns {Promise<string|null>}
+   */
+  ipcMain.handle('dialog:select-folder', async () => {
+    const win = BrowserWindow.getFocusedWindow();
+    const result = await dialog.showOpenDialog(win, {
+      title: '选择同步目标文件夹',
+      properties: ['openDirectory'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
   });
 }
 
@@ -359,6 +464,15 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
   notesDir = fileStore.ensureNotesDir(userDataPath);
+  appSettings = settingsStore.getSettings(userDataPath); // 加载持久化设置
+
+  // 检查是否需要文件格式迁移（.txt → .html）
+  const targetExt = getNoteExtension();
+  if (formatMigration.needsMigration(notesDir, targetExt)) {
+    const result = formatMigration.migrateNotesToFormat(notesDir, targetExt);
+    console.log('Format migration completed:', result);
+  }
+
   registerIpcHandlers();
   createWindow();
 

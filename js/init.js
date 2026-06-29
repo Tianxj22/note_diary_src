@@ -11,6 +11,7 @@
 document.getElementById('btn-sidebar-new').addEventListener('click', createNewNote);
 document.getElementById('btn-new').addEventListener('click', createNewNote);
 document.getElementById('btn-save').addEventListener('click', () => manualSave());
+document.getElementById('btn-settings').addEventListener('click', () => ND.showSettingsModal());
 
 // ---- 全局快捷键 ----
 document.addEventListener('keydown', (e) => {

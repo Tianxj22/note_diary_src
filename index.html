@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="css/image-resize.css">
   <link rel="stylesheet" href="css/overlays.css">
   <link rel="stylesheet" href="css/drawing.css">
+  <link rel="stylesheet" href="css/settings.css">
 </head>
 <body>
   <!-- 侧边栏 -->
@@ -70,6 +71,7 @@
         <span class="separator"></span>
         <button id="btn-save" class="style-btn" data-tooltip="保存笔记 (Ctrl+S)">💾</button>
         <span class="separator"></span>
+        <button id="btn-settings" class="style-btn" data-tooltip="设置 (云同步配置)">⚙</button>
       </div>
       <div class="toolbar-actions" id="toolbar-style" style="display:none">
         <button id="btn-bold" class="style-btn" data-tooltip="加粗 (Ctrl+B)"><b>B</b></button>
@@ -276,6 +278,107 @@
     </div>
   </div>
 
+  <!-- 设置弹窗 -->
+  <div class="settings-overlay" id="settings-overlay">
+    <div class="settings-dialog">
+      <div class="settings-header">
+        <h2>设置</h2>
+        <button class="settings-close" id="settings-close">&times;</button>
+      </div>
+      <div class="settings-body">
+        <!-- 云同步 -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">☁ 云同步</h3>
+          <div class="toggle-row">
+            <span class="toggle-label">启用云同步</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settings-sync-enabled">
+              <span class="toggle-track"></span>
+              <span class="toggle-thumb"></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <label>同步模式</label>
+            <div class="radio-group">
+              <label><input type="radio" name="sync-mode" value="git" checked> Git 仓库</label>
+              <label><input type="radio" name="sync-mode" value="cloudDrive"> 云盘文件夹</label>
+            </div>
+          </div>
+
+          <!-- Git 配置组 -->
+          <div class="settings-group" id="settings-git-group">
+            <p class="settings-group-title">Git 配置</p>
+            <div class="settings-row">
+              <label>远程仓库 URL</label>
+              <input type="url" id="settings-git-remote-url" placeholder="https://github.com/user/repo.git">
+            </div>
+            <div class="settings-row">
+              <label>分支</label>
+              <input type="text" id="settings-git-branch" placeholder="main">
+            </div>
+            <div class="settings-row">
+              <label>Access Token</label>
+              <input type="password" id="settings-git-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+            </div>
+            <div class="settings-row">
+              <label>作者名</label>
+              <input type="text" id="settings-git-author-name" placeholder="Your Name">
+            </div>
+            <div class="settings-row">
+              <label>作者邮箱</label>
+              <input type="email" id="settings-git-author-email" placeholder="email@example.com">
+            </div>
+            <div class="settings-row">
+              <button class="btn-test-connection" id="btn-test-connection">测试连接</button>
+              <span class="test-result" id="test-connection-result"></span>
+            </div>
+          </div>
+
+          <!-- 云盘配置组 -->
+          <div class="settings-group hidden" id="settings-cloud-group">
+            <p class="settings-group-title">云盘配置</p>
+            <div class="settings-row">
+              <label>同步文件夹</label>
+              <input type="text" id="settings-cloud-folder-path" placeholder="C:\Users\xxx\Dropbox\Notes">
+              <button class="btn-inline" id="btn-browse-folder">浏览...</button>
+            </div>
+          </div>
+
+          <!-- 自动同步 -->
+          <div class="toggle-row">
+            <span class="toggle-label">启用自动同步</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settings-auto-sync">
+              <span class="toggle-track"></span>
+              <span class="toggle-thumb"></span>
+            </label>
+          </div>
+          <div class="settings-row" id="sync-interval-row" style="display:none">
+            <label>同步间隔</label>
+            <input type="number" id="settings-sync-interval" min="1" max="1440" value="15">
+            <span style="font-size:0.82rem;color:#888;">分钟</span>
+          </div>
+        </div>
+
+        <!-- 通用 -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">📄 文件</h3>
+          <div class="settings-row">
+            <label>笔记扩展名</label>
+            <select id="settings-file-extension">
+              <option value=".html">.html</option>
+              <option value=".txt">.txt</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="settings-footer">
+        <button class="btn-cancel" id="settings-cancel">取消</button>
+        <button class="btn-save" id="settings-save">保存</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 隐藏的文件选择器用于导入 -->
   <input type="file" id="import-file-input" accept=".txt,.md,.markdown" style="display:none">
 
@@ -294,6 +397,7 @@
   <script src="js/view-switching.js"></script>
   <script src="js/drawing-tools.js"></script>
   <script src="js/drawing-ui.js"></script>
+  <script src="js/settings-ui.js"></script>
   <script src="js/init.js"></script>
 </body>
 </html>

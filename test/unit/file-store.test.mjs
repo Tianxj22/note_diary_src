@@ -56,7 +56,10 @@ describe('file-store', () => {
       expect(result).toHaveProperty('fileName');
       expect(result.fileName).toMatch(/^测试笔记_\d+\.txt$/);
       expect(fs.existsSync(result.filePath)).toBe(true);
-      expect(fs.readFileSync(result.filePath, 'utf-8')).toBe('');
+      // 新行为：createNote 写入元数据头，不再是空文件
+      const content = fs.readFileSync(result.filePath, 'utf-8');
+      expect(content.startsWith('<!--')).toBe(true);
+      expect(content).toContain('"title": "测试笔记"');
     });
 
     it('U-04: 空标题应使用默认名称"未命名笔记"', () => {
@@ -153,12 +156,14 @@ describe('file-store', () => {
       expect(result).toBe('');
     });
 
-    it('U-08 补充: 空文件应返回空字符串', () => {
+    it('U-08 补充: createNote 创建的文件应包含元数据头', () => {
       const notesDir = fileStore.ensureNotesDir(tmpDir);
       const { filePath } = fileStore.createNote(notesDir, '空笔记');
 
       const result = fileStore.readNote(filePath);
-      expect(result).toBe('');
+      // 新行为：createNote 写入 JSON 元数据头，不再是空字符串
+      expect(result.startsWith('<!--')).toBe(true);
+      expect(result).toContain('"title": "空笔记"');
     });
   });
 

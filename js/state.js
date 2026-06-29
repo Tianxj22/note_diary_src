@@ -3,8 +3,8 @@
  * @description  Note Diary — 全局状态与 DOM 引用
  * @author       tianxj22
  * @created      2026-06-24
- * @updated      2026-06-26
- * @version      1.0.0
+ * @updated      2026-06-29
+ * @version      1.1.0
  */
 
 window.ND = window.ND || {};
@@ -118,6 +118,10 @@ ND.btnEraserSize = document.getElementById('btn-eraser-size');
 ND.btnShapeMenu = document.getElementById('dropdown-shape-menu');
 ND.btnSelectMenu = document.getElementById('dropdown-select-menu');
 ND.zoomLabel = document.getElementById('zoom-label');
+
+// ---- 设置 DOM ----
+ND.settingsOverlay = document.getElementById('settings-overlay');
+ND.btnSettings = document.getElementById('btn-settings');
 
 // ---- 选区状态 ----
 ND.selectionMask = null;                // ImageData|null: 选区遮罩

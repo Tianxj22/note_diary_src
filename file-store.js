@@ -3,18 +3,83 @@
  * @description  笔记文件的基础读写操作模块，封装 notes 目录下的文件 CRUD、回收站、排序
  * @author       tianxj22
  * @created      2024-06-24
- * @updated      2026-06-25
- * @version      1.2.0
+ * @updated      2026-06-29
+ * @version      1.3.0
  */
 
 const fs = require('fs');
 const path = require('path');
 
 const DEFAULT_NOTE_NAME = '新建笔记本';
+const DEFAULT_EXT = '.txt';
 const NAME_STACK_FILE = '.name-stack.json';
 const TRASH_DIR = '.trash';
 const TRASH_META_FILE = '.trash-meta.json';
 const CLIPBOARD_DIR = '.clipboard';
+
+// ===== 元数据头 =====
+
+const METADATA_HEADER_START = '<!--';
+const METADATA_HEADER_END = '-->';
+
+/**
+ * 从文件内容中解析元数据头
+ * @param {string} filePath - 文件路径
+ * @returns {{ title: string, created: number, modified: number, version: number }|null}
+ */
+function getMetadata(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    if (!raw.startsWith(METADATA_HEADER_START)) return null;
+
+    const endIdx = raw.indexOf(METADATA_HEADER_END);
+    if (endIdx === -1) return null;
+
+    const jsonStr = raw.substring(METADATA_HEADER_START.length, endIdx).trim();
+    return JSON.parse(jsonStr);
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * 构建元数据头字符串
+ * @param {object} meta - { title, created, modified, version }
+ * @returns {string}
+ */
+function buildMetadataString(meta) {
+  return METADATA_HEADER_START + '\n' + JSON.stringify(meta, null, 2) + '\n' + METADATA_HEADER_END + '\n';
+}
+
+/**
+ * 更新文件中的元数据头
+ * @param {string} filePath - 文件路径
+ * @param {object} meta - 要更新的元数据字段
+ * @returns {boolean}
+ */
+function setMetadata(filePath, meta) {
+  try {
+    if (!fs.existsSync(filePath)) return false;
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    const existing = getMetadata(filePath) || {};
+    const merged = Object.assign({}, existing, meta, { version: (existing.version || 0) + 1 });
+    const header = buildMetadataString(merged);
+
+    let newContent;
+    if (raw.startsWith(METADATA_HEADER_START)) {
+      const endIdx = raw.indexOf(METADATA_HEADER_END);
+      newContent = header + raw.substring(endIdx + METADATA_HEADER_END.length + 1); // +1 for \n
+    } else {
+      newContent = header + raw;
+    }
+    fs.writeFileSync(filePath, newContent, 'utf-8');
+    return true;
+  } catch (err) {
+    console.error('setMetadata failed:', err.message);
+    return false;
+  }
+}
 
 // ===== 命名栈 =====
 
@@ -90,12 +155,15 @@ function saveTrashMeta(notesDir, meta) {
 
 // ===== CRUD =====
 
-function createNote(notesDir, title) {
+function createNote(notesDir, title, ext) {
   const safeTitle = title || '未命名笔记';
   const timestamp = Date.now();
-  const fileName = `${safeTitle}_${timestamp}.txt`;
+  const extension = ext || DEFAULT_EXT;
+  const fileName = `${safeTitle}_${timestamp}${extension}`;
   const filePath = path.join(notesDir, fileName);
-  fs.writeFileSync(filePath, '', 'utf-8');
+  // 写入元数据头
+  const header = buildMetadataString({ title: safeTitle, created: timestamp, modified: timestamp, version: 1 });
+  fs.writeFileSync(filePath, header, 'utf-8');
   return { filePath, fileName };
 }
 
@@ -109,20 +177,34 @@ function createNote(notesDir, title) {
  */
 function listNotes(notesDir, opts = {}) {
   const { sortBy = 'mtime', sortDir = 'desc' } = opts;
+  const ext = opts.ext || DEFAULT_EXT;
   if (!fs.existsSync(notesDir)) return [];
 
   const ignored = new Set([TRASH_DIR, CLIPBOARD_DIR]);
 
   const notes = fs.readdirSync(notesDir)
-    .filter(f => f.endsWith('.txt'))
+    .filter(f => f.endsWith(ext))
     .map(f => {
       const filePath = path.join(notesDir, f);
       const stat = fs.statSync(filePath);
-      const displayName = f.replace(/\.txt$/, '').replace(/_\d+$/, '');
-      // 从文件名解析创建时间（格式：标题_时间戳.txt）
-      const tsMatch = f.match(/_(\d{13})\.txt$/);
-      const createdAt = tsMatch ? parseInt(tsMatch[1], 10) : stat.mtimeMs;
-      return { fileName: f, filePath, displayName, mtime: stat.mtimeMs, createdAt };
+      // 优先读取元数据头，回退到文件名解析
+      const meta = getMetadata(filePath);
+      let displayName, createdAt;
+      if (meta && meta.title) {
+        displayName = meta.title;
+        createdAt = meta.created || stat.birthtimeMs;
+      } else {
+        displayName = f.replace(new RegExp(ext.replace('.', '\\.') + '$'), '').replace(/_\d+$/, '');
+        const tsMatch = f.match(/_(\d{13})/);
+        createdAt = tsMatch ? parseInt(tsMatch[1], 10) : stat.birthtimeMs;
+      }
+      return {
+        fileName: f,
+        filePath,
+        displayName,
+        mtime: (meta && meta.modified) ? meta.modified : stat.mtimeMs,
+        createdAt,
+      };
     })
     // 排除回收站和剪贴板中的文件
     .filter(n => {
@@ -170,10 +252,11 @@ function moveToTrash(notesDir, filePath) {
       fs.mkdirSync(trashDir, { recursive: true });
     }
     const fileName = path.basename(filePath);
+    const ext = path.extname(fileName);
     const destPath = path.join(trashDir, fileName);
     // 如果回收站已有同名文件，追加时间戳
     const finalName = fs.existsSync(destPath)
-      ? fileName.replace(/\.txt$/, `_${Date.now()}.txt`)
+      ? fileName.replace(new RegExp(ext.replace('.', '\\.') + '$'), `_${Date.now()}${ext}`)
       : fileName;
     const finalPath = path.join(trashDir, finalName);
     fs.renameSync(filePath, finalPath);
@@ -207,15 +290,16 @@ function deleteNote(filePath) {
 // ===== 回收站操作 =====
 
 /** 列出回收站中的笔记 */
-function listTrash(notesDir) {
+function listTrash(notesDir, ext) {
+  const extension = ext || DEFAULT_EXT;
   const trashDir = path.join(notesDir, TRASH_DIR);
   if (!fs.existsSync(trashDir)) return [];
   const meta = loadTrashMeta(notesDir);
   return fs.readdirSync(trashDir)
-    .filter(f => f.endsWith('.txt'))
+    .filter(f => f.endsWith(extension))
     .map(f => ({
       fileName: f,
-      displayName: f.replace(/\.txt$/, '').replace(/_\d+$/, ''),
+      displayName: f.replace(new RegExp(extension.replace('.', '\\.') + '$'), '').replace(/_\d+$/, ''),
       deletedAt: meta[f] || 0,
     }))
     .sort((a, b) => b.deletedAt - a.deletedAt);
@@ -256,12 +340,13 @@ function permanentlyDelete(notesDir, fileName) {
 }
 
 /** 清空回收站 */
-function emptyTrash(notesDir) {
+function emptyTrash(notesDir, ext) {
   try {
     const trashDir = path.join(notesDir, TRASH_DIR);
     if (!fs.existsSync(trashDir)) return true;
+    const extension = ext || DEFAULT_EXT;
     fs.readdirSync(trashDir)
-      .filter(f => f.endsWith('.txt'))
+      .filter(f => f.endsWith(extension))
       .forEach(f => fs.unlinkSync(path.join(trashDir, f)));
     const metaPath = path.join(trashDir, TRASH_META_FILE);
     if (fs.existsSync(metaPath)) fs.unlinkSync(metaPath);
@@ -280,8 +365,13 @@ function renameNote(oldPath, newTitle) {
     const dir = path.dirname(oldPath);
     const timestamp = Date.now();
     const safeTitle = newTitle || '未命名笔记';
-    const newFileName = `${safeTitle}_${timestamp}.txt`;
+    const ext = path.extname(oldPath) || DEFAULT_EXT;
+    const newFileName = `${safeTitle}_${timestamp}${ext}`;
     const newPath = path.join(dir, newFileName);
+
+    // 先更新元数据头中的标题（在重命名之前）
+    setMetadata(oldPath, { title: safeTitle, modified: timestamp });
+
     fs.renameSync(oldPath, newPath);
     return { filePath: newPath, fileName: newFileName };
   } catch (err) {
@@ -315,9 +405,10 @@ function cutNote(notesDir, filePath) {
       fs.mkdirSync(clipboardDir, { recursive: true });
     }
     const fileName = path.basename(filePath);
+    const ext = path.extname(fileName);
     const destPath = path.join(clipboardDir, fileName);
     const finalDest = fs.existsSync(destPath)
-      ? path.join(clipboardDir, fileName.replace(/\.txt$/, `_${Date.now()}.txt`))
+      ? path.join(clipboardDir, fileName.replace(new RegExp(ext.replace('.', '\\.') + '$'), `_${Date.now()}${ext}`))
       : destPath;
     fs.renameSync(filePath, finalDest);
     return { filePath: finalDest, fileName: path.basename(finalDest) };
@@ -332,4 +423,5 @@ module.exports = {
   moveToTrash, renameNote, duplicateNote, cutNote,
   getNextDefaultName, releaseNameNumber,
   listTrash, restoreFromTrash, permanentlyDelete, emptyTrash,
+  getMetadata, setMetadata, buildMetadataString, DEFAULT_EXT,
 };

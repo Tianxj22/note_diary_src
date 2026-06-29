@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.10.0",
   "activeFeature": null,
   "features": [
     {
@@ -291,6 +291,30 @@
       "verification": "排序下拉 + 方向切换正常工作"
     },
     {
+      "id": "F-040",
+      "name": "设置基础设施",
+      "description": "持久化配置存储（settings.json）+ 设置弹窗UI + Git Token AES-256-GCM加密存储",
+      "status": "done",
+      "priority": "P0",
+      "milestone": "M5",
+      "dependencies": [],
+      "estimatedEffort": "1d",
+      "completedAt": "2026-06-29",
+      "verification": "设置弹窗可打开/编辑/保存，重启后配置保留，Token 加密存储不可明文读取"
+    },
+    {
+      "id": "F-041",
+      "name": "文件格式优化",
+      "description": ".html 扩展名 + JSON 元数据头（标题/创建时间/修改时间/版本号）+ 向后兼容旧格式 + 启动时自动迁移",
+      "status": "done",
+      "priority": "P1",
+      "milestone": "M5",
+      "dependencies": ["F-040"],
+      "estimatedEffort": "1d",
+      "completedAt": "2026-06-29",
+      "verification": "新笔记默认 .html 扩展名并包含元数据头；旧 .txt 笔记可正常读取和迁移"
+    },
+    {
       "id": "F-025",
       "name": "绘图功能（铅笔/画笔/橡皮/颜料桶/取色器/图形/缩放）",
       "description": "在笔记中通过类似于画图的方式绘制图像，支持核心绘制工具和形状",
@@ -343,6 +367,7 @@
     { "id": "M1", "name": "Hello World", "targetDate": "2024-06-24", "status": "done" },
     { "id": "M2", "name": "基础编辑", "targetDate": "2024-06-24", "status": "done" },
     { "id": "M3", "name": "体验版", "targetDate": "TBD", "status": "pending" },
-    { "id": "M4", "name": "正式版", "targetDate": "TBD", "status": "pending" }
+    { "id": "M4", "name": "正式版", "targetDate": "TBD", "status": "pending" },
+    { "id": "M5", "name": "云端同步", "targetDate": "TBD", "status": "in-progress" }
   ]
 }

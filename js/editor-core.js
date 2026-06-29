@@ -3,8 +3,8 @@
  * @description  Note Diary — 笔记选择/新建/保存/编辑器显示隐藏 + 状态栏
  * @author       tianxj22
  * @created      2026-06-25
- * @updated      2026-06-26
- * @version      1.0.0
+ * @updated      2026-06-29
+ * @version      1.1.0
  */
 
 // ============================================================
@@ -18,12 +18,15 @@ async function selectNote(note) {
   const prevNote = ND.currentNote;
   ND.currentNote = null;
   if (ND.saveTimer) { clearTimeout(ND.saveTimer); ND.saveTimer = null; }
-  // 保存上一个笔记（含绘图层数据）
+  // 保存上一个笔记（含绘图层数据 + 元数据）
   if (prevNote && ND.editorDiv) {
     saveDrawCanvasData();
     var prevDrawing = ND.drawingCanvasData || '';
     var prevText = ND.editorDiv.innerHTML;
-    var prevContent = encodeNoteContent(prevText, prevDrawing);
+    var prevMeta = prevNote._meta || { title: prevNote.displayName, created: prevNote.createdAt || Date.now(), modified: Date.now() };
+    prevMeta.title = prevNote.displayName;
+    prevMeta.modified = Date.now();
+    var prevContent = encodeNoteContent(prevText, prevDrawing, prevMeta);
     if (prevContent !== ND.lastSavedContent) {
       await window.electronAPI.saveNote(prevNote.filePath, prevContent);
     }
@@ -33,13 +36,17 @@ async function selectNote(note) {
   var decoded = decodeNoteContent(raw);
   ND.drawingCanvasData = decoded.drawing;
   ND.currentContent = decoded.text;
+  // 存储解码出的元数据，用于后续编码
+  ND.currentNote._meta = decoded.metadata || { title: note.displayName, created: note.createdAt || Date.now(), modified: Date.now() };
+  ND.currentNote.createdAt = (decoded.metadata && decoded.metadata.created) || note.createdAt || Date.now();
   // 兼容旧纯文本笔记：将换行转换为 HTML <br>
   if (!/^\s*</.test(ND.currentContent)) {
     ND.currentContent = ND.currentContent.split('\n').map(function(line) {
       return line ? escapeHtml(line) : '<br>';
     }).join('<br>');
   }
-  ND.lastSavedContent = raw;
+  // 以当前格式重新编码作为基准（包含元数据头），用于后续变更检测
+  ND.lastSavedContent = encodeNoteContent(decoded.text, decoded.drawing, ND.currentNote._meta);
   showEditor();
   ND.editorTitleInput.value = note.displayName;
   ND.editorDiv.innerHTML = ND.currentContent;
@@ -86,7 +93,10 @@ async function saveCurrentNote() {
   var textHtml = ND.editorDiv.innerHTML;
   saveDrawCanvasData();
   var drawingData = ND.drawingCanvasData || '';
-  var content = encodeNoteContent(textHtml, drawingData);
+  var meta = ND.currentNote._meta || { title: ND.currentNote.displayName, created: Date.now(), modified: Date.now() };
+  meta.title = ND.currentNote.displayName;
+  meta.modified = Date.now();
+  var content = encodeNoteContent(textHtml, drawingData, meta);
   if (content === ND.lastSavedContent) return;
   var ok = await window.electronAPI.saveNote(ND.currentNote.filePath, content);
   if (ok) {
@@ -116,7 +126,10 @@ async function manualSave() {
   var textHtml = ND.editorDiv.innerHTML;
   saveDrawCanvasData();
   var drawingData = ND.drawingCanvasData || '';
-  var content = encodeNoteContent(textHtml, drawingData);
+  var meta = ND.currentNote._meta || { title: ND.currentNote.displayName, created: Date.now(), modified: Date.now() };
+  meta.title = ND.currentNote.displayName;
+  meta.modified = Date.now();
+  var content = encodeNoteContent(textHtml, drawingData, meta);
   if (content === ND.lastSavedContent) return;
   var ok = await window.electronAPI.saveNote(ND.currentNote.filePath, content);
   if (ok) {
@@ -137,7 +150,10 @@ async function closeCurrentNote() {
     saveDrawCanvasData();
     var textHtml = ND.editorDiv.innerHTML;
     var drawingData = ND.drawingCanvasData || '';
-    var content = encodeNoteContent(textHtml, drawingData);
+    var meta = ND.currentNote._meta || { title: ND.currentNote.displayName, created: Date.now(), modified: Date.now() };
+    meta.title = ND.currentNote.displayName;
+    meta.modified = Date.now();
+    var content = encodeNoteContent(textHtml, drawingData, meta);
     if (content !== ND.lastSavedContent) {
       await window.electronAPI.saveNote(ND.currentNote.filePath, content);
     }
@@ -312,30 +328,64 @@ function initDrawCanvas() {
 
 var DRAWING_SEP = '\n---DRAWING---\n';
 var TEXT_SEP = '\n---TEXT---\n';
+var METADATA_HEADER_START = '<!--';
+var METADATA_HEADER_END = '-->';
 
 /**
- * 编码笔记内容为持久化格式
+ * 编码笔记内容为持久化格式（含元数据头）
+ * @param {string} textHtml - HTML 文本内容
+ * @param {string} drawingDataUrl - 绘图层 base64 data URI
+ * @param {object} [meta] - 元数据 { title, created, modified }
+ * @returns {string}
  */
-function encodeNoteContent(textHtml, drawingDataUrl) {
+function encodeNoteContent(textHtml, drawingDataUrl, meta) {
   var d = drawingDataUrl || '';
   var t = textHtml || '';
-  return DRAWING_SEP.trim() + '\n' + d + '\n' + TEXT_SEP.trim() + '\n' + t;
+  var body = DRAWING_SEP.trim() + '\n' + d + '\n' + TEXT_SEP.trim() + '\n' + t;
+
+  // 如果有元数据，添加 JSON 头
+  if (meta) {
+    var headerMeta = {
+      title: meta.title || '',
+      created: meta.created || Date.now(),
+      modified: meta.modified || Date.now(),
+      version: (meta.version || 0) + 1,
+    };
+    return METADATA_HEADER_START + '\n' + JSON.stringify(headerMeta, null, 2) + '\n' + METADATA_HEADER_END + '\n' + body;
+  }
+  return body;
 }
 
 /**
- * 解码笔记内容
- * @returns {{ drawing: string|null, text: string }}
+ * 解码笔记内容（剥离元数据头）
+ * @param {string} raw - 原始文件内容
+ * @returns {{ drawing: string|null, text: string, metadata: object|null }}
  */
 function decodeNoteContent(raw) {
-  var dIdx = raw.indexOf(DRAWING_SEP.trim());
-  var tIdx = raw.indexOf(TEXT_SEP.trim());
+  var content = raw;
+  var metadata = null;
+
+  // 剥离元数据头 <!--\n{...}\n-->
+  if (content.startsWith(METADATA_HEADER_START)) {
+    var endIdx = content.indexOf(METADATA_HEADER_END);
+    if (endIdx !== -1) {
+      try {
+        var jsonStr = content.substring(METADATA_HEADER_START.length, endIdx).trim();
+        metadata = JSON.parse(jsonStr);
+      } catch (_) { /* ignore parse errors */ }
+      content = content.substring(endIdx + METADATA_HEADER_END.length + 1); // +1 for \n
+    }
+  }
+
+  var dIdx = content.indexOf(DRAWING_SEP.trim());
+  var tIdx = content.indexOf(TEXT_SEP.trim());
   if (dIdx === -1 || tIdx === -1) {
     // 旧格式：整个内容作为文本
-    return { drawing: null, text: raw };
+    return { drawing: null, text: content, metadata: metadata };
   }
-  var drawing = raw.substring(dIdx + DRAWING_SEP.trim().length + 1, tIdx).trim();
-  var text = raw.substring(tIdx + TEXT_SEP.trim().length + 1);
-  return { drawing: drawing || null, text: text };
+  var drawing = content.substring(dIdx + DRAWING_SEP.trim().length + 1, tIdx).trim();
+  var text = content.substring(tIdx + TEXT_SEP.trim().length + 1);
+  return { drawing: drawing || null, text: text, metadata: metadata };
 }
 
 // ---- 状态栏 ----
