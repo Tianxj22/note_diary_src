@@ -305,13 +305,17 @@ function updateLineNumbers() {
   var fragments = [];
   var lineNum = 0;
 
+  // 需要跳过的特殊元素标签（列表/清单/时间戳不显示行号）
+  var skipTags = { OL: true, UL: true };
+
   // 遍历 editor-content 的直接子元素
   var children = contentEl.children;
   for (var i = 0; i < children.length; i++) {
     var child = children[i];
-
-    // 跳过空的文本节点和不可见元素
     if (!child.tagName) continue;
+
+    // 跳过列表容器（<ol>/<ul>）
+    if (skipTags[child.tagName]) continue;
 
     // 该块的第一个逻辑行：标注行号
     lineNum++;
@@ -319,15 +323,19 @@ function updateLineNumbers() {
     var childTop = childRect.top - scrollRect.top + scrollTop;
     fragments.push({ num: lineNum, top: childTop });
 
-    // 块内 <br>：每个产生额外行号
-    var brs = child.querySelectorAll('br');
-    for (var b = 0; b < brs.length; b++) {
-      lineNum++;
-      var range = document.createRange();
-      range.setStartBefore(brs[b]);
-      var brRect = range.getBoundingClientRect();
-      var brTop = brRect.top - scrollRect.top + scrollTop;
-      fragments.push({ num: lineNum, top: brTop });
+    // 块内 <br>：每个产生额外行号，但跳过空块的占位 <br>
+    var blockText = child.textContent;
+    var hasContent = blockText && blockText.trim().length > 0;
+    if (hasContent) {
+      var brs = child.querySelectorAll('br');
+      for (var b = 0; b < brs.length; b++) {
+        lineNum++;
+        var range = document.createRange();
+        range.setStartBefore(brs[b]);
+        var brRect = range.getBoundingClientRect();
+        var brTop = brRect.top - scrollRect.top + scrollTop;
+        fragments.push({ num: lineNum, top: brTop });
+      }
     }
   }
 
