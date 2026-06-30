@@ -18,7 +18,10 @@
     "test:all": "vitest run",
     "test:watch": "vitest"
   },
-  "author": "tianxj22",
+  "author": {
+    "name": "tianxj22",
+    "email": "3456053429@qq.com"
+  },
   "license": "MIT",
   "build": {
     "appId": "com.tianxj22.note-diary",

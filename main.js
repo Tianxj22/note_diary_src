@@ -25,6 +25,7 @@ if (process.platform === 'win32') {
 let notesDir = '';
 let appSettings = settingsStore.getDefaults();
 let isQuitting = false;
+let userDataPath = ''; // 模块级存储，IPC handler 和启动逻辑共用
 const isE2E = !!process.env.NOTE_DIARY_E2E_DIR;
 
 /**
@@ -285,7 +286,6 @@ function registerIpcHandlers() {
    * 返回给渲染进程的设置中 Token 字段用掩码替代
    */
   ipcMain.handle('settings:get', () => {
-    const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
     appSettings = settingsStore.getSettings(userDataPath);
 
     // 构造发送给渲染进程的副本：掩码 token
@@ -307,7 +307,6 @@ function registerIpcHandlers() {
    * @param {string|null} newToken - 新 Token 明文（null 表示不更新）
    */
   ipcMain.handle('settings:update', (_event, partial, newToken) => {
-    const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
     appSettings = settingsStore.updateSettings(userDataPath, partial, newToken);
     return true;
   });
@@ -364,22 +363,91 @@ function registerIpcHandlers() {
   ipcMain.handle('dialog:select-folder', async () => {
     const win = BrowserWindow.getFocusedWindow();
     const result = await dialog.showOpenDialog(win, {
-      title: '选择同步目标文件夹',
+      title: '选择文件夹',
       properties: ['openDirectory'],
     });
     if (result.canceled || result.filePaths.length === 0) return null;
     return result.filePaths[0];
   });
 
+  /**
+   * 获取当前用户数据存储绝对路径
+   * @returns {Promise<string>}
+   */
+  ipcMain.handle('app:get-user-data-path', () => {
+    return userDataPath;
+  });
+
+  /**
+   * 更改用户数据存储路径（迁移现有数据到新目录）
+   * @param {string} newPath - 新目录的绝对路径
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  ipcMain.handle('app:set-user-data-path', async (_event, newPath) => {
+    if (!newPath || typeof newPath !== 'string') {
+      return { success: false, message: '无效的路径' };
+    }
+
+    const oldPath = userDataPath;
+    if (newPath === oldPath) {
+      return { success: false, message: '新路径与当前路径相同' };
+    }
+
+    try {
+      // 确保新目录存在
+      if (!fs.existsSync(newPath)) {
+        fs.mkdirSync(newPath, { recursive: true });
+      }
+
+      // 迁移现有数据（复制整个旧目录到新目录）
+      copyDirectorySync(oldPath, newPath);
+
+      // 更新模块级路径
+      userDataPath = newPath;
+      notesDir = fileStore.ensureNotesDir(userDataPath);
+
+      // 重新加载设置（指向新路径）
+      appSettings = settingsStore.getSettings(userDataPath);
+
+      return { success: true, message: '数据路径已更改' };
+    } catch (err) {
+      console.error('Failed to migrate data path:', err);
+      return { success: false, message: '迁移失败: ' + err.message };
+    }
+  });
+
+  /**
+   * 递归复制目录
+   * @param {string} src - 源目录
+   * @param {string} dest - 目标目录
+   */
+  function copyDirectorySync(src, dest) {
+    if (!fs.existsSync(src)) return;
+    const entries = fs.readdirSync(src, { withFileTypes: true });
+    for (const entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+      if (entry.isDirectory()) {
+        if (!fs.existsSync(destPath)) {
+          fs.mkdirSync(destPath, { recursive: true });
+        }
+        copyDirectorySync(srcPath, destPath);
+      } else {
+        // 跳过已存在的文件（不覆盖）
+        if (!fs.existsSync(destPath)) {
+          fs.copyFileSync(srcPath, destPath);
+        }
+      }
+    }
+  }
+
   // ---- 快捷键配置 ----
 
   ipcMain.handle('keybindings:get', () => {
-    const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
     return keybindingsStore.loadKeybindings(userDataPath);
   });
 
   ipcMain.handle('keybindings:update', (_event, bindings) => {
-    const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
     keybindingsStore.saveKeybindings(userDataPath, bindings);
     return true;
   });
@@ -643,7 +711,7 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
-    const userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
+    userDataPath = process.env.NOTE_DIARY_E2E_DIR || app.getPath('userData');
     notesDir = fileStore.ensureNotesDir(userDataPath);
     appSettings = settingsStore.getSettings(userDataPath); // 加载持久化设置
     keybindingsStore.loadKeybindings(userDataPath); // 首次运行自动生成 keybindings.json

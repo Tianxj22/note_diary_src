@@ -28,9 +28,25 @@
     populateSettingsForm(cachedSettings);
     populateKeybindingTable();
     updateAutoSyncUI(cachedSettings.sync.autoSync);
+    await populateDataPath();
 
     ND.settingsOverlay.classList.add('visible');
   };
+
+  /**
+   * 填充数据存储路径到设置弹窗顶部
+   */
+  async function populateDataPath() {
+    var el = document.getElementById('settings-data-path');
+    if (!el) return;
+    try {
+      var p = await window.electronAPI.getUserDataPath();
+      el.textContent = p || '—';
+      el.title = p || '';
+    } catch (_) {
+      el.textContent = '无法获取路径';
+    }
+  }
 
   /**
    * 填充快捷键参考表
@@ -277,6 +293,35 @@
     const testBtn = document.getElementById('btn-test-connection');
     if (testBtn) {
       testBtn.addEventListener('click', testGitConnection);
+    }
+
+    // 更改数据存储路径按钮
+    var changePathBtn = document.getElementById('btn-change-data-path');
+    if (changePathBtn) {
+      changePathBtn.addEventListener('click', async function () {
+        try {
+          var newPath = await window.electronAPI.selectFolder();
+          if (!newPath) return; // 用户取消
+          var result = await window.electronAPI.setUserDataPath(newPath);
+          if (result.success) {
+            await populateDataPath();
+            if (ND.statusLeft) {
+              ND.statusLeft.textContent = '数据路径已更改';
+              setTimeout(function () {
+                if (ND.statusLeft.textContent === '数据路径已更改') {
+                  ND.statusLeft.textContent = '就绪';
+                }
+              }, 2500);
+            }
+          } else {
+            alert(result.message || '更改失败'); // eslint-disable-line no-alert
+          }
+        } catch (e) {
+          console.error('Failed to change data path:', e);
+          // eslint-disable-next-line no-alert
+          alert('更改数据路径失败: ' + e.message);
+        }
+      });
     }
 
     // Token 输入框聚焦时清除掩码

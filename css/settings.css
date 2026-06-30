@@ -89,6 +89,46 @@
   border-bottom: 1px solid #eee;
 }
 
+/* ===== 数据存储路径行 ===== */
+.settings-path-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  background: #f7f8fa;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+}
+
+.settings-path-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.settings-path-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.settings-path-value {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.82rem;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl; /* 溢出时从左侧省略，保留末尾目录名 */
+  text-align: left;
+}
+
 /* ===== 表单行 ===== */
 .settings-row {
   display: flex;

@@ -152,6 +152,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
    */
   selectFolder: () => ipcRenderer.invoke('dialog:select-folder'),
   /**
+   * 获取当前用户数据存储绝对路径
+   * @returns {Promise<string>}
+   */
+  getUserDataPath: () => ipcRenderer.invoke('app:get-user-data-path'),
+  /**
+   * 更改用户数据存储路径（迁移现有数据）
+   * @param {string} newPath - 新目录绝对路径
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  setUserDataPath: (newPath) => ipcRenderer.invoke('app:set-user-data-path', newPath),
+  /**
    * 初始化 Git 仓库 + 远程配置
    * @returns {Promise<{success: boolean, message: string}>}
    */
