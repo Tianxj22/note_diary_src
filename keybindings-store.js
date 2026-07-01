@@ -40,6 +40,7 @@ function getDefaultBindings() {
       'insert.checklist':     'Ctrl+Shift+C',
       'insert.timestamp':     'Ctrl+Shift+T',
       'insert.image':         'Ctrl+Shift+I',
+      'insert.codeblock':     'Ctrl+Shift+K',
       'view.toggleDraw':      'Ctrl+Shift+D',
     },
   };

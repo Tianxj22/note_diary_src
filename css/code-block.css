@@ -1,0 +1,210 @@
+/**
+ * @file         css/code-block.css
+ * @description  Note Diary — 代码块样式（Prism 高亮 + wrapper 容器 + 头部栏）
+ * @author       tianxj22
+ * @created      2026-07-01
+ * @updated      2026-07-01
+ * @version      1.0.0
+ */
+
+/* ========================================
+   代码块容器（contenteditable 内原子单元）
+   ======================================== */
+
+.editor-content .code-block-wrapper {
+  position: relative;
+  margin: 12px 0;
+  border: 1px solid #444;
+  border-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ========================================
+   头部栏（语言标签 + 编辑/删除按钮）
+   ======================================== */
+
+.code-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #444;
+  user-select: none;
+}
+
+.code-lang-label {
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-right: auto;
+  user-select: none;
+}
+
+.code-block-edit-btn,
+.code-block-delete-btn {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border: 1px solid #555;
+  border-radius: 3px;
+  background: transparent;
+  color: #aaa;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.code-block-edit-btn:hover {
+  color: #fff;
+  background: #444;
+}
+
+.code-block-delete-btn:hover {
+  color: #f66;
+  background: #444;
+}
+
+/* ========================================
+   代码内容区
+   ======================================== */
+
+.editor-content .code-block {
+  margin: 0;
+  padding: 14px 16px;
+  background: #1e1e1e;
+  overflow-x: auto;
+  font-family: 'Consolas', 'Courier New', 'Source Code Pro', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  tab-size: 4;
+  -moz-tab-size: 4;
+  user-select: text;
+  white-space: pre;
+  word-wrap: normal;
+}
+
+.editor-content .code-block code {
+  font-family: inherit;
+  font-size: inherit;
+  background: none;
+  padding: 0;
+  color: inherit;
+  white-space: inherit;
+}
+
+/* ========================================
+   模态框样式
+   ======================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-overlay.visible {
+  display: flex;
+}
+
+.modal-card {
+  background: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 520px;
+  max-width: 680px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.modal-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #ddd;
+  font-weight: 600;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.82rem;
+  color: #aaa;
+}
+
+.form-group select {
+  padding: 6px 10px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #1e1e1e;
+  color: #ddd;
+  font-size: 0.88rem;
+  outline: none;
+}
+
+.form-group select:focus {
+  border-color: #6c9fff;
+}
+
+.form-group textarea {
+  padding: 10px 12px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #1e1e1e;
+  color: #ddd;
+  font-family: 'Consolas', 'Courier New', 'Source Code Pro', monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  tab-size: 4;
+  -moz-tab-size: 4;
+  resize: vertical;
+  outline: none;
+}
+
+.form-group textarea:focus {
+  border-color: #6c9fff;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-actions .btn-primary {
+  padding: 6px 18px;
+  border: 1px solid #6c9fff;
+  border-radius: 4px;
+  background: #6c9fff;
+  color: #fff;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.modal-actions .btn-primary:hover {
+  background: #5a8ee8;
+}
+
+.modal-actions .btn-secondary {
+  padding: 6px 18px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: transparent;
+  color: #aaa;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.modal-actions .btn-secondary:hover {
+  color: #fff;
+  background: #444;
+}

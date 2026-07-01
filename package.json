@@ -12,6 +12,8 @@
     "build:linux": "electron-builder --linux",
     "dist": "electron-builder",
     "icon:prepare": "node scripts/resize-icon.js",
+    "copy:prism": "node scripts/copy-prism.js",
+    "prestart": "node scripts/copy-prism.js",
     "test": "vitest run test/unit/",
     "test:unit": "vitest run test/unit/",
     "test:e2e": "vitest run test/e2e/",
@@ -47,8 +49,18 @@
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "build/icon.png"
     },
@@ -66,7 +78,13 @@
     },
     "mac": {
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "icon": "build/icon.png",
       "category": "public.app-category.productivity"
@@ -74,21 +92,47 @@
     "dmg": {
       "title": "Note Diary ${version}",
       "contents": [
-        { "x": 130, "y": 220 },
-        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     },
     "linux": {
       "target": [
-        { "target": "AppImage", "arch": ["x64"] },
-        { "target": "deb", "arch": ["x64"] }
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "build/icons",
       "category": "Office"
     },
     "fileAssociations": [
-      { "ext": "html", "name": "Note Diary HTML Note", "role": "Editor" },
-      { "ext": "txt", "name": "Note Diary Text Note", "role": "Editor" }
+      {
+        "ext": "html",
+        "name": "Note Diary HTML Note",
+        "role": "Editor"
+      },
+      {
+        "ext": "txt",
+        "name": "Note Diary Text Note",
+        "role": "Editor"
+      }
     ]
   },
   "devDependencies": {
@@ -103,6 +147,7 @@
     "electron@33.4.11": true
   },
   "dependencies": {
+    "prismjs": "^1.30.0",
     "simple-git": "^3.36.0"
   }
 }

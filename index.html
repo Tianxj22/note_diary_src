@@ -23,6 +23,8 @@
   <link rel="stylesheet" href="css/settings.css">
   <link rel="stylesheet" href="css/conflict.css">
   <link rel="stylesheet" href="css/edit-toolbar.css">
+  <link rel="stylesheet" href="css/prism.css">
+  <link rel="stylesheet" href="css/code-block.css">
 </head>
 <body>
   <!-- 侧边栏 -->
@@ -152,6 +154,8 @@
             <div class="menu-item" data-method="window">🪟 窗口截图</div>
           </div>
         </div>
+        <span class="separator"></span>
+        <button id="btn-code-block" class="style-btn" data-tooltip="插入代码块 (Ctrl+Shift+K)">&lt;/&gt;</button>
       </div>
       <div class="toolbar-actions" id="toolbar-edit" style="display:none">
         <button id="btn-find-open" class="style-btn" data-tooltip="查找替换 (Ctrl+F)">🔍</button>
@@ -364,6 +368,25 @@
     </div>
   </div>
 
+  <!-- 代码块插入/编辑模态框 -->
+  <div class="modal-overlay" id="code-block-overlay">
+    <div class="modal-card">
+      <h3 id="code-block-modal-title">插入代码块</h3>
+      <div class="form-group">
+        <label>语言</label>
+        <select id="code-block-lang"></select>
+      </div>
+      <div class="form-group">
+        <label>代码</label>
+        <textarea id="code-block-textarea" rows="14" spellcheck="false" placeholder="在此粘贴或输入代码..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button id="code-block-cancel" class="btn-secondary">取消</button>
+        <button id="code-block-confirm" class="btn-primary">插入</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 设置弹窗 -->
   <div class="settings-overlay" id="settings-overlay">
     <div class="settings-dialog">
@@ -494,8 +517,19 @@
   <!-- 隐藏的文件选择器用于导入 -->
   <input type="file" id="import-file-input" accept=".txt,.md,.markdown" style="display:none">
 
+  <!-- Prism.js 语法高亮 -->
+  <script src="js/prism/prism-core.js"></script>
+  <script src="js/prism/prism-javascript.js"></script>
+  <script src="js/prism/prism-typescript.js"></script>
+  <script src="js/prism/prism-python.js"></script>
+  <script src="js/prism/prism-markup.js"></script>
+  <script src="js/prism/prism-css.js"></script>
+  <script src="js/prism/prism-json.js"></script>
+  <script src="js/prism/prism-bash.js"></script>
+  <script src="js/prism/prism-sql.js"></script>
   <!-- JS 文件：按依赖顺序加载 -->
   <script src="js/state.js"></script>
+  <script src="js/code-block.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/sidebar-render.js"></script>
   <script src="js/sidebar-ops.js"></script>

@@ -42,6 +42,7 @@ var shortcutActions = {
   'insert.checklist': function () { if (ND.editorDiv) insertChecklist(); },
   'insert.timestamp': function () { if (ND.editorDiv) insertTimestamp(); },
   'insert.image':     function () { if (ND.editorDiv) insertImageFromFile(); },
+  'insert.codeblock': function () { if (ND.editorDiv) ND.showCodeBlockModal(null); },
   'view.toggleDraw':  function () { if (ND.editorDiv) toggleDrawingMode(); },
 };
 
