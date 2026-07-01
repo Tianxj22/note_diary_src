@@ -178,7 +178,7 @@ async function commit(notesDir, message) {
 }
 
 /**
- * 从远程拉取
+ * 从远程拉取（fetch → 条件stash → merge → stash pop）
  * @param {string} notesDir
  * @param {string} branch - 分支名
  * @param {string} token - Access Token
@@ -193,15 +193,63 @@ async function pull(notesDir, branch, token) {
     }
 
     const authUrl = buildAuthUrl(remoteUrl, token);
-    // 使用带认证的 URL 进行 pull
-    await git.pull(authUrl, branch, { '--no-edit': null, '--no-rebase': null });
+    const refspec = `refs/heads/${branch}:refs/remotes/origin/${branch}`;
+
+    // 检查工作区是否有未提交的修改
+    const status = await git.status();
+    const hasUncommitted = !status.isClean();
+
+    if (!hasUncommitted) {
+      // 工作区干净：直接 fetch + merge
+      await git.raw(['fetch', authUrl, refspec]);
+      await git.merge(['origin/' + branch, '--no-edit']);
+    } else {
+      // 工作区有未提交修改：stash → fetch → merge → stash pop
+      try {
+        await git.raw(['stash', '--include-untracked']);
+      } catch (_stashErr) {
+        // stash 失败（可能无可 stash 内容），静默继续
+      }
+
+      try {
+        await git.raw(['fetch', authUrl, refspec]);
+        await git.merge(['origin/' + branch, '--no-edit']);
+      } finally {
+        // 始终尝试恢复 stash
+        try {
+          await git.raw(['stash', 'pop']);
+        } catch (_popErr) {
+          // stash pop 可能因冲突失败，后续通过 hasConflicts 检测
+        }
+      }
+
+      // stash pop 后检查是否产生冲突标记
+      const conflictCheck = await hasConflicts(notesDir);
+      if (conflictCheck.hasConflicts) {
+        return {
+          success: false,
+          message: '存在合并冲突，已保留本地修改',
+          hasConflicts: true,
+        };
+      }
+    }
+
     return { success: true, message: '拉取成功', hasConflicts: false };
   } catch (err) {
     const msg = err.message || '';
     if (msg.includes('CONFLICT') || msg.includes('conflict') || msg.includes('Merge conflict')) {
       return { success: false, message: '存在合并冲突', hasConflicts: true };
     }
-    if (msg.includes('could not resolve host') || msg.includes('Could not read from remote')) {
+    if (msg.includes("Couldn't find remote ref") || msg.includes('unknown revision')
+        || msg.includes('not found')) {
+      return {
+        success: false,
+        message: '远程分支不存在，请先推送或检查分支名称',
+        hasConflicts: false,
+      };
+    }
+    if (msg.includes('could not resolve host') || msg.includes('Could not read from remote')
+        || msg.includes('Connection refused') || msg.includes('Connection timed out')) {
       return { success: false, message: '网络连接失败，请检查远程 URL', hasConflicts: false };
     }
     if (msg.includes('Authentication failed') || msg.includes('401') || msg.includes('403')) {

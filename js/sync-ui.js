@@ -32,7 +32,16 @@
       if (hasConflicts && hasConflicts.hasConflicts) {
         statusEl.textContent = '⚠ ' + hasConflicts.conflictFiles.length + ' 个冲突';
         statusEl.className = 'sync-status-label sync-warning';
+        // 同步更新徽标（不切换视图，不重复 IPC 调用）
+        ND.conflictFiles = hasConflicts.conflictFiles;
+        if (ND.renderConflictList) ND.renderConflictList();
         return;
+      }
+
+      // 无冲突时也更新徽标（可能之前的冲突已被解决）
+      if (ND.conflictFiles && ND.conflictFiles.length > 0) {
+        ND.conflictFiles = [];
+        if (ND.renderConflictList) ND.renderConflictList();
       }
 
       if (status.clean) {
@@ -55,11 +64,6 @@
    * 拉取远程更新
    */
   async function pullRemote() {
-    if (!ND.currentNote) {
-      setSyncStatus('请先打开一篇笔记', 'sync-error');
-      return;
-    }
-
     setSyncStatus('拉取中...', '');
     try {
       var result = await window.electronAPI.gitPull();
@@ -70,6 +74,7 @@
         renderNoteList();
       } else if (result.hasConflicts) {
         setSyncStatus('⚠ 有冲突，请手动解决', 'sync-warning');
+        switchView('conflicts');
       } else {
         setSyncStatus('✗ ' + result.message, 'sync-error');
       }
@@ -84,11 +89,6 @@
    * 推送本地更改
    */
   async function pushLocal() {
-    if (!ND.currentNote) {
-      setSyncStatus('请先打开一篇笔记', 'sync-error');
-      return;
-    }
-
     setSyncStatus('推送中...', '');
     try {
       var result = await window.electronAPI.gitPush();

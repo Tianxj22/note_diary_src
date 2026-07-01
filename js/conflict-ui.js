@@ -34,23 +34,23 @@
    * 渲染侧边栏冲突列表
    */
   function renderConflictList() {
-    var el = ND.noteListEl;
-    if (!el || ND.activeView !== 'conflicts') return;
-
-    el.innerHTML = '';
-
-    // 批量操作栏
-    var bulkBar = document.getElementById('conflict-bulk-actions');
-    if (bulkBar) {
-      bulkBar.classList.toggle('visible', ND.conflictFiles.length > 0);
-    }
-
-    // 冲突徽标
+    // 始终更新冲突标签页徽标和批量操作栏（即使不在冲突视图）
     var badge = document.querySelector('.sidebar-tab.conflict-tab .badge');
     if (badge) {
       badge.textContent = ND.conflictFiles.length;
       badge.classList.toggle('hidden', ND.conflictFiles.length === 0);
     }
+
+    var bulkBar = document.getElementById('conflict-bulk-actions');
+    if (bulkBar) {
+      bulkBar.classList.toggle('visible', ND.conflictFiles.length > 0);
+    }
+
+    // 只有当前在冲突视图时才渲染列表项（避免覆盖工作区/回收站列表）
+    var el = ND.noteListEl;
+    if (!el || ND.activeView !== 'conflicts') return;
+
+    el.innerHTML = '';
 
     if (ND.conflictFiles.length === 0) {
       el.innerHTML = '<div class="empty">无冲突</div>';
