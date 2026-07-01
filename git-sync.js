@@ -90,6 +90,37 @@ async function initRepo(notesDir) {
 }
 
 /**
+ * 确保 HEAD 在命名分支上。如果 HEAD 分离，在当前位置创建/重建目标分支。
+ * @param {string} notesDir
+ * @param {string} [branchName='master']
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
+async function ensureBranch(notesDir, branchName) {
+  branchName = branchName || 'master';
+  try {
+    const git = simpleGit(notesDir);
+    const isRepo = await git.checkIsRepo();
+    if (!isRepo) {
+      return { success: false, message: '不是 Git 仓库' };
+    }
+
+    const branches = await git.branch();
+    if (!branches.detached) {
+      return { success: true, message: 'HEAD 已在 ' + branches.current + ' 分支上' };
+    }
+
+    // HEAD 分离：删除旧分支（如果存在），在当前位置重建
+    if (branches.all.indexOf(branchName) !== -1) {
+      await git.deleteLocalBranch(branchName, true);  // git branch -D <name>
+    }
+    await git.checkoutLocalBranch(branchName);  // git checkout -b <name>
+    return { success: true, message: '已在 HEAD 处创建 ' + branchName + ' 分支' };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
+
+/**
  * 设置远程仓库
  * @param {string} notesDir
  * @param {string} remoteUrl
@@ -431,5 +462,5 @@ module.exports = {
   initRepo, setRemote, configureUser, getStatus, commit,
   pull, push, hasConflicts, resolveConflict, getHistory,
   fullSync, getSyncState, updateSyncState, buildAuthUrl,
-  detectProvider,
+  detectProvider, ensureBranch,
 };

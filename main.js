@@ -59,7 +59,10 @@ function setupGitSync() {
   }
 
   // 初始化 Git 仓库 + 远程配置
-  gitSync.initRepo(notesDir).then(() => {
+  gitSync.initRepo(notesDir).then(async () => {
+    // 确保不在 detached HEAD 状态
+    var branchName = gitCfg.branch || 'master';
+    await gitSync.ensureBranch(notesDir, branchName);
     gitSync.setRemote(notesDir, gitCfg.remoteUrl);
     if (gitCfg.authorName || gitCfg.authorEmail) {
       gitSync.configureUser(notesDir, gitCfg.authorName, gitCfg.authorEmail);
@@ -483,8 +486,10 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('sync:git-push', async () => {
+    // 确保不在 detached HEAD 状态
+    const branch = (appSettings.sync.git && appSettings.sync.git.branch) || 'master';
+    await gitSync.ensureBranch(notesDir, branch);
     const token = getGitToken();
-    const branch = (appSettings.sync.git && appSettings.sync.git.branch) || 'main';
     // 先提交再推送
     await gitSync.commit(notesDir, 'sync: auto commit');
     const result = await gitSync.push(notesDir, branch, token);
