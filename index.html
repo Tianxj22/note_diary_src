@@ -13,6 +13,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: file:; media-src 'self' file:">
   <title>Note Diary</title>
+  <link rel="stylesheet" href="css/theme-variables.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/sidebar.css">
   <link rel="stylesheet" href="css/toolbar.css">
@@ -24,6 +25,9 @@
   <link rel="stylesheet" href="css/conflict.css">
   <link rel="stylesheet" href="css/edit-toolbar.css">
   <link rel="stylesheet" href="css/prism.css">
+  <link rel="stylesheet" href="css/calendar.css">
+  <link rel="stylesheet" href="css/search.css">
+  <link rel="stylesheet" href="css/tag-system.css">
   <link rel="stylesheet" href="css/code-block.css">
 </head>
 <body>
@@ -33,6 +37,7 @@
       <button class="sidebar-tab active" data-view="workspace" id="tab-workspace">📁 工作区</button>
       <button class="sidebar-tab" data-view="trash" id="tab-trash">🗑 回收站</button>
       <button class="sidebar-tab conflict-tab" data-view="conflicts" id="tab-conflicts">⚠ 冲突<span class="badge hidden">0</span></button>
+      <button class="sidebar-tab" data-view="calendar" id="tab-calendar">📅 日历</button>
     </div>
     <!-- 工作区页眉 -->
     <div class="sidebar-header" id="sidebar-header-workspace">
@@ -56,6 +61,33 @@
     <div class="conflict-bulk-actions" id="conflict-bulk-actions">
       <button class="btn-bulk-local" id="btn-bulk-local">全部保留本地</button>
       <button class="btn-bulk-remote" id="btn-bulk-remote">全部保留远程</button>
+    </div>
+    <!-- 搜索栏 -->
+    <div class="search-bar" id="search-bar" style="display:none">
+      <input type="text" id="search-input" placeholder="搜索所有笔记... (Ctrl+Shift+F)">
+      <button id="search-case-btn" class="search-option-btn" title="大小写敏感">Aa</button>
+      <button id="search-clear-btn" class="search-option-btn" title="清除">✕</button>
+    </div>
+    <!-- 搜索结果信息 -->
+    <div class="search-results-info" id="search-results-info" style="display:none">
+      <span id="search-count"></span>
+    </div>
+    <!-- 标签过滤栏 -->
+    <div class="tag-filter-bar" id="tag-filter-bar" style="display:none">
+      <span class="tag-filter-chip active" data-tag="">全部</span>
+    </div>
+    <!-- 日历视图 -->
+    <div class="calendar-container" id="calendar-container" style="display:none">
+      <div class="calendar-header">
+        <button id="cal-prev-month">&lt;</button>
+        <span id="cal-month-label"></span>
+        <button id="cal-next-month">&gt;</button>
+        <button id="cal-date-mode" class="cal-date-mode-btn">📅创建时间</button>
+      </div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+      <div class="calendar-notes-list" id="calendar-notes-list">
+        <div class="empty">点击日期查看笔记</div>
+      </div>
     </div>
     <div class="note-list" id="note-list">
       <div class="empty">暂无笔记<br>点击上方按钮创建</div>
@@ -83,6 +115,10 @@
         <span class="separator"></span>
         <button id="btn-save" class="style-btn" data-tooltip="保存笔记 (Ctrl+S)">💾</button>
         <span class="separator"></span>
+        <button id="btn-export-pdf" class="style-btn" data-tooltip="导出为 PDF">📄</button>
+        <button id="btn-export-md" class="style-btn" data-tooltip="导出为 Markdown">📝</button>
+        <span class="separator"></span>
+        <button id="btn-theme-toggle" class="style-btn" data-tooltip="切换亮色/暗色主题">🌓</button>
         <button id="btn-settings" class="style-btn" data-tooltip="设置 (云同步配置)">⚙</button>
       </div>
       <div class="toolbar-actions" id="toolbar-style" style="display:none">
@@ -490,6 +526,13 @@
           <!-- 系统常量 -->
           <p class="settings-group-title" style="margin-top:12px">显示</p>
           <div class="settings-row">
+            <label>主题</label>
+            <select id="settings-theme">
+              <option value="light">浅色</option>
+              <option value="dark">深色</option>
+            </select>
+          </div>
+          <div class="settings-row">
             <label>字体大小</label>
             <select id="settings-font-size">
               <option value="0.85">0.85rem (小)</option>
@@ -507,6 +550,27 @@
               <option value="1.8" selected>1.8 (默认)</option>
               <option value="2.0">2.0 (宽松)</option>
               <option value="2.2">2.2 (很宽松)</option>
+            </select>
+          </div>
+
+          <!-- 自动保存 -->
+          <p class="settings-group-title" style="margin-top:12px">自动保存</p>
+          <div class="settings-row">
+            <label>启用自动保存</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settings-auto-save-enabled" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <label>保存延迟</label>
+            <select id="settings-auto-save-delay">
+              <option value="500">500ms (即时)</option>
+              <option value="1000">1 秒</option>
+              <option value="2000">2 秒</option>
+              <option value="3000" selected>3 秒 (默认)</option>
+              <option value="5000">5 秒</option>
+              <option value="10000">10 秒 (省电)</option>
             </select>
           </div>
         </div>
@@ -541,6 +605,24 @@
   <!-- 隐藏的文件选择器用于导入 -->
   <input type="file" id="import-file-input" accept=".txt,.md,.markdown" style="display:none">
 
+  <!-- 崩溃恢复弹窗 -->
+  <div class="settings-overlay" id="recovery-overlay" style="display:none">
+    <div class="settings-card" style="max-width:420px;">
+      <h2 class="settings-title">🔄 恢复未保存内容</h2>
+      <p style="margin:12px 0;color:#666;font-size:0.9rem;line-height:1.6;">
+        检测到上次会话异常退出前的未保存数据。
+      </p>
+      <div class="recovery-info" style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-bottom:16px;">
+        <div style="font-weight:600;color:#92400e;" id="recovery-note-name">—</div>
+        <div style="font-size:0.8rem;color:#b45309;margin-top:4px;" id="recovery-note-time">—</div>
+      </div>
+      <div class="settings-footer">
+        <button class="btn-cancel" id="btn-recovery-discard">丢弃</button>
+        <button class="btn-save" id="btn-recovery-restore" style="background:#f59e0b;">恢复</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Prism.js 语法高亮 -->
   <script src="js/prism/prism-core.js"></script>
   <script src="js/prism/prism-javascript.js"></script>
@@ -557,6 +639,10 @@
   <script src="js/utils.js"></script>
   <script src="js/sidebar-render.js"></script>
   <script src="js/sidebar-ops.js"></script>
+  <script src="js/search-ui.js"></script>
+  <script src="js/export-ui.js"></script>
+  <script src="js/calendar-view.js"></script>
+  <script src="js/tag-system.js"></script>
   <script src="js/editor-core.js"></script>
   <script src="js/editor-events.js"></script>
   <script src="js/editor-markers.js"></script>

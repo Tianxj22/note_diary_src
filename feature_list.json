@@ -1,5 +1,5 @@
 {
-  "version": "1.11.0",
+  "version": "2.0.0",
   "activeFeature": null,
   "features": [
     {
@@ -234,36 +234,36 @@
       "id": "F-020",
       "name": "日记日历视图",
       "description": "按日期浏览日记的日历组件",
-      "status": "pending",
+      "status": "done",
       "priority": "P1",
       "milestone": "M3",
       "dependencies": ["F-008"],
       "estimatedEffort": "3d",
-      "completedAt": null,
+      "completedAt": "2026-07-08",
       "verification": "日历组件可按日期筛选和浏览笔记"
     },
     {
       "id": "F-021",
       "name": "全文搜索",
       "description": "搜索框检索所有笔记内容并高亮匹配结果",
-      "status": "pending",
+      "status": "done",
       "priority": "P1",
       "milestone": "M3",
       "dependencies": ["F-008"],
       "estimatedEffort": "2d",
-      "completedAt": null,
+      "completedAt": "2026-07-08",
       "verification": "搜索框可检索所有笔记内容并高亮结果"
     },
     {
       "id": "F-022",
       "name": "标签系统",
       "description": "为笔记添加/删除分类标签，支持按标签筛选",
-      "status": "pending",
+      "status": "done",
       "priority": "P1",
       "milestone": "M3",
       "dependencies": ["F-008"],
       "estimatedEffort": "1d",
-      "completedAt": null,
+      "completedAt": "2026-07-08",
       "verification": "可为笔记添加/删除标签，按标签筛选笔记列表"
     },
     {
@@ -414,37 +414,37 @@
       "id": "F-030",
       "name": "导出 (PDF/Markdown)",
       "description": "将笔记导出为 PDF 和 Markdown 格式文件",
-      "status": "pending",
+      "status": "done",
       "priority": "P2",
       "milestone": "M4",
       "dependencies": ["F-009"],
       "estimatedEffort": "2d",
-      "completedAt": null,
+      "completedAt": "2026-07-08",
       "verification": "可将笔记导出为 PDF 和 Markdown 文件"
     },
     {
       "id": "F-031",
       "name": "主题切换",
       "description": "亮色/暗色模式切换，UI 即时响应",
-      "status": "pending",
+      "status": "done",
       "priority": "P2",
       "milestone": "M4",
       "dependencies": ["F-004"],
       "estimatedEffort": "1d",
-      "completedAt": null,
-      "verification": "亮色/暗色模式切换，UI 即时响应"
+      "completedAt": "2026-07-08",
+      "verification": "CSS 变量体系建立，工具栏按钮/设置弹窗可切换亮色暗色主题"
     },
     {
       "id": "F-032",
       "name": "自动保存增强",
       "description": "支持自动保存到指定目录，崩溃恢复",
-      "status": "pending",
+      "status": "done",
       "priority": "P2",
       "milestone": "M4",
       "dependencies": ["F-010"],
       "estimatedEffort": "1d",
-      "completedAt": null,
-      "verification": "支持自动保存到指定目录，崩溃恢复"
+      "completedAt": "2026-07-08",
+      "verification": "自动保存防抖工作，崩溃恢复 .recovery.json 读写清除正常"
     },
     {
       "id": "F-033",
@@ -486,8 +486,8 @@
   "milestones": [
     { "id": "M1", "name": "Hello World", "targetDate": "2024-06-24", "status": "done" },
     { "id": "M2", "name": "基础编辑", "targetDate": "2024-06-24", "status": "done" },
-    { "id": "M3", "name": "体验版", "targetDate": "TBD", "status": "in-progress" },
-    { "id": "M4", "name": "正式版", "targetDate": "TBD", "status": "pending" },
+    { "id": "M3", "name": "体验版", "targetDate": "TBD", "status": "done" },
+    { "id": "M4", "name": "正式版", "targetDate": "TBD", "status": "done" },
     { "id": "M5", "name": "云端同步", "targetDate": "2026-06-29", "status": "done" }
   ]
 }

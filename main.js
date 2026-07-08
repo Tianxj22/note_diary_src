@@ -10,6 +10,7 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, nativeImage, dialog, clipboard, desktopCapturer, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const fileStore = require('./file-store');
 const settingsStore = require('./settings-store');
 const formatMigration = require('./format-migration');
@@ -128,6 +129,113 @@ function registerIpcHandlers() {
   ipcMain.handle('note:list', (_event, opts) => {
     const listOpts = Object.assign({}, opts || {}, { ext: getNoteExtension() });
     return fileStore.listNotes(notesDir, listOpts);
+  });
+
+  // ---- 标签系统 ----
+
+  ipcMain.handle('note:read-tags', (_event, filePath) => {
+    return fileStore.readNoteTags(filePath, notesDir);
+  });
+
+  ipcMain.handle('note:update-tags', (_event, filePath, tags) => {
+    return fileStore.writeNoteTags(filePath, notesDir, tags);
+  });
+
+  ipcMain.handle('note:list-tags', () => {
+    return fileStore.listAllTags(notesDir, getNoteExtension());
+  });
+
+  // ---- 全文搜索 ----
+
+  ipcMain.handle('note:search', (_event, query, opts) => {
+    var searchOpts = Object.assign({}, opts || {}, { query: query, ext: getNoteExtension() });
+    return fileStore.searchNotes(notesDir, searchOpts);
+  });
+
+  // ---- 导出 ----
+
+  ipcMain.handle('export:to-pdf', async (_event, htmlContent, options) => {
+    var tmpPath = '';
+    var exportWin = null;
+    var timeoutId = null;
+
+    try {
+      // 写入临时 HTML 文件（file:// 协议可加载 file:// 图片）
+      tmpPath = path.join(os.tmpdir(), 'nd-export-' + Date.now() + '.html');
+      fs.writeFileSync(tmpPath, htmlContent, 'utf-8');
+
+      exportWin = new BrowserWindow({
+        width: 800,
+        height: 600,
+        show: false,
+        webPreferences: { nodeIntegration: false, contextIsolation: true },
+      });
+
+      await exportWin.loadURL('file:///' + tmpPath.replace(/\\/g, '/'));
+
+      var pdfBuffer = await new Promise((resolve, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error('超时'));
+        }, 30000);
+
+        exportWin.webContents.on('did-finish-load', async () => {
+          try {
+            var buf = await exportWin.webContents.printToPDF({
+              pageSize: options.pageSize || 'A4',
+              landscape: options.landscape || false,
+              margins: options.margins || { top: 20, bottom: 20, left: 20, right: 20 },
+            });
+            clearTimeout(timeoutId);
+            resolve(buf);
+          } catch (err) {
+            clearTimeout(timeoutId);
+            reject(err);
+          }
+        });
+
+        exportWin.webContents.on('did-fail-load', () => {
+          clearTimeout(timeoutId);
+          reject(new Error('页面加载失败'));
+        });
+      });
+
+      var win = BrowserWindow.getFocusedWindow();
+      var result = await dialog.showSaveDialog(win, {
+        title: '导出 PDF',
+        defaultPath: (options.title || 'note') + '.pdf',
+        filters: [{ name: 'PDF 文件', extensions: ['pdf'] }],
+      });
+
+      if (!result.canceled && result.filePath) {
+        fs.writeFileSync(result.filePath, pdfBuffer);
+        return { success: true, filePath: result.filePath };
+      }
+      return { success: false, cancelled: true };
+    } catch (err) {
+      return { success: false, message: err.message };
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (exportWin && !exportWin.isDestroyed()) exportWin.close();
+      // 清理临时文件
+      if (tmpPath) {
+        try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch (_) {}
+      }
+    }
+  });
+
+  ipcMain.handle('export:to-markdown', async (_event, mdContent, title) => {
+    var win = BrowserWindow.getFocusedWindow();
+    var result = await dialog.showSaveDialog(win, {
+      title: '导出 Markdown',
+      defaultPath: (title || 'note') + '.md',
+      filters: [{ name: 'Markdown 文件', extensions: ['md'] }],
+    });
+
+    if (!result.canceled && result.filePath) {
+      fs.writeFileSync(result.filePath, mdContent, 'utf-8');
+      return { success: true, filePath: result.filePath };
+    }
+    return { success: false, cancelled: true };
   });
 
   ipcMain.handle('note:read', (_event, filePath) => {
@@ -644,6 +752,47 @@ function registerIpcHandlers() {
   ipcMain.handle('update:install', () => {
     updateChecker.installNow();
     return true;
+  });
+
+  // ---- 崩溃恢复 ----
+
+  ipcMain.handle('recovery:write', (_event, data) => {
+    try {
+      const recoveryPath = path.join(notesDir, '.recovery.json');
+      fs.writeFileSync(recoveryPath, JSON.stringify(data, null, 2), 'utf-8');
+      return true;
+    } catch (err) {
+      console.error('recovery:write failed:', err.message);
+      return false;
+    }
+  });
+
+  ipcMain.handle('recovery:read', () => {
+    try {
+      const recoveryPath = path.join(notesDir, '.recovery.json');
+      if (!fs.existsSync(recoveryPath)) return null;
+      const raw = fs.readFileSync(recoveryPath, 'utf-8');
+      // 验证 JSON 合法性
+      const data = JSON.parse(raw);
+      if (!data || !data.filePath || !data.content) return null;
+      return data;
+    } catch (err) {
+      console.error('recovery:read failed:', err.message);
+      return null;
+    }
+  });
+
+  ipcMain.handle('recovery:clear', () => {
+    try {
+      const recoveryPath = path.join(notesDir, '.recovery.json');
+      if (fs.existsSync(recoveryPath)) {
+        fs.unlinkSync(recoveryPath);
+      }
+      return true;
+    } catch (err) {
+      console.error('recovery:clear failed:', err.message);
+      return false;
+    }
   });
 }
 

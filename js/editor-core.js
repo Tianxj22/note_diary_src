@@ -14,6 +14,8 @@
 // ---- 选择笔记 ----
 async function selectNote(note) {
   if (ND.currentNote && ND.currentNote.filePath === note.filePath) return;
+  // 清除搜索高亮
+  if (ND.clearHighlights) ND.clearHighlights();
   // 在 async gap 前清空 currentNote，防止 autoSave 写入错误的笔记
   const prevNote = ND.currentNote;
   ND.currentNote = null;
@@ -39,6 +41,13 @@ async function selectNote(note) {
   // 存储解码出的元数据，用于后续编码
   ND.currentNote._meta = decoded.metadata || { title: note.displayName, created: note.createdAt || Date.now(), modified: Date.now() };
   ND.currentNote.createdAt = (decoded.metadata && decoded.metadata.created) || note.createdAt || Date.now();
+  // 从标签文件加载标签
+  try {
+    var tagsFromFile = await window.electronAPI.readNoteTags(note.filePath);
+    ND.currentTags = Array.isArray(tagsFromFile) ? tagsFromFile : [];
+  } catch (_) {
+    ND.currentTags = [];
+  }
   // 兼容旧纯文本笔记：将换行转换为 HTML <br>
   if (!/^\s*</.test(ND.currentContent)) {
     ND.currentContent = ND.currentContent.split('\n').map(function(line) {
@@ -135,21 +144,36 @@ async function saveCurrentNote() {
     ND.currentNote.mtime = Date.now();
     ND.statusLeft.textContent = '已保存';
     setTimeout(function() { if (ND.statusLeft.textContent === '已保存') updateStatus(); }, 1500);
+    // 保存成功，清除恢复数据
+    try { await window.electronAPI.clearRecovery(); } catch (_) {}
   }
 }
 
-// ---- 自动保存（防抖）—— 已禁用 ----
-// function autoSave() {
-//   if (ND.saveTimer) clearTimeout(ND.saveTimer);
-//   ND.saveTimer = setTimeout(async () => {
-//     if (ND.editorDiv && ND.editorDiv.innerHTML !== ND.lastSavedContent) {
-//       pushUndo(ND.lastSavedContent);
-//     }
-//     await saveCurrentNote();
-//     await loadNoteList();
-//     renderNoteList();
-//   }, 500);
-// }
+// ---- 自动保存（防抖） ----
+function autoSave() {
+  if (!ND.autoSaveEnabled) return;
+  if (!ND.currentNote || !ND.editorDiv) return;
+  if (ND.saveTimer) clearTimeout(ND.saveTimer);
+  ND.saveTimer = setTimeout(async () => {
+    // 写入崩溃恢复数据
+    try {
+      await window.electronAPI.writeRecovery({
+        filePath: ND.currentNote.filePath,
+        content: ND.editorDiv.innerHTML,
+        title: ND.currentNote.displayName,
+        timestamp: Date.now(),
+      });
+    } catch (_) { /* 恢复写入失败不阻塞保存 */ }
+    await saveCurrentNote();
+    // 保存成功后清除恢复数据
+    try { await window.electronAPI.clearRecovery(); } catch (_) {}
+    ND.lastAutoSaveTime = Date.now();
+    ND.statusLeft.textContent = '自动保存';
+    setTimeout(function() {
+      if (ND.statusLeft.textContent === '自动保存') updateStatus();
+    }, 1500);
+  }, ND.autoSaveDelay);
+}
 
 // ---- 手动保存 ----
 async function manualSave() {
@@ -238,6 +262,9 @@ function showEditor() {
     }
   });
   ND.editorArea.appendChild(ND.editorTitleInput);
+
+  // 标签编辑区
+  if (ND.renderTagEditor) ND.renderTagEditor(ND.currentTags);
 
   // 滚动容器（包裹文字层 + 绘图层）
   var scrollDiv = document.createElement('div');

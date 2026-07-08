@@ -209,11 +209,21 @@
     // 通用
     document.getElementById('settings-file-extension').value = s.general.fileExtension;
 
-    // 首选项
+      // 首选项
+    var themeEl = document.getElementById('settings-theme');
+    if (themeEl) themeEl.value = (s.general && s.general.theme) || 'light';
     var fontSizeEl = document.getElementById('settings-font-size');
     if (fontSizeEl) fontSizeEl.value = (s.general && s.general.fontSize) || '0.95';
     var lineHeightEl = document.getElementById('settings-line-height');
     if (lineHeightEl) lineHeightEl.value = (s.general && s.general.lineHeight) || '1.8';
+
+    // 自动保存
+    if (s.autoSave) {
+      var autoSaveEnabledEl = document.getElementById('settings-auto-save-enabled');
+      if (autoSaveEnabledEl) autoSaveEnabledEl.checked = s.autoSave.enabled !== false;
+      var autoSaveDelayEl = document.getElementById('settings-auto-save-delay');
+      if (autoSaveDelayEl) autoSaveDelayEl.value = s.autoSave.delayMs || 3000;
+    }
   }
 
   /**
@@ -249,6 +259,11 @@
         fileExtension: document.getElementById('settings-file-extension').value,
         fontSize: document.getElementById('settings-font-size').value,
         lineHeight: document.getElementById('settings-line-height').value,
+        theme: document.getElementById('settings-theme').value,
+      },
+      autoSave: {
+        enabled: document.getElementById('settings-auto-save-enabled').checked,
+        delayMs: parseInt(document.getElementById('settings-auto-save-delay').value) || 3000,
       },
     };
 
@@ -277,6 +292,15 @@
     try {
       cachedSettings = await window.electronAPI.updateSettings(partial, newToken);
       hideSettingsModal();
+      // 即时应用自动保存设置
+      if (partial.autoSave) {
+        ND.autoSaveEnabled = partial.autoSave.enabled;
+        ND.autoSaveDelay = partial.autoSave.delayMs || 3000;
+      }
+      // 即时应用主题设置
+      if (partial.general && partial.general.theme && ND.applyTheme) {
+        ND.applyTheme(partial.general.theme);
+      }
       // 更新状态栏提示
       if (ND.statusLeft) {
         ND.statusLeft.textContent = '设置已保存';

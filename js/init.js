@@ -11,7 +11,42 @@
 document.getElementById('btn-sidebar-new').addEventListener('click', createNewNote);
 document.getElementById('btn-new').addEventListener('click', createNewNote);
 document.getElementById('btn-save').addEventListener('click', () => manualSave());
+document.getElementById('btn-export-pdf').addEventListener('click', () => { if (ND.exportToPdf) ND.exportToPdf(); });
+document.getElementById('btn-export-md').addEventListener('click', () => { if (ND.exportToMarkdown) ND.exportToMarkdown(); });
 document.getElementById('btn-settings').addEventListener('click', () => ND.showSettingsModal());
+
+// ---- 主题切换 ----
+document.getElementById('btn-theme-toggle').addEventListener('click', toggleTheme);
+
+/**
+ * 应用主题
+ * @param {string} theme - 'light' | 'dark'
+ */
+function applyTheme(theme) {
+  ND.currentTheme = theme;
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+  // 更新按钮图标
+  var themeBtn = document.getElementById('btn-theme-toggle');
+  if (themeBtn) {
+    themeBtn.textContent = theme === 'dark' ? '☀️' : '🌓';
+  }
+}
+
+/**
+ * 切换主题（含持久化）
+ */
+function toggleTheme() {
+  var newTheme = ND.currentTheme === 'dark' ? 'light' : 'dark';
+  applyTheme(newTheme);
+  // 持久化到设置
+  try {
+    window.electronAPI.updateSettings({ general: { theme: newTheme } }, null);
+  } catch (_) {}
+}
+
+// 暴露到 ND 供 settings 调用
+ND.applyTheme = applyTheme;
+ND.toggleTheme = toggleTheme;
 
 // ---- 快捷键动作分发表 ----
 var shortcutActions = {
@@ -45,6 +80,11 @@ var shortcutActions = {
   'insert.codeblock': function () { if (ND.editorDiv) ND.showCodeBlockModal(null); },
   'insert.video':     function () { if (ND.editorDiv && ND.btnInsertVideo) ND.btnInsertVideo.click(); },
   'view.toggleDraw':  function () { if (ND.editorDiv) toggleDrawingMode(); },
+  'search.global':    function () {
+    if (ND.activeView !== 'workspace') switchView('workspace');
+    var si = document.getElementById('search-input');
+    if (si) { si.focus(); si.select(); }
+  },
 };
 
 /** 解析后的快捷键映射: shortcutString → actionId */
@@ -145,10 +185,61 @@ reloadBindings();
       ND.prefFontSize = settings.general.fontSize || '0.95';
       ND.prefLineHeight = settings.general.lineHeight || '1.8';
     }
+    // 加载自动保存设置
+    if (settings && settings.autoSave) {
+      ND.autoSaveEnabled = settings.autoSave.enabled !== false;  // 默认 true
+      ND.autoSaveDelay = settings.autoSave.delayMs || 3000;
+    }
+    // 加载主题设置
+    if (settings && settings.general && settings.general.theme) {
+      applyTheme(settings.general.theme);
+    }
+    // 加载自定义标签
+    if (settings && settings.general && Array.isArray(settings.general.customTags)) {
+      ND.customTags = settings.general.customTags;
+    }
   } catch (_) {
     ND.prefFontSize = '0.95';
     ND.prefLineHeight = '1.8';
   }
+})();
+
+// ---- 崩溃恢复检查 ----
+(async function checkRecovery() {
+  try {
+    var recoveryData = await window.electronAPI.readRecovery();
+    if (!recoveryData) return;
+    // 有未保存的恢复数据，显示恢复弹窗
+    var recoveryOverlay = document.getElementById('recovery-overlay');
+    var recoveryNoteName = document.getElementById('recovery-note-name');
+    var recoveryNoteTime = document.getElementById('recovery-note-time');
+    if (recoveryOverlay && recoveryNoteName) {
+      recoveryNoteName.textContent = recoveryData.title || '未知笔记';
+      if (recoveryNoteTime) {
+        var d = new Date(recoveryData.timestamp);
+        recoveryNoteTime.textContent = d.toLocaleString('zh-CN');
+      }
+      recoveryOverlay.style.display = 'flex';
+      // 绑定按钮事件
+      document.getElementById('btn-recovery-restore').onclick = async function () {
+        recoveryOverlay.style.display = 'none';
+        // 恢复笔记：用 selectNote 正常打开获取元数据，然后覆盖为恢复内容
+        if (recoveryData.filePath) {
+          var noteObj = { filePath: recoveryData.filePath, fileName: recoveryData.filePath.split(/[\\/]/).pop(), displayName: recoveryData.title, mtime: recoveryData.timestamp };
+          await selectNote(noteObj);
+          // 用恢复内容覆盖编辑器（标记为未保存状态）
+          if (ND.editorDiv && recoveryData.content) {
+            ND.editorDiv.innerHTML = recoveryData.content;
+            ND.statusLeft.textContent = '已恢复未保存内容 — 请手动保存';
+          }
+        }
+      };
+      document.getElementById('btn-recovery-discard').onclick = async function () {
+        recoveryOverlay.style.display = 'none';
+        await window.electronAPI.clearRecovery();
+      };
+    }
+  } catch (_) {}
 })();
 
 // ---- 防御：点击编辑区任意位置自动聚焦到 editorDiv ----

@@ -1,0 +1,93 @@
+/* Note Diary - search styles */
+
+/* 搜索栏 */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-sidebar);
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--bg-sidebar-active);
+  border-radius: 4px;
+  background: var(--bg-sidebar-hover);
+  color: var(--text-sidebar);
+  font-size: 0.78rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-bar input:focus {
+  border-color: var(--accent-blue);
+}
+
+.search-bar input::placeholder {
+  color: var(--text-sidebar-muted);
+}
+
+.search-option-btn {
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--bg-sidebar-active);
+  border-radius: 3px;
+  background: var(--bg-sidebar-hover);
+  color: var(--text-sidebar-muted);
+  cursor: pointer;
+  font-size: 0.68rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-option-btn:hover {
+  background: var(--bg-sidebar-active);
+  color: var(--text-sidebar);
+}
+
+.search-option-btn.active {
+  background: var(--accent-blue);
+  color: #fff;
+  border-color: var(--accent-blue);
+}
+
+/* 搜索结果信息 */
+.search-results-info {
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--border-sidebar);
+  font-size: 0.7rem;
+  color: var(--text-sidebar-muted);
+}
+
+/* 搜索结果项 */
+.search-result-item .search-snippet {
+  font-size: 0.75rem;
+  color: var(--text-sidebar-muted);
+  white-space: normal;
+  line-height: 1.4;
+  margin: 2px 0;
+}
+
+.search-result-item .search-snippet mark {
+  background: #f8c555;
+  color: #333;
+  padding: 0 1px;
+  border-radius: 1px;
+}
+
+/* 编辑器内高亮 */
+mark.search-highlight {
+  background: #ffeb3b;
+  color: #333;
+  padding: 0 1px;
+  border-radius: 1px;
+}
+
+:root.dark mark.search-highlight {
+  background: #b8860b;
+  color: #fff;
+}

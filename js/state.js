@@ -16,6 +16,21 @@ ND.currentContent = '';
 ND.saveTimer = null;
 ND.lastSavedContent = '';
 
+// ---- 自动保存状态 ----
+ND.autoSaveEnabled = true;
+ND.autoSaveDelay = 3000;         // 默认 3 秒防抖
+ND.lastAutoSaveTime = null;
+
+// ---- 标签状态 ----
+ND.currentTags = [];             // 当前笔记标签
+ND.activeTagFilter = null;       // 当前选中的标签过滤（null = 全部）
+ND.customTags = [];              // 预设 + 用户自定义标签列表 [{name, emoji}]
+
+// ---- 搜索状态 ----
+ND.searchQuery = '';
+ND.searchResults = [];
+ND.searchCaseSensitive = false;
+
 // ---- DOM 引用 ----
 ND.noteListEl = document.getElementById('note-list');
 ND.editorArea = document.getElementById('editor-area');
@@ -30,6 +45,9 @@ ND.editorTitleInput = null;
 ND.activeView = 'workspace'; // 'workspace' | 'trash'
 ND.sortBy = 'mtime';
 ND.sortDir = 'desc';
+
+// ---- 主题状态 ----
+ND.currentTheme = 'light'; // 'light' | 'dark'
 
 // ---- 样式工具栏 DOM ----
 ND.btnBold = document.getElementById('btn-bold');

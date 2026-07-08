@@ -301,4 +301,59 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateStatus: (callback) => {
     ipcRenderer.on('update:status', (_event, data) => callback(data));
   },
+  /**
+   * 写入崩溃恢复数据
+   * @param {{ filePath: string, content: string, title: string, timestamp: number }} data
+   * @returns {Promise<boolean>}
+   */
+  writeRecovery: (data) => ipcRenderer.invoke('recovery:write', data),
+  /**
+   * 读取崩溃恢复数据
+   * @returns {Promise<object|null>}
+   */
+  readRecovery: () => ipcRenderer.invoke('recovery:read'),
+  /**
+   * 清除崩溃恢复数据
+   * @returns {Promise<boolean>}
+   */
+  clearRecovery: () => ipcRenderer.invoke('recovery:clear'),
+  /**
+   * 读取笔记标签
+   * @param {string} filePath - 笔记文件路径
+   * @returns {Promise<string[]>}
+   */
+  readNoteTags: (filePath) => ipcRenderer.invoke('note:read-tags', filePath),
+  /**
+   * 更新笔记标签
+   * @param {string} filePath - 笔记文件路径
+   * @param {string[]} tags - 标签数组
+   * @returns {Promise<boolean>}
+   */
+  updateNoteTags: (filePath, tags) => ipcRenderer.invoke('note:update-tags', filePath, tags),
+  /**
+   * 列出所有标签及计数
+   * @returns {Promise<Array<{tag: string, count: number}>>}
+   */
+  listAllTags: () => ipcRenderer.invoke('note:list-tags'),
+  /**
+   * 全文搜索笔记
+   * @param {string} query - 搜索关键词
+   * @param {object} [opts] - { caseSensitive: boolean }
+   * @returns {Promise<Array>}
+   */
+  searchNotes: (query, opts) => ipcRenderer.invoke('note:search', query, opts),
+  /**
+   * 导出笔记为 PDF
+   * @param {string} htmlContent - 完整 HTML 文档
+   * @param {object} options - { pageSize, landscape, margins, title }
+   * @returns {Promise<{success: boolean, filePath?: string}>}
+   */
+  exportToPdf: (htmlContent, options) => ipcRenderer.invoke('export:to-pdf', htmlContent, options),
+  /**
+   * 导出笔记为 Markdown
+   * @param {string} mdContent - Markdown 内容
+   * @param {string} title - 文件名
+   * @returns {Promise<{success: boolean, filePath?: string}>}
+   */
+  exportToMarkdown: (mdContent, title) => ipcRenderer.invoke('export:to-markdown', mdContent, title),
 });

@@ -1,0 +1,155 @@
+/**
+ * Note Diary — 主题色彩变量
+ * 通过 :root（亮色）和 :root.dark（暗色）定义两套配色
+ * 所有 CSS 文件中的硬编码颜色引用本文件的 var(--xxx)
+ */
+
+:root {
+  /* ---- 背景色 ---- */
+  --bg-primary: #fff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #fafafa;
+  --bg-sidebar: #2c2c2c;
+  --bg-sidebar-hover: #3a3a3a;
+  --bg-sidebar-active: #4a4a4a;
+  --bg-toolbar: #fafafa;
+  --bg-editor: #fff;
+  --bg-context: #333;
+  --bg-code: #1e1e1e;
+  --bg-overlay-card: #fff;
+  --bg-input: #fff;
+  --bg-findbar: #333;
+  --bg-settings-section: #f7f8fa;
+  --bg-tag-chip: #e8f0fe;
+
+  /* ---- 文字色 ---- */
+  --text-primary: #333;
+  --text-secondary: #555;
+  --text-tertiary: #666;
+  --text-muted: #888;
+  --text-sidebar: #ccc;
+  --text-sidebar-muted: #888;
+  --text-on-dark: #fff;
+  --text-on-accent: #fff;
+  --text-link: #1a56b0;
+  --text-code: #ccc;
+  --text-placeholder: #999;
+
+  /* ---- 边框色 ---- */
+  --border-primary: #e0e0e0;
+  --border-secondary: #d0d0d0;
+  --border-light: #e8e8e8;
+  --border-sidebar: #3a3a3a;
+  --border-input: #d0d0d0;
+
+  /* ---- 强调色 ---- */
+  --accent-blue: #6c9fff;
+  --accent-blue-dark: #1a56b0;
+  --accent-blue-hover: #5a8eeb;
+  --accent-blue-light: #d6e4f0;
+  --accent-selected: #4a6a9a;
+
+  /* ---- 功能色 ---- */
+  --danger: #f66;
+  --danger-dark: #c62828;
+  --danger-bg: #ffebee;
+  --success: #8f8;
+  --success-dark: #2a7d2a;
+  --success-bg: #e8f5e9;
+  --warning: #f8c555;
+  --warning-bg: #fef3e8;
+
+  /* ---- 覆盖层 ---- */
+  --overlay-backdrop: rgba(0, 0, 0, 0.5);
+  --overlay-shadow: rgba(0, 0, 0, 0.3);
+  --overlay-border: rgba(0, 0, 0, 0.1);
+
+  /* ---- 特定组件 ---- */
+  --scrollbar-thumb: #d0d0d0;
+  --scrollbar-track: transparent;
+  --toggle-bg: #ccc;
+  --toggle-active-bg: #6c9fff;
+  --resize-handle: #6c9fff;
+  --line-gutter-text: #ccc;
+  --line-gutter-bg: transparent;
+  --note-item-bg: transparent;
+  --note-item-hover: #3a3a3a;
+  --note-item-active-border: #6c9fff;
+  --separator: #e0e0e0;
+  --btn-cancel-bg: #f0f0f0;
+  --btn-cancel-text: #555;
+  --status-bar-bg: #fafafa;
+  --status-bar-border: #e0e0e0;
+}
+
+/* ---- 暗色主题 ---- */
+:root.dark {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252525;
+  --bg-tertiary: #2a2a2a;
+  --bg-sidebar: #1a1a1a;
+  --bg-sidebar-hover: #2a2a2a;
+  --bg-sidebar-active: #3a3a3a;
+  --bg-toolbar: #252525;
+  --bg-editor: #1e1e1e;
+  --bg-context: #2d2d2d;
+  --bg-code: #1a1a1a;
+  --bg-overlay-card: #2a2a2a;
+  --bg-input: #333;
+  --bg-findbar: #2d2d2d;
+  --bg-settings-section: #2a2a2a;
+  --bg-tag-chip: #1a3a5a;
+
+  --text-primary: #ddd;
+  --text-secondary: #bbb;
+  --text-tertiary: #aaa;
+  --text-muted: #777;
+  --text-sidebar: #bbb;
+  --text-sidebar-muted: #666;
+  --text-on-dark: #fff;
+  --text-on-accent: #fff;
+  --text-link: #6c9fff;
+  --text-code: #ccc;
+  --text-placeholder: #666;
+
+  --border-primary: #444;
+  --border-secondary: #555;
+  --border-light: #3a3a3a;
+  --border-sidebar: #333;
+  --border-input: #555;
+
+  --accent-blue: #5a8eeb;
+  --accent-blue-dark: #6c9fff;
+  --accent-blue-hover: #6c9fff;
+  --accent-blue-light: #1a2a4a;
+  --accent-selected: #3a5a8a;
+
+  --danger: #e55;
+  --danger-dark: #ef5350;
+  --danger-bg: #3a1a1a;
+  --success: #6c6;
+  --success-dark: #4a8a4a;
+  --success-bg: #1a3a1a;
+  --warning: #e67e22;
+  --warning-bg: #3a2a1a;
+
+  --overlay-backdrop: rgba(0, 0, 0, 0.7);
+  --overlay-shadow: rgba(0, 0, 0, 0.5);
+  --overlay-border: rgba(255, 255, 255, 0.1);
+
+  --scrollbar-thumb: #555;
+  --scrollbar-track: transparent;
+  --toggle-bg: #555;
+  --toggle-active-bg: #5a8eeb;
+  --resize-handle: #5a8eeb;
+  --line-gutter-text: #555;
+  --line-gutter-bg: transparent;
+  --note-item-bg: transparent;
+  --note-item-hover: #2a2a2a;
+  --note-item-active-border: #5a8eeb;
+  --separator: #444;
+  --btn-cancel-bg: #3a3a3a;
+  --btn-cancel-text: #bbb;
+  --status-bar-bg: #252525;
+  --status-bar-border: #444;
+}

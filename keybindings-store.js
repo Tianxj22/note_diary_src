@@ -43,6 +43,7 @@ function getDefaultBindings() {
       'insert.codeblock':     'Ctrl+Shift+K',
       'insert.video':         'Ctrl+Shift+V',
       'view.toggleDraw':      'Ctrl+Shift+D',
+      'search.global':        'Ctrl+Shift+F',
     },
   };
 }

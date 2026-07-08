@@ -13,7 +13,7 @@
 .editor-content .log-stamp {
   display: inline;
   user-select: none;
-  color: #888;
+  color: var(--text-muted);
   margin-right: 4px;
   font-size: 0.88rem;
 }
@@ -37,7 +37,7 @@
 .editor-content img.selected,
 .editor-content video.selected,
 .editor-content .media-crop-wrapper.selected {
-  outline: 2px solid #6c9fff;
+  outline: 2px solid var(--accent-blue);
   outline-offset: 2px;
 }
 
@@ -57,13 +57,13 @@
   font-size: 1.2rem;
   font-weight: 600;
   font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
-  color: #333;
+  color: var(--text-primary);
   background: transparent;
   transition: border-color 0.15s;
 }
 
 .editor-title-input:focus {
-  border-bottom-color: #6c9fff;
+  border-bottom-color: var(--accent-blue);
 }
 
 .editor-title-input::placeholder {
@@ -121,7 +121,7 @@
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: 0.8rem;
   line-height: 1.71rem;
-  color: #d0d0d0;
+  color: var(--line-gutter-text);
 }
 
 .editor-area .editor-content {
@@ -134,7 +134,11 @@
   font-size: 0.95rem;
   line-height: 1.8;
   font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
-  color: #333;
+  color: var(--text-primary);
+}
+
+:root.dark .editor-content {
+  color-scheme: dark;
 }
 
 .editor-area .editor-content:empty::before {
@@ -153,7 +157,7 @@
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: #999;
+  color: var(--text-muted);
   font-size: 1.2rem;
   cursor: pointer;
   display: flex;
@@ -163,8 +167,8 @@
 }
 
 .btn-close-note:hover {
-  background: #e0e0e0;
-  color: #555;
+  background: var(--border-primary);
+  color: var(--text-secondary);
 }
 
 /* 缩放控件（main-area 右下角浮动，不受 showEditor 影响） */
@@ -176,7 +180,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  background: #fff;
+  background: var(--bg-primary);
   border: 1px solid #ddd;
   border-radius: 6px;
   padding: 2px 6px;
@@ -192,7 +196,7 @@
   background: transparent;
   cursor: pointer;
   font-size: 1rem;
-  color: #666;
+  color: var(--text-tertiary);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -200,13 +204,13 @@
 }
 
 .zoom-controls button:hover {
-  background: #e8e8e8;
-  color: #333;
+  background: var(--border-light);
+  color: var(--text-primary);
 }
 
 #zoom-label {
   font-size: 0.78rem;
-  color: #888;
+  color: var(--text-muted);
   min-width: 38px;
   text-align: center;
 }

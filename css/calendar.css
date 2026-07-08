@@ -1,0 +1,144 @@
+/* Note Diary - calendar view styles */
+
+.calendar-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 日历头部 */
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-sidebar);
+}
+
+.calendar-header button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--bg-sidebar-active);
+  border-radius: 4px;
+  background: var(--bg-sidebar-hover);
+  color: var(--text-sidebar);
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.calendar-header button:hover {
+  background: var(--bg-sidebar-active);
+}
+
+#cal-month-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-sidebar);
+  min-width: 110px;
+  text-align: center;
+  user-select: none;
+}
+
+#cal-date-mode {
+  width: auto;
+  padding: 3px 8px;
+  font-size: 0.68rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* 日历网格 */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border-sidebar);
+}
+
+.cal-day-header {
+  text-align: center;
+  font-size: 0.65rem;
+  color: var(--text-sidebar-muted);
+  padding: 4px 0;
+  user-select: none;
+}
+
+.cal-day {
+  position: relative;
+  text-align: center;
+  padding: 4px 0;
+  font-size: 0.75rem;
+  color: var(--text-sidebar);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.1s;
+  user-select: none;
+  min-height: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.cal-day:hover {
+  background: var(--bg-sidebar-hover);
+}
+
+.cal-other-month {
+  color: #555;
+  cursor: default;
+}
+
+.cal-other-month:hover {
+  background: transparent;
+}
+
+.cal-today {
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+
+.cal-selected {
+  background: var(--accent-selected) !important;
+  color: #fff;
+}
+
+/* 笔记圆点指示器 */
+.cal-dot {
+  display: block;
+  width: 4px;
+  height: 4px;
+  background: var(--accent-blue);
+  border-radius: 50%;
+  margin-top: 1px;
+}
+
+.cal-dot-multi {
+  width: 6px;
+  height: 6px;
+}
+
+.cal-selected .cal-dot {
+  background: #fff;
+}
+
+/* 日历笔记列表 */
+.calendar-notes-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.calendar-notes-list .empty {
+  text-align: center;
+  color: var(--text-tertiary);
+  margin-top: 40px;
+  font-size: 0.85rem;
+}

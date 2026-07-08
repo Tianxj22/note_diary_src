@@ -39,6 +39,13 @@ function getDefaults() {
       fileExtension: '.html',    // '.html' | '.txt'
       fontSize: '0.95',          // rem
       lineHeight: '1.8',         // unitless
+      theme: 'light',            // 'light' | 'dark'
+      customTags: [],            // [{name: string, emoji: string}]
+    },
+    autoSave: {
+      enabled: true,
+      delayMs: 3000,
+      backupDir: '',
     },
   };
 }
@@ -75,6 +82,17 @@ function deepMerge(target, partial) {
 
   if (partial.general) {
     if (typeof partial.general.fileExtension === 'string') result.general.fileExtension = partial.general.fileExtension;
+    if (typeof partial.general.fontSize === 'string') result.general.fontSize = partial.general.fontSize;
+    if (typeof partial.general.lineHeight === 'string') result.general.lineHeight = partial.general.lineHeight;
+    if (typeof partial.general.theme === 'string') result.general.theme = partial.general.theme;
+    if (Array.isArray(partial.general.customTags)) result.general.customTags = partial.general.customTags;
+  }
+
+  if (partial.autoSave) {
+    if (!result.autoSave) result.autoSave = getDefaults().autoSave;
+    if (typeof partial.autoSave.enabled === 'boolean') result.autoSave.enabled = partial.autoSave.enabled;
+    if (typeof partial.autoSave.delayMs === 'number') result.autoSave.delayMs = partial.autoSave.delayMs;
+    if (typeof partial.autoSave.backupDir === 'string') result.autoSave.backupDir = partial.autoSave.backupDir;
   }
 
   return result;

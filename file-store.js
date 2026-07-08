@@ -16,6 +16,7 @@ const NAME_STACK_FILE = '.name-stack.json';
 const TRASH_DIR = '.trash';
 const TRASH_META_FILE = '.trash-meta.json';
 const CLIPBOARD_DIR = '.clipboard';
+const TAGS_DIR = 'tags';
 
 // ===== 元数据头 =====
 
@@ -180,7 +181,9 @@ function listNotes(notesDir, opts = {}) {
   const ext = opts.ext || DEFAULT_EXT;
   if (!fs.existsSync(notesDir)) return [];
 
-  const ignored = new Set([TRASH_DIR, CLIPBOARD_DIR]);
+  const ignored = new Set([TRASH_DIR, CLIPBOARD_DIR, TAGS_DIR]);
+
+  const tagFilter = opts.tagFilter || null;
 
   const notes = fs.readdirSync(notesDir)
     .filter(f => f.endsWith(ext))
@@ -189,14 +192,16 @@ function listNotes(notesDir, opts = {}) {
       const stat = fs.statSync(filePath);
       // 优先读取元数据头，回退到文件名解析
       const meta = getMetadata(filePath);
-      let displayName, createdAt;
+      let displayName, createdAt, tags;
       if (meta && meta.title) {
         displayName = meta.title;
         createdAt = meta.created || stat.birthtimeMs;
+        tags = readNoteTags(filePath, notesDir);
       } else {
         displayName = f.replace(new RegExp(ext.replace('.', '\\.') + '$'), '').replace(/_\d+$/, '');
         const tsMatch = f.match(/_(\d{13})/);
         createdAt = tsMatch ? parseInt(tsMatch[1], 10) : stat.birthtimeMs;
+        tags = readNoteTags(filePath, notesDir);
       }
       return {
         fileName: f,
@@ -204,12 +209,16 @@ function listNotes(notesDir, opts = {}) {
         displayName,
         mtime: (meta && meta.modified) ? meta.modified : stat.mtimeMs,
         createdAt,
+        tags,
       };
     })
     // 排除回收站和剪贴板中的文件
     .filter(n => {
       const parent = path.basename(path.dirname(n.filePath));
-      return !ignored.has(parent);
+      if (ignored.has(parent)) return false;
+      // 标签过滤
+      if (tagFilter && !n.tags.includes(tagFilter)) return false;
+      return true;
     });
 
   const dir = sortDir === 'asc' ? 1 : -1;
@@ -272,6 +281,17 @@ function moveToTrash(notesDir, filePath) {
       }
       const newAssetDir = path.join(trashAssetsDir, newBasename);
       fs.renameSync(oldAssetDir, newAssetDir);
+    }
+
+    // 同步移动标签文件到回收站
+    const oldTagFile = path.join(notesDir, TAGS_DIR, oldBasename + '.json');
+    if (fs.existsSync(oldTagFile)) {
+      const trashTagsDir = path.join(trashDir, TAGS_DIR);
+      if (!fs.existsSync(trashTagsDir)) {
+        fs.mkdirSync(trashTagsDir, { recursive: true });
+      }
+      const newTagFile = path.join(trashTagsDir, newBasename + '.json');
+      fs.renameSync(oldTagFile, newTagFile);
     }
 
     // 记录删除时间
@@ -340,6 +360,14 @@ function restoreFromTrash(notesDir, fileName) {
       fs.renameSync(trashAssetsDir, destAssetDir);
     }
 
+    // 同步恢复标签文件
+    const trashTagFile = path.join(trashDir, TAGS_DIR, basename + '.json');
+    if (fs.existsSync(trashTagFile)) {
+      const tagsDir = path.join(notesDir, TAGS_DIR);
+      if (!fs.existsSync(tagsDir)) fs.mkdirSync(tagsDir, { recursive: true });
+      fs.renameSync(trashTagFile, path.join(tagsDir, basename + '.json'));
+    }
+
     const meta = loadTrashMeta(notesDir);
     delete meta[fileName];
     saveTrashMeta(notesDir, meta);
@@ -365,6 +393,9 @@ function permanentlyDelete(notesDir, fileName) {
     if (fs.existsSync(trashAssetsDir)) {
       fs.rmSync(trashAssetsDir, { recursive: true, force: true });
     }
+    // 同步删除标签文件
+    const trashTagFile = path.join(trashDir, TAGS_DIR, basename + '.json');
+    if (fs.existsSync(trashTagFile)) fs.unlinkSync(trashTagFile);
 
     const meta = loadTrashMeta(notesDir);
     delete meta[fileName];
@@ -426,6 +457,14 @@ function renameNote(oldPath, newTitle) {
       fs.renameSync(oldAssetDir, newAssetDir);
     }
 
+    // 同步重命名标签文件
+    const oldTagFile = path.join(dir, TAGS_DIR, oldBasename + '.json');
+    if (fs.existsSync(oldTagFile)) {
+      const tagsDir = path.join(dir, TAGS_DIR);
+      if (!fs.existsSync(tagsDir)) fs.mkdirSync(tagsDir, { recursive: true });
+      fs.renameSync(oldTagFile, path.join(tagsDir, newBasename + '.json'));
+    }
+
     return { filePath: newPath, fileName: newFileName };
   } catch (err) {
     console.error('重命名笔记失败:', err.message);
@@ -452,6 +491,9 @@ function duplicateNote(filePath) {
       const newAssetDir = path.join(dir, 'assets', newBasename);
       copyDirectorySync(oldAssetDir, newAssetDir);
     }
+
+    // 同步复制标签文件
+    copyNoteTags(path.join(dir, oldBasename + ext), newPath, dir);
 
     return { filePath: newPath, fileName: newFileName };
   } catch (err) {
@@ -600,6 +642,201 @@ function saveDrawingAsset(noteFilePath, base64DataUri, notesDir) {
   }
 }
 
+// ===== 标签文件系统 =====
+
+/**
+ * 获取笔记对应的标签文件路径
+ * @param {string} noteFilePath
+ * @param {string} notesDir
+ * @returns {string}
+ */
+function getTagFile(noteFilePath, notesDir) {
+  var basename = path.basename(noteFilePath, path.extname(noteFilePath));
+  return path.join(notesDir, TAGS_DIR, basename + '.json');
+}
+
+/**
+ * 读取笔记标签
+ * @param {string} noteFilePath
+ * @param {string} notesDir
+ * @returns {string[]}
+ */
+function readNoteTags(noteFilePath, notesDir) {
+  var tf = getTagFile(noteFilePath, notesDir);
+  if (!fs.existsSync(tf)) return [];
+  try {
+    var d = JSON.parse(fs.readFileSync(tf, 'utf-8'));
+    return Array.isArray(d.tags) ? d.tags : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+/**
+ * 写入笔记标签
+ * @param {string} noteFilePath
+ * @param {string} notesDir
+ * @param {string[]} tags
+ * @returns {boolean}
+ */
+function writeNoteTags(noteFilePath, notesDir, tags) {
+  try {
+    // 清理标签：小写、去空格、去重、限长、限数
+    var cleaned = tags
+      .map(function (t) { return (t || '').trim().toLowerCase(); })
+      .filter(function (t) { return t.length > 0 && t.length <= 50; });
+    cleaned = cleaned.filter(function (t, i) { return cleaned.indexOf(t) === i; });
+    if (cleaned.length > 20) cleaned = cleaned.slice(0, 20);
+    var tf = getTagFile(noteFilePath, notesDir);
+    var dir = path.dirname(tf);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(tf, JSON.stringify({ tags: cleaned }, null, 2), 'utf-8');
+    return true;
+  } catch (err) {
+    console.error('writeNoteTags failed:', err.message);
+    return false;
+  }
+}
+
+/**
+ * 删除笔记对应的标签文件
+ * @param {string} noteFilePath
+ * @param {string} notesDir
+ */
+function deleteNoteTags(noteFilePath, notesDir) {
+  try {
+    var tf = getTagFile(noteFilePath, notesDir);
+    if (fs.existsSync(tf)) fs.unlinkSync(tf);
+  } catch (err) {
+    console.error('deleteNoteTags failed:', err.message);
+  }
+}
+
+/**
+ * 复制标签文件（用于笔记复制）
+ * @param {string} srcFilePath
+ * @param {string} destFilePath
+ * @param {string} notesDir
+ */
+function copyNoteTags(srcFilePath, destFilePath, notesDir) {
+  try {
+    var srcTf = getTagFile(srcFilePath, notesDir);
+    if (!fs.existsSync(srcTf)) return;
+    var destTf = getTagFile(destFilePath, notesDir);
+    var dir = path.dirname(destTf);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.copyFileSync(srcTf, destTf);
+  } catch (err) {
+    console.error('copyNoteTags failed:', err.message);
+  }
+}
+
+/**
+ * 全文搜索笔记
+ * @param {string} notesDir - notes 目录路径
+ * @param {object} opts - { query, ext, caseSensitive }
+ * @returns {Array<{filePath, fileName, displayName, mtime, matchCount, snippet}>}
+ */
+function searchNotes(notesDir, opts) {
+  var query = opts.query || '';
+  var ext = opts.ext || '.html';
+  var caseSensitive = opts.caseSensitive || false;
+
+  if (!query || !fs.existsSync(notesDir)) return [];
+
+  // 转义正则特殊字符
+  var escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  var flags = 'g' + (caseSensitive ? '' : 'i');
+  var regex;
+  try {
+    regex = new RegExp(escaped, flags);
+  } catch (_) {
+    return [];
+  }
+
+  var results = [];
+  var files = fs.readdirSync(notesDir).filter(function (f) { return f.endsWith(ext); });
+
+  files.forEach(function (f) {
+    var filePath = path.join(notesDir, f);
+    try {
+      var raw = fs.readFileSync(filePath, 'utf-8');
+      var meta = getMetadata(filePath);
+
+      // 提取 TEXT 部分：跳过元数据头和 DRAWING 部分
+      var textContent = raw;
+      var drawingIdx = raw.indexOf('---DRAWING---');
+      if (drawingIdx !== -1) {
+        var textIdx = raw.indexOf('---TEXT---', drawingIdx);
+        if (textIdx !== -1) {
+          textContent = raw.substring(textIdx + '---TEXT---'.length);
+        }
+      }
+
+      // 去除 HTML 标签，只搜索纯文本
+      var plainText = textContent.replace(/<[^>]*>/g, ' ');
+      // 解码常见 HTML 实体
+      plainText = plainText.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+
+      var matches = plainText.match(regex);
+      if (!matches) return;
+
+      var matchCount = matches.length;
+      var ctxLen = 80;
+      var snippet = '';
+      // 取第一个匹配位置的上下文
+      var idx = plainText.search(regex);
+      if (idx !== -1) {
+        var start = Math.max(0, idx - ctxLen);
+        var end = Math.min(plainText.length, idx + query.length + ctxLen);
+        snippet = (start > 0 ? '...' : '') + plainText.substring(start, end) + (end < plainText.length ? '...' : '');
+      }
+
+      results.push({
+        filePath: filePath,
+        fileName: f,
+        displayName: meta && meta.title ? meta.title : f.replace(new RegExp(ext.replace('.', '\\.') + '$'), ''),
+        mtime: meta && meta.modified ? meta.modified : fs.statSync(filePath).mtimeMs,
+        matchCount: matchCount,
+        snippet: snippet,
+      });
+    } catch (_) {
+      // 跳过无法读取的文件
+    }
+  });
+
+  // 按匹配数降序排列
+  results.sort(function (a, b) { return b.matchCount - a.matchCount; });
+  return results;
+}
+
+/**
+ * 列出所有笔记中出现的标签（扫描 tags/*.json）
+ * @param {string} notesDir - notes 目录路径
+ * @param {string} ext - 未使用（保留兼容）
+ * @returns {Array<{tag: string, count: number}>}
+ */
+function listAllTags(notesDir, ext) {
+  var tagCount = {};
+  var tagsDir = path.join(notesDir, TAGS_DIR);
+  if (!fs.existsSync(tagsDir)) return [];
+  var files = fs.readdirSync(tagsDir).filter(function (f) { return f.endsWith('.json'); });
+  files.forEach(function (f) {
+    try {
+      var d = JSON.parse(fs.readFileSync(path.join(tagsDir, f), 'utf-8'));
+      if (d.tags && Array.isArray(d.tags)) {
+        d.tags.forEach(function (t) {
+          if (t) tagCount[t] = (tagCount[t] || 0) + 1;
+        });
+      }
+    } catch (_) {}
+  });
+  return Object.keys(tagCount)
+    .sort(function (a, b) { return tagCount[b] - tagCount[a]; })
+    .map(function (t) { return { tag: t, count: tagCount[t] }; });
+}
+
 /**
  * 删除笔记对应的资源文件夹
  * @param {string} noteFilePath - 笔记文件绝对路径
@@ -623,4 +860,6 @@ module.exports = {
   listTrash, restoreFromTrash, permanentlyDelete, emptyTrash,
   getMetadata, setMetadata, buildMetadataString, DEFAULT_EXT,
   getAssetDir, copyAssetFile, saveBase64Asset, saveDrawingAsset, deleteAssetDir,
+  readNoteTags, writeNoteTags, deleteNoteTags, copyNoteTags,
+  listAllTags, searchNotes,
 };

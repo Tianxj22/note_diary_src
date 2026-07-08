@@ -206,9 +206,10 @@ function isCurrentLineEmpty() {
   return text.trim() === '';
 }
 
-// ---- 编辑事件（重复定义，与上方相同，保留原始结构） ----
+// ---- 编辑事件 ----
 function onEditorInput() {
   updateUndoRedoButtons();
+  autoSave();
 }
 
 function onEditorKeydown(e) {

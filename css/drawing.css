@@ -28,9 +28,9 @@
 }
 
 .draw-tool-btn.active {
-  background: #d6e4f0;
-  border-color: #6c9fff;
-  color: #1a56b0;
+  background: var(--accent-blue-light);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue-dark);
 }
 
 /* ===== 颜色选择器 ===== */

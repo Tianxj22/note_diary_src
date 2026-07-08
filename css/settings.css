@@ -3,8 +3,8 @@
  * @description  Note Diary — 设置弹窗样式（遮罩 + 卡片 + 表单）
  * @author       tianxj22
  * @created      2026-06-29
- * @updated      2026-06-29
- * @version      1.0.0
+ * @updated      2026-07-08
+ * @version      1.1.0
  */
 
 /* ===== 设置弹窗遮罩 ===== */
@@ -12,7 +12,7 @@
   display: none;
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-backdrop);
   z-index: 10000;
   align-items: center;
   justify-content: center;
@@ -24,13 +24,13 @@
 
 /* ===== 设置卡片 ===== */
 .settings-dialog {
-  background: #fff;
+  background: var(--bg-overlay-card);
   border-radius: 8px;
   width: 620px;
   max-height: 80vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px var(--overlay-shadow);
 }
 
 .settings-header {
@@ -38,10 +38,10 @@
   justify-content: space-between;
   align-items: center;
   padding: 14px 18px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border-primary);
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .settings-header h2 {
@@ -55,14 +55,14 @@
   border: none;
   font-size: 1.3rem;
   cursor: pointer;
-  color: #999;
+  color: var(--text-muted);
   padding: 0 4px;
   line-height: 1;
   transition: color 0.15s;
 }
 
 .settings-close:hover {
-  color: #333;
+  color: var(--text-primary);
 }
 
 /* ===== 设置内容区（可滚动） ===== */
@@ -83,10 +83,14 @@
 .settings-section-title {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin: 0 0 12px;
   padding-bottom: 6px;
   border-bottom: 1px solid #eee;
+}
+
+:root.dark .settings-section-title {
+  border-bottom-color: var(--border-primary);
 }
 
 /* ===== 数据存储路径行 ===== */
@@ -97,8 +101,8 @@
   gap: 10px;
   padding: 10px 14px;
   margin-bottom: 14px;
-  background: #f7f8fa;
-  border: 1px solid #e8e8e8;
+  background: var(--bg-settings-section);
+  border: 1px solid var(--border-light);
   border-radius: 6px;
 }
 
@@ -113,7 +117,7 @@
 .settings-path-label {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #888;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -121,11 +125,11 @@
 .settings-path-value {
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: 0.82rem;
-  color: #333;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  direction: rtl; /* 溢出时从左侧省略，保留末尾目录名 */
+  direction: rtl;
   text-align: left;
 }
 
@@ -145,7 +149,7 @@
 .settings-row label {
   min-width: 80px;
   font-size: 0.84rem;
-  color: #555;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -157,31 +161,33 @@
   flex: 1;
   min-width: 180px;
   padding: 7px 10px;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--border-secondary);
   border-radius: 4px;
   font-size: 0.84rem;
-  color: #333;
+  color: var(--text-primary);
   outline: none;
   transition: border-color 0.15s;
+  background: var(--bg-input);
 }
 
 .settings-row input:focus {
-  border-color: #6c9fff;
+  border-color: var(--accent-blue);
 }
 
 .settings-row select {
   padding: 7px 10px;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--border-secondary);
   border-radius: 4px;
   font-size: 0.84rem;
-  color: #333;
+  color: var(--text-primary);
   outline: none;
   cursor: pointer;
   transition: border-color 0.15s;
+  background: var(--bg-input);
 }
 
 .settings-row select:focus {
-  border-color: #6c9fff;
+  border-color: var(--accent-blue);
 }
 
 /* ===== 开关切换 ===== */
@@ -198,7 +204,7 @@
 
 .toggle-label {
   font-size: 0.84rem;
-  color: #333;
+  color: var(--text-primary);
   cursor: pointer;
   user-select: none;
 }
@@ -219,13 +225,13 @@
   width: 100%;
   height: 100%;
   border-radius: 11px;
-  background: #ccc;
+  background: var(--toggle-bg);
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .toggle-switch input:checked + .toggle-track {
-  background: #6c9fff;
+  background: var(--toggle-active-bg);
 }
 
 .toggle-switch .toggle-thumb {
@@ -235,7 +241,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--bg-primary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s;
 }
@@ -248,7 +254,7 @@
 .settings-group {
   margin: 8px 0 12px 4px;
   padding: 10px 14px;
-  border-left: 3px solid #e0e0e0;
+  border-left: 3px solid var(--border-primary);
   transition: opacity 0.2s;
 }
 
@@ -259,7 +265,7 @@
 .settings-group-title {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #888;
+  color: var(--text-muted);
   margin: 0 0 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -268,19 +274,19 @@
 /* ===== 测试连接按钮 ===== */
 .btn-test-connection {
   padding: 6px 14px;
-  border: 1px solid #6c9fff;
+  border: 1px solid var(--accent-blue);
   border-radius: 4px;
-  background: #fff;
+  background: var(--bg-input);
   cursor: pointer;
   font-size: 0.82rem;
-  color: #1a56b0;
+  color: var(--accent-blue-dark);
   transition: background 0.15s, border-color 0.15s;
   white-space: nowrap;
 }
 
 .btn-test-connection:hover {
-  background: #e8f0ff;
-  border-color: #5a8eeb;
+  background: var(--accent-blue-light);
+  border-color: var(--accent-blue-hover);
 }
 
 .test-result {
@@ -290,13 +296,13 @@
 }
 
 .test-result.success {
-  color: #2a7d2a;
-  background: #e8f5e9;
+  color: var(--success-dark);
+  background: var(--success-bg);
 }
 
 .test-result.failure {
-  color: #c62828;
-  background: #ffebee;
+  color: var(--danger-dark);
+  background: var(--danger-bg);
 }
 
 /* ===== 底部按钮栏 ===== */
@@ -305,7 +311,7 @@
   justify-content: flex-end;
   gap: 10px;
   padding: 12px 18px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border-primary);
 }
 
 .settings-footer button {
@@ -317,20 +323,20 @@
 }
 
 .btn-save {
-  border: 1px solid #6c9fff;
-  background: #6c9fff;
-  color: #fff;
+  border: 1px solid var(--accent-blue);
+  background: var(--accent-blue);
+  color: var(--text-on-dark);
 }
 
 .btn-save:hover {
-  background: #5a8eeb;
-  border-color: #5a8eeb;
+  background: var(--accent-blue-hover);
+  border-color: var(--accent-blue-hover);
 }
 
 .btn-cancel {
-  border: 1px solid #d0d0d0;
-  background: #fff;
-  color: #555;
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
 }
 
 .btn-cancel:hover {
@@ -338,9 +344,14 @@
   border-color: #bbb;
 }
 
+:root.dark .btn-cancel:hover {
+  background: var(--bg-sidebar-hover);
+  border-color: var(--border-primary);
+}
+
 /* ===== 快捷键参考表 ===== */
 .keybinding-table {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-primary);
   border-radius: 4px;
   max-height: 300px;
   overflow-y: auto;
@@ -355,19 +366,23 @@
   border-bottom: 1px solid #f0f0f0;
 }
 
+:root.dark .kb-row {
+  border-bottom-color: var(--border-light);
+}
+
 .kb-row:last-child {
   border-bottom: none;
 }
 
 .kb-action {
-  color: #555;
+  color: var(--text-secondary);
 }
 
 .kb-key {
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: 0.78rem;
-  color: #1a56b0;
-  background: #e8f0ff;
+  color: var(--accent-blue-dark);
+  background: var(--accent-blue-light);
   padding: 2px 8px;
   border-radius: 3px;
   border: 1px solid #c0d8f0;
@@ -377,12 +392,12 @@
 /* ===== 内联按钮 ===== */
 .btn-inline {
   padding: 6px 12px;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--border-secondary);
   border-radius: 4px;
-  background: #fff;
+  background: var(--bg-primary);
   cursor: pointer;
   font-size: 0.82rem;
-  color: #444;
+  color: var(--text-secondary);
   transition: background 0.1s, border-color 0.1s;
   white-space: nowrap;
 }
@@ -390,6 +405,11 @@
 .btn-inline:hover {
   background: #eee;
   border-color: #bbb;
+}
+
+:root.dark .btn-inline:hover {
+  background: var(--bg-sidebar-hover);
+  border-color: var(--border-primary);
 }
 
 /* ===== Radio 组 ===== */
@@ -406,7 +426,7 @@
   min-width: auto;
   font-size: 0.84rem;
   cursor: pointer;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .radio-group input[type="radio"] {
@@ -417,7 +437,7 @@
 .update-progress {
   width: 100%;
   height: 8px;
-  background: #e0e0e0;
+  background: var(--border-primary);
   border-radius: 4px;
   margin-top: 8px;
   overflow: hidden;
@@ -425,18 +445,18 @@
 
 .update-progress-fill {
   height: 100%;
-  background: #6c9fff;
+  background: var(--accent-blue);
   border-radius: 4px;
   transition: width 0.3s ease;
   width: 0%;
 }
 
 #update-status-text.success {
-  color: #2a7d2a;
+  color: var(--success-dark);
 }
 
 #update-status-text.error {
-  color: #c62828;
+  color: var(--danger-dark);
 }
 
 #update-action-area {

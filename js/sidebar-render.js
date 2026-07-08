@@ -14,6 +14,8 @@ ND.trashNotes = [];
 function renderNoteList() {
   ND.noteListEl.innerHTML = '';
   if (ND.activeView !== 'workspace') return;
+  // 刷新标签过滤栏
+  if (ND.loadTagFilterBar) ND.loadTagFilterBar();
   if (ND.notes.length === 0) {
     ND.noteListEl.innerHTML = '<div class="empty">暂无笔记<br>点击上方按钮创建</div>';
     return;
@@ -21,8 +23,15 @@ function renderNoteList() {
   ND.notes.forEach(n => {
     const div = document.createElement('div');
     div.className = 'note-item' + (ND.currentNote && ND.currentNote.filePath === n.filePath ? ' active' : '');
-    div.innerHTML = `<div class="title">${escapeHtml(n.displayName)}</div>
-                     <div class="meta">${formatDate(n.mtime)}</div>`;
+    var tagsHtml = '';
+    if (n.tags && n.tags.length > 0) {
+      tagsHtml = '<div class="note-tags">' + n.tags.map(function(t) {
+        return '<span class="note-tag">' + escapeHtml(t) + '</span>';
+      }).join(' ') + '</div>';
+    }
+    div.innerHTML = '<div class="title">' + escapeHtml(n.displayName) + '</div>'
+      + tagsHtml
+      + '<div class="meta">' + formatDate(n.mtime) + '</div>';
     div.addEventListener('click', () => selectNote(n));
     div.addEventListener('contextmenu', (e) => {
       e.preventDefault();
@@ -55,7 +64,9 @@ function renderTrashList() {
 
 // ---- 加载笔记列表 ----
 async function loadNoteList() {
-  ND.notes = await window.electronAPI.listNotes({ sortBy: ND.sortBy, sortDir: ND.sortDir });
+  var opts = { sortBy: ND.sortBy, sortDir: ND.sortDir };
+  if (ND.activeTagFilter) opts.tagFilter = ND.activeTagFilter;
+  ND.notes = await window.electronAPI.listNotes(opts);
   renderNoteList();
 }
 

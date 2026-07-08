@@ -4,8 +4,8 @@
 .toolbar {
   display: flex;
   flex-direction: column;
-  border-bottom: 1px solid #e0e0e0;
-  background: #fafafa;
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-toolbar);
 }
 
 .toolbar-tabs {
@@ -21,19 +21,19 @@
   background: transparent;
   cursor: pointer;
   font-size: 0.82rem;
-  color: #888;
+  color: var(--text-muted);
   transition: color 0.15s, border-color 0.15s;
   border-radius: 0;
 }
 
 .toolbar-tab:hover {
-  color: #555;
+  color: var(--text-secondary);
 }
 
 .toolbar-tab.active {
-  color: #1a56b0;
-  background: #fff;
-  border-bottom-color: #6c9fff;
+  color: var(--accent-blue-dark);
+  background: var(--bg-primary);
+  border-bottom-color: var(--accent-blue);
   font-weight: 600;
   border-radius: 6px 6px 0 0;
 }
@@ -47,12 +47,12 @@
 
 .toolbar button {
   padding: 6px 14px;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--border-secondary);
   border-radius: 4px;
-  background: #fff;
+  background: var(--bg-primary);
   cursor: pointer;
   font-size: 0.82rem;
-  color: #444;
+  color: var(--text-secondary);
   transition: background 0.1s, border-color 0.1s;
 }
 
@@ -65,10 +65,19 @@
   background: #ddd;
 }
 
+:root.dark .toolbar button:hover {
+  background: var(--bg-sidebar-hover);
+  border-color: var(--border-primary);
+}
+
+:root.dark .toolbar button:active {
+  background: var(--bg-sidebar-active);
+}
+
 .toolbar button:disabled {
   opacity: 0.4;
   cursor: default;
-  background: #f5f5f5;
+  background: var(--bg-secondary);
 }
 
 /* 样式图标按钮（无文字，仅图标） */
@@ -83,9 +92,9 @@
 }
 
 .toolbar .style-btn.active {
-  background: #d6e4f0;
-  border-color: #6c9fff;
-  color: #1a56b0;
+  background: var(--accent-blue-light);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue-dark);
 }
 
 /* 自定义 tooltip，悬浮 0.5s 后显示 */
@@ -96,8 +105,8 @@
   left: 50%;
   transform: translateX(-50%);
   padding: 4px 8px;
-  background: #333;
-  color: #fff;
+  background: var(--bg-context);
+  color: var(--text-on-dark);
   font-size: 0.72rem;
   border-radius: 4px;
   white-space: nowrap;
@@ -115,18 +124,18 @@
 .toolbar .separator {
   width: 1px;
   height: 22px;
-  background: #d0d0d0;
+  background: var(--separator);
   margin: 0 4px;
 }
 
 .toolbar select {
   padding: 6px 8px;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--border-secondary);
   border-radius: 4px;
-  background: #fff;
+  background: var(--bg-primary);
   cursor: pointer;
   font-size: 0.82rem;
-  color: #444;
+  color: var(--text-secondary);
   outline: none;
 }
 
@@ -140,18 +149,23 @@
   align-items: center;
   gap: 4px;
   padding: 6px 10px;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--border-secondary);
   border-radius: 4px;
-  background: #fff;
+  background: var(--bg-primary);
   cursor: pointer;
   font-size: 0.82rem;
-  color: #444;
+  color: var(--text-secondary);
   transition: background 0.1s, border-color 0.1s;
 }
 
 .toolbar .color-btn:hover {
   background: #eee;
   border-color: #bbb;
+}
+
+:root.dark .toolbar .color-btn:hover {
+  background: var(--bg-sidebar-hover);
+  border-color: var(--border-primary);
 }
 
 .toolbar .color-btn input[type="color"] {
@@ -187,12 +201,12 @@
 .align-bars span {
   display: block;
   height: 2px;
-  background: #444;
+  background: var(--text-secondary);
   border-radius: 1px;
 }
 
 .style-btn.active .align-bars span {
-  background: #1a56b0;
+  background: var(--accent-blue-dark);
 }
 
 /* 左对齐：左端齐平 */
@@ -213,14 +227,14 @@
 /* ---- 图片编辑面板 ---- */
 .image-dim-label {
   font-size: 0.78rem;
-  color: #666;
+  color: var(--text-tertiary);
   user-select: none;
 }
 
 .dim-input {
   width: 64px;
   padding: 4px 6px;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--border-secondary);
   border-radius: 4px;
   font-size: 0.82rem;
   text-align: right;
@@ -229,7 +243,7 @@
 }
 
 .dim-input:focus {
-  border-color: #6c9fff;
+  border-color: var(--accent-blue);
 }
 
 .lock-btn {
@@ -238,9 +252,9 @@
 }
 
 .lock-btn.locked {
-  background: #d6e4f0;
-  border-color: #6c9fff;
-  color: #1a56b0;
+  background: var(--accent-blue-light);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue-dark);
 }
 
 #btn-crop-image {
@@ -250,28 +264,28 @@
 /* ---- 同步状态标签 ---- */
 .sync-status-label {
   font-size: 0.8rem;
-  color: #888;
+  color: var(--text-muted);
   user-select: none;
   padding: 4px 8px;
   border-radius: 3px;
 }
 
 .sync-status-label.sync-ok {
-  color: #2a7d2a;
-  background: #e8f5e9;
+  color: var(--success-dark);
+  background: var(--success-bg);
 }
 
 .sync-status-label.sync-pending {
   color: #e67e22;
-  background: #fef3e8;
+  background: var(--warning-bg);
 }
 
 .sync-status-label.sync-warning {
-  color: #c62828;
-  background: #ffebee;
+  color: var(--danger-dark);
+  background: var(--danger-bg);
 }
 
 .sync-status-label.sync-error {
-  color: #c62828;
-  background: #ffebee;
+  color: var(--danger-dark);
+  background: var(--danger-bg);
 }

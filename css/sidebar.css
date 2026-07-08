@@ -2,8 +2,8 @@
 
 /* ===== 侧边栏 ===== */
 .sidebar {
-  background: #2c2c2c;
-  color: #ccc;
+  background: var(--bg-sidebar);
+  color: var(--text-sidebar);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -13,7 +13,7 @@
 /* 侧边栏标签切换 */
 .sidebar-tabs {
   display: flex;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid var(--border-sidebar);
 }
 
 .sidebar-tab {
@@ -21,7 +21,7 @@
   padding: 10px 0;
   border: none;
   background: transparent;
-  color: #888;
+  color: var(--text-sidebar-muted);
   cursor: pointer;
   font-size: 0.82rem;
   text-align: center;
@@ -30,35 +30,35 @@
 }
 
 .sidebar-tab:hover {
-  color: #ccc;
-  background: #333;
+  color: var(--text-sidebar);
+  background: var(--bg-sidebar-hover);
 }
 
 .sidebar-tab.active {
-  color: #fff;
-  border-bottom-color: #6c9fff;
+  color: var(--text-on-dark);
+  border-bottom-color: var(--accent-blue);
   font-weight: 600;
 }
 
 .sidebar-header {
   padding: 12px 16px;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid var(--border-sidebar);
 }
 
 .btn-new-note {
   width: 100%;
   padding: 8px 0;
-  border: 1px solid #4a4a4a;
+  border: 1px solid var(--bg-sidebar-active);
   border-radius: 6px;
-  background: #3a3a3a;
-  color: #fff;
+  background: var(--bg-sidebar-hover);
+  color: var(--text-on-dark);
   cursor: pointer;
   font-size: 0.9rem;
   transition: background 0.15s;
 }
 
 .btn-new-note:hover {
-  background: #4a4a4a;
+  background: var(--bg-sidebar-active);
 }
 
 /* 排序控件 */
@@ -67,16 +67,16 @@
   align-items: center;
   gap: 4px;
   padding: 8px 16px;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid var(--border-sidebar);
 }
 
 .sort-controls select {
   flex: 1;
   padding: 4px 6px;
-  border: 1px solid #4a4a4a;
+  border: 1px solid var(--bg-sidebar-active);
   border-radius: 4px;
-  background: #3a3a3a;
-  color: #ccc;
+  background: var(--bg-sidebar-hover);
+  color: var(--text-sidebar);
   font-size: 0.75rem;
   outline: none;
   cursor: pointer;
@@ -85,10 +85,10 @@
 .sort-dir-btn {
   width: 26px;
   height: 26px;
-  border: 1px solid #4a4a4a;
+  border: 1px solid var(--bg-sidebar-active);
   border-radius: 4px;
-  background: #3a3a3a;
-  color: #888;
+  background: var(--bg-sidebar-hover);
+  color: var(--text-sidebar-muted);
   cursor: pointer;
   font-size: 0.7rem;
   display: flex;
@@ -98,20 +98,20 @@
 }
 
 .sort-dir-btn:hover {
-  background: #4a4a4a;
-  color: #ccc;
+  background: var(--bg-sidebar-active);
+  color: var(--text-sidebar);
 }
 
 .sort-dir-btn.active {
-  background: #4a6a9a;
-  border-color: #6c9fff;
-  color: #fff;
+  background: var(--accent-selected);
+  border-color: var(--accent-blue);
+  color: var(--text-on-dark);
 }
 
 /* 回收站操作 */
 .trash-actions {
   padding: 8px 16px;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid var(--border-sidebar);
 }
 
 .btn-empty-trash {
@@ -120,7 +120,7 @@
   border: 1px solid #6a3a3a;
   border-radius: 4px;
   background: #4a2a2a;
-  color: #f66;
+  color: var(--danger);
   cursor: pointer;
   font-size: 0.82rem;
   transition: background 0.15s;
@@ -139,17 +139,17 @@
 
 /* 回收站笔记项 */
 .note-item.trash-item .title {
-  color: #999;
+  color: var(--text-muted);
 }
 
 .note-item.trash-item .meta {
-  color: #666;
+  color: var(--text-tertiary);
   font-size: 0.65rem;
 }
 
 .note-list .empty {
   text-align: center;
-  color: #666;
+  color: var(--text-tertiary);
   margin-top: 40px;
   font-size: 0.85rem;
 }
@@ -162,13 +162,13 @@
 }
 
 .note-item:hover {
-  background: #333;
+  background: var(--note-item-hover);
 }
 
 .note-item.active {
-  background: #3a3a3a;
-  border-left-color: #6c9fff;
-  color: #fff;
+  background: var(--bg-sidebar-hover);
+  border-left-color: var(--accent-blue);
+  color: var(--text-on-dark);
 }
 
 .note-item .title {
@@ -179,23 +179,44 @@
   text-overflow: ellipsis;
 }
 
+/* 笔记标签（侧边栏显示） */
+.note-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.note-tag {
+  display: inline-block;
+  padding: 0 5px;
+  background: var(--bg-tag-chip);
+  color: var(--text-link);
+  border-radius: 8px;
+  font-size: 0.62rem;
+  white-space: nowrap;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .note-item .meta {
   font-size: 0.7rem;
   color: #777;
 }
 
 .note-item.active .meta {
-  color: #999;
+  color: var(--text-muted);
 }
 
 /* ===== 侧边栏内联重命名 ===== */
 .note-item .rename-input {
   width: calc(100% - 8px);
   padding: 2px 4px;
-  border: 1px solid #6c9fff;
+  border: 1px solid var(--accent-blue);
   border-radius: 3px;
-  background: #444;
-  color: #fff;
+  background: var(--bg-sidebar-active);
+  color: var(--text-on-dark);
   font-size: 0.88rem;
   outline: none;
 }
@@ -207,13 +228,13 @@
 
 .sidebar-tab.conflict-tab.active {
   color: #f88;
-  border-bottom-color: #f66;
+  border-bottom-color: var(--danger);
 }
 
 /* 冲突批量操作栏 */
 .conflict-bulk-actions {
   padding: 8px 16px;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid var(--border-sidebar);
   display: none;
   gap: 6px;
 }
@@ -235,7 +256,7 @@
 
 .btn-bulk-local {
   background: #3a5a3a;
-  color: #8f8;
+  color: var(--success);
 }
 
 .btn-bulk-local:hover {
@@ -248,5 +269,5 @@
 }
 
 .btn-bulk-remote:hover {
-  background: #4a6a9a;
+  background: var(--accent-selected);
 }
