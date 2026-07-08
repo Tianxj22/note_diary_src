@@ -279,4 +279,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @returns {Promise<string|null>}
    */
   getVideoClipboard: () => ipcRenderer.invoke('clipboard:get-video'),
+  /**
+   * 触发检查应用更新
+   * @returns {Promise<boolean>}
+   */
+  checkForUpdate: () => ipcRenderer.invoke('update:check'),
+  /**
+   * 获取当前应用版本号
+   * @returns {Promise<string>}
+   */
+  getAppVersion: () => ipcRenderer.invoke('update:get-version'),
+  /**
+   * 立即安装已下载的更新并重启
+   * @returns {Promise<boolean>}
+   */
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+  /**
+   * 监听更新状态变化
+   * @param {Function} callback - ({ status, version?, percent?, message? }) => void
+   */
+  onUpdateStatus: (callback) => {
+    ipcRenderer.on('update:status', (_event, data) => callback(data));
+  },
 });

@@ -469,6 +469,18 @@
       "estimatedEffort": "0.5d",
       "completedAt": "2026-07-08",
       "verification": "Ctrl+Shift+V 或点击按钮选择视频文件，<video controls> 出现在编辑器，保存重开后可播放"
+    },
+    {
+      "id": "F-051",
+      "name": "应用自动更新",
+      "description": "设置弹窗内手动检查更新，通过 electron-updater 连接 GitHub Releases 检测新版本，自动下载并提示安装重启",
+      "status": "done",
+      "priority": "P1",
+      "milestone": "M3",
+      "dependencies": ["F-040", "F-050"],
+      "estimatedEffort": "0.5d",
+      "completedAt": "2026-07-08",
+      "verification": "设置弹窗显示当前版本号，点击检查更新按钮能与 GitHub Releases 通信，有更新时自动下载并提示重启"
     }
   ],
   "milestones": [

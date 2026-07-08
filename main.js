@@ -15,6 +15,7 @@ const settingsStore = require('./settings-store');
 const formatMigration = require('./format-migration');
 const gitSync = require('./git-sync');
 const keybindingsStore = require('./keybindings-store');
+const updateChecker = require('./update-checker');
 
 // 必须在 app.whenReady() 之前设置，否则 Windows 任务栏图标与快捷方式无法正确关联
 app.setName('Note Diary');
@@ -628,6 +629,22 @@ function registerIpcHandlers() {
       return { success: false, message: err.message };
     }
   });
+
+  // ---- 应用更新 ----
+
+  ipcMain.handle('update:check', () => {
+    updateChecker.checkForUpdates();
+    return true;
+  });
+
+  ipcMain.handle('update:get-version', () => {
+    return updateChecker.getCurrentVersion();
+  });
+
+  ipcMain.handle('update:install', () => {
+    updateChecker.installNow();
+    return true;
+  });
 }
 
 /**
@@ -801,6 +818,9 @@ if (!gotTheLock) {
 
     // 启动时初始化 Git 同步（如果已配置）
     setupGitSync();
+
+    // 初始化自动更新检查（监听 GitHub Releases）
+    updateChecker.init();
 
     registerIpcHandlers();
     createWindow();

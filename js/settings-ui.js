@@ -29,6 +29,7 @@
     populateKeybindingTable();
     updateAutoSyncUI(cachedSettings.sync.autoSync);
     await populateDataPath();
+    await populateVersion();
 
     ND.settingsOverlay.classList.add('visible');
   };
@@ -45,6 +46,20 @@
       el.title = p || '';
     } catch (_) {
       el.textContent = '无法获取路径';
+    }
+  }
+
+  /**
+   * 填充当前应用版本号
+   */
+  async function populateVersion() {
+    var el = document.getElementById('settings-current-version');
+    if (!el) return;
+    try {
+      var v = await window.electronAPI.getAppVersion();
+      el.textContent = 'v' + v;
+    } catch (_) {
+      el.textContent = '—';
     }
   }
 
@@ -90,6 +105,77 @@
     // 清除测试连接结果
     const testResult = document.getElementById('test-connection-result');
     if (testResult) testResult.textContent = '';
+    // 重置更新状态 UI
+    resetUpdateUI();
+  }
+
+  /**
+   * 重置更新区域 UI
+   */
+  function resetUpdateUI() {
+    const statusEl = document.getElementById('update-status-text');
+    const progressBar = document.getElementById('update-progress-bar');
+    const progressFill = document.getElementById('update-progress-fill');
+    const actionArea = document.getElementById('update-action-area');
+    if (statusEl) { statusEl.textContent = ''; statusEl.className = ''; }
+    if (progressBar) progressBar.style.display = 'none';
+    if (progressFill) progressFill.style.width = '0%';
+    if (actionArea) actionArea.style.display = 'none';
+  }
+
+  /**
+   * 处理更新状态回调
+   * @param {{ status: string, version?: string, percent?: number, message?: string }} data
+   */
+  function handleUpdateStatus(data) {
+    const statusEl = document.getElementById('update-status-text');
+    const progressBar = document.getElementById('update-progress-bar');
+    const progressFill = document.getElementById('update-progress-fill');
+    const actionArea = document.getElementById('update-action-area');
+
+    if (!statusEl) return;
+
+    switch (data.status) {
+      case 'checking':
+        statusEl.textContent = '正在检查...';
+        statusEl.className = '';
+        if (progressBar) progressBar.style.display = 'none';
+        if (actionArea) actionArea.style.display = 'none';
+        break;
+      case 'no-update':
+        statusEl.textContent = '✅ 已是最新版本';
+        statusEl.className = 'success';
+        if (progressBar) progressBar.style.display = 'none';
+        if (actionArea) actionArea.style.display = 'none';
+        break;
+      case 'available':
+        statusEl.textContent = '⬇ 发现新版本 v' + (data.version || '?') + '，正在下载...';
+        statusEl.className = '';
+        if (progressBar) progressBar.style.display = 'block';
+        if (progressFill) progressFill.style.width = '0%';
+        if (actionArea) actionArea.style.display = 'none';
+        break;
+      case 'progress':
+        if (progressBar) progressBar.style.display = 'block';
+        if (progressFill) progressFill.style.width = (data.percent || 0) + '%';
+        statusEl.textContent = '⬇ 下载中 ' + (data.percent || 0) + '%';
+        statusEl.className = '';
+        break;
+      case 'downloaded':
+        statusEl.textContent = '✅ 新版本已就绪 (v' + (data.version || '?') + ')';
+        statusEl.className = 'success';
+        if (progressBar) progressBar.style.display = 'none';
+        if (actionArea) actionArea.style.display = 'flex';
+        break;
+      case 'error':
+        statusEl.textContent = '❌ ' + (data.message || '更新检查失败');
+        statusEl.className = 'error';
+        if (progressBar) progressBar.style.display = 'none';
+        if (actionArea) actionArea.style.display = 'none';
+        break;
+      default:
+        break;
+    }
   }
 
   /**
@@ -334,5 +420,42 @@
         }
       });
     }
+
+    // 检查更新按钮
+    const checkUpdateBtn = document.getElementById('btn-check-update');
+    if (checkUpdateBtn) {
+      checkUpdateBtn.addEventListener('click', async function () {
+        resetUpdateUI();
+        try {
+          await window.electronAPI.checkForUpdate();
+        } catch (_) {
+          // 状态通过 onUpdateStatus 回调推送，此处忽略
+        }
+      });
+    }
+
+    // 立即安装更新按钮
+    const installBtn = document.getElementById('btn-install-update');
+    if (installBtn) {
+      installBtn.addEventListener('click', async function () {
+        try {
+          await window.electronAPI.installUpdate();
+        } catch (_) { /* ignore */ }
+      });
+    }
+
+    // 稍后按钮 — 隐藏操作区域
+    const dismissBtn = document.getElementById('btn-dismiss-update');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', function () {
+        const actionArea = document.getElementById('update-action-area');
+        if (actionArea) actionArea.style.display = 'none';
+        const statusEl = document.getElementById('update-status-text');
+        if (statusEl) { statusEl.textContent = ''; statusEl.className = ''; }
+      });
+    }
+
+    // 监听主进程推送的更新状态
+    window.electronAPI.onUpdateStatus(handleUpdateStatus);
   });
 })();

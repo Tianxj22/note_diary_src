@@ -510,6 +510,26 @@
             </select>
           </div>
         </div>
+
+        <!-- 更新 -->
+        <div class="settings-section">
+          <h3 class="settings-section-title">🔄 更新</h3>
+          <div class="settings-row">
+            <label>当前版本</label>
+            <span id="settings-current-version" style="font-family:'Consolas','Courier New',monospace;font-size:0.84rem;color:#333;">—</span>
+          </div>
+          <div class="settings-row">
+            <button class="btn-test-connection" id="btn-check-update">检查更新</button>
+            <span id="update-status-text" style="font-size:0.8rem;"></span>
+          </div>
+          <div id="update-progress-bar" class="update-progress" style="display:none;">
+            <div id="update-progress-fill" class="update-progress-fill"></div>
+          </div>
+          <div id="update-action-area" style="display:none;margin-top:8px;">
+            <button class="btn-save" id="btn-install-update" style="font-size:0.82rem;padding:6px 14px;">立即重启安装</button>
+            <button class="btn-cancel" id="btn-dismiss-update" style="font-size:0.82rem;padding:6px 14px;">稍后</button>
+          </div>
+        </div>
       </div>
       <div class="settings-footer">
         <button class="btn-cancel" id="settings-cancel">取消</button>

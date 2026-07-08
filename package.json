@@ -1,6 +1,6 @@
 {
   "name": "note-diary",
-  "version": "1.0.0",
+  "version": "1.11.0",
   "description": "Electron Hello World - Note Diary",
   "main": "main.js",
   "scripts": {
@@ -28,6 +28,11 @@
   "build": {
     "appId": "com.tianxj22.note-diary",
     "productName": "Note Diary",
+    "publish": {
+      "provider": "github",
+      "owner": "Tianxj22",
+      "repo": "note_diary_src"
+    },
     "directories": {
       "output": "dist"
     },
@@ -147,6 +152,7 @@
     "electron@33.4.11": true
   },
   "dependencies": {
+    "electron-updater": "^6.3.9",
     "prismjs": "^1.30.0",
     "simple-git": "^3.36.0"
   }

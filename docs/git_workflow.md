@@ -87,3 +87,63 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 - 禁止提交 `node_modules/`、`.env`、密钥文件
 - 禁止在提交信息中写"update"、"fix bug"等笼统描述
 - 禁止跳过 pre-commit 检查（`--no-verify`）
+
+## 8. 发布新版本（GitHub Release）
+
+应用使用 `electron-updater` 通过 GitHub Releases 提供自动更新。每次发版时按以下步骤操作：
+
+### 8.1 准备工作
+
+1. **更新版本号**
+   - 修改 `package.json` 中的 `version` 字段（如 `1.11.0` → `1.12.0`）
+   - 同步更新 `feature_list.json` 中的 `version` 字段
+
+2. **提交版本号变更**
+   ```bash
+   git add package.json feature_list.json
+   git commit -m "chore: bump version to X.Y.Z"
+   ```
+
+### 8.2 构建安装包
+
+```bash
+npm run build:win    # Windows: NSIS 安装器 + 便携版
+# 或按需构建其他平台
+npm run build:mac    # macOS: DMG
+npm run build:linux  # Linux: AppImage + deb
+```
+
+构建产物在 `dist/` 目录下：
+- `Note-Diary-Setup-X.Y.Z.exe` — NSIS 安装器
+- `Note-Diary-X.Y.Z-portable.exe` — 便携版
+- `latest.yml` — electron-updater 版本描述文件（**必须上传**）
+
+### 8.3 创建 GitHub Release
+
+1. 推送代码到 GitHub：
+   ```bash
+   git push origin master
+   ```
+
+2. 打开 GitHub 仓库的 [Releases](https://github.com/Tianxj22/note_diary_src/releases) 页面
+
+3. 点击 **"Draft a new release"**
+
+4. 填写发布信息：
+   - **Tag version**: `vX.Y.Z`（与 `package.json` 版本号一致，前缀 `v`）
+   - **Release title**: `vX.Y.Z`
+   - **Describe this release**: 列出本版本的主要变更
+
+5. 上传 `dist/` 目录下的以下文件：
+   - `latest.yml`（必须，electron-updater 依赖此文件判断版本）
+   - `Note-Diary-Setup-X.Y.Z.exe`
+   - `Note-Diary-X.Y.Z-portable.exe`
+
+6. 点击 **"Publish release"**
+
+### 8.4 验证更新
+
+1. 在旧版本应用中打开 **设置 → 更新 → 检查更新**
+2. 确认能检测到新版本
+3. 确认下载进度条正常显示
+4. 下载完成后点击「立即重启安装」，验证安装成功
