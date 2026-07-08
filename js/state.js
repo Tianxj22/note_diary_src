@@ -64,6 +64,7 @@ ND.contextMenuEditor = document.getElementById('context-menu-editor');
 ND.importFileInput = document.getElementById('import-file-input');
 ND.contextNote = null; // 当前右键操作的笔记对象
 ND.dropdownImageMenu = document.getElementById('dropdown-image-menu');
+ND.btnInsertVideo = document.getElementById('btn-insert-video');
 
 // ---- 图片编辑标签页状态 ----
 ND.previousToolbarTab = 'file';       // 进入图片编辑前的标签页

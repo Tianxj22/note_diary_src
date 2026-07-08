@@ -28,6 +28,10 @@
     if (ND.editorDiv) {
       ND.editorDiv.focus();
       document.execCommand(command, false, value);
+      // 列表插入后添加空行
+      if (command === 'insertOrderedList' || command === 'insertUnorderedList') {
+        document.execCommand('insertHTML', false, '<br>');
+      }
     }
   }
 

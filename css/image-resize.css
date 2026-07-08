@@ -32,3 +32,12 @@
 .image-resize-handle.handle-s  { cursor: ns-resize; }
 .image-resize-handle.handle-w  { cursor: ew-resize; }
 .image-resize-handle.handle-e  { cursor: ew-resize; }
+
+/* 视频裁剪 wrapper 基础样式 */
+.media-crop-wrapper {
+  vertical-align: top;
+}
+.media-crop-wrapper.selected {
+  outline: 2px solid #6c9fff;
+  outline-offset: 2px;
+}

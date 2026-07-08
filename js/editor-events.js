@@ -23,7 +23,7 @@ function onEditorInput() {
 function execInsertHTML(html) {
   if (!ND.editorDiv) return;
   ND.editorDiv.focus();
-  document.execCommand('insertHTML', false, html);
+  document.execCommand('insertHTML', false, html + '<br>');
 }
 
 /**
@@ -39,6 +39,41 @@ function execDeleteElement(el) {
   sel.removeAllRanges();
   sel.addRange(range);
   document.execCommand('delete');
+}
+
+/**
+ * 复制选中的媒体（图片/视频）到系统剪贴板
+ */
+async function copySelectedMediaToClipboard() {
+  if (!ND.selectedImage) return;
+  var el = ND.selectedImage;
+  var isWrapper = el.classList.contains('media-crop-wrapper');
+  var mediaEl = isWrapper ? el.querySelector('video') : el;
+  if (!mediaEl) return;
+
+  var src = mediaEl.getAttribute('src') || mediaEl.src;
+  if (!src) return;
+
+  // 将 file:/// URL 转换为文件系统路径
+  var filePath = src;
+  if (filePath.startsWith('file:///')) {
+    // Windows: file:///C:/path → C:/path
+    filePath = filePath.replace(/^file:\/\/\//, '');
+    // Unix: file:///path → /path
+    if (filePath.match(/^[A-Z]:/i)) {
+      // Windows path already correct
+    }
+    filePath = decodeURIComponent(filePath);
+  }
+
+  var mediaType = (mediaEl.tagName === 'VIDEO') ? 'video' : 'image';
+  var ok = await window.electronAPI.copyMediaToClipboard(filePath, mediaType);
+  if (ok) {
+    ND.statusLeft.textContent = mediaType === 'image' ? '图片已复制到剪贴板' : '视频路径已复制到剪贴板';
+  } else {
+    ND.statusLeft.textContent = '复制失败';
+  }
+  setTimeout(function() { updateStatus(); }, 2000);
 }
 
 /**
@@ -177,6 +212,20 @@ function onEditorInput() {
 }
 
 function onEditorKeydown(e) {
+  // Delete/Backspace: 删除选中的媒体元素
+  if ((e.key === 'Delete' || e.key === 'Backspace') && ND.selectedImage) {
+    e.preventDefault();
+    var el = ND.selectedImage;
+    el.remove();
+    deselectImage();
+    return;
+  }
+  // Ctrl+C: 复制选中的媒体到剪贴板
+  if (e.ctrlKey && e.key === 'c' && ND.selectedImage) {
+    e.preventDefault();
+    copySelectedMediaToClipboard();
+    return;
+  }
   if (e.ctrlKey && e.key === 'n') {
     e.preventDefault();
     createNewNote();

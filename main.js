@@ -282,6 +282,77 @@ function registerIpcHandlers() {
     return found.thumbnail.toDataURL();
   });
 
+  // ---- 资源管理 ----
+
+  ipcMain.handle('asset:save-base64', (_event, noteFilePath, base64DataUri) => {
+    return fileStore.saveBase64Asset(noteFilePath, base64DataUri, notesDir);
+  });
+
+  ipcMain.handle('asset:save-drawing', (_event, noteFilePath, base64DataUri) => {
+    return fileStore.saveDrawingAsset(noteFilePath, base64DataUri, notesDir);
+  });
+
+  ipcMain.handle('asset:copy-file', (_event, noteFilePath, sourcePath) => {
+    return fileStore.copyAssetFile(noteFilePath, sourcePath, notesDir);
+  });
+
+  ipcMain.handle('asset:get-dir', (_event, noteFilePath) => {
+    return fileStore.getAssetDir(noteFilePath, notesDir);
+  });
+
+  // ---- 视频插入 ----
+
+  ipcMain.handle('video:open-file', async (_event, noteFilePath) => {
+    const win = BrowserWindow.getFocusedWindow();
+    const result = await dialog.showOpenDialog(win, {
+      title: '选择视频文件',
+      filters: [
+        { name: '视频文件', extensions: ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'] },
+        { name: '所有文件', extensions: ['*'] },
+      ],
+      properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return fileStore.copyAssetFile(noteFilePath, result.filePaths[0], notesDir);
+  });
+
+  // ---- 剪贴板复制媒体 ----
+
+  ipcMain.handle('clipboard:copy-media', (_event, filePath, mediaType) => {
+    try {
+      if (!fs.existsSync(filePath)) return false;
+      if (mediaType === 'image') {
+        const img = nativeImage.createFromPath(filePath);
+        if (img.isEmpty()) return false;
+        clipboard.writeImage(img);
+      } else {
+        // 视频：写入标记前缀文本（供 paste 同步检测）+ 自定义格式（备查）
+        const buf = Buffer.from(filePath, 'utf-8');
+        clipboard.writeBuffer('application/x-note-diary-video', buf);
+        // 前缀标记让 paste handler 可以同步检测并 preventDefault
+        clipboard.writeText('__NDVIDEO__' + filePath);
+      }
+      return true;
+    } catch (err) {
+      console.error('clipboard:copy-media failed:', err.message);
+      return false;
+    }
+  });
+
+  /**
+   * 检查剪贴板中是否有笔记内复制的视频
+   * 使用 Electron 原生 clipboard API 读取自定义格式（浏览器 clipboardData 无法访问自定义 MIME）
+   */
+  ipcMain.handle('clipboard:get-video', () => {
+    try {
+      if (!clipboard.has('application/x-note-diary-video')) return null;
+      const buf = clipboard.readBuffer('application/x-note-diary-video');
+      return buf.toString('utf-8');
+    } catch (_) {
+      return null;
+    }
+  });
+
   // ---- 设置 ----
 
   /**

@@ -234,4 +234,49 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * @returns {Promise<boolean>}
    */
   updateKeybindings: (bindings) => ipcRenderer.invoke('keybindings:update', bindings),
+  /**
+   * 将 base64 data URI 保存为笔记资源文件
+   * @param {string} noteFilePath - 笔记文件绝对路径
+   * @param {string} dataUrl - base64 data URI
+   * @returns {Promise<string|null>} 相对路径如 'assets/xxx.png'
+   */
+  saveBase64Asset: (noteFilePath, dataUrl) => ipcRenderer.invoke('asset:save-base64', noteFilePath, dataUrl),
+  /**
+   * 将绘图 base64 data URI 保存为 resources/drawing.png
+   * @param {string} noteFilePath - 笔记文件绝对路径
+   * @param {string} dataUrl - base64 data URI
+   * @returns {Promise<string>} 'assets/drawing.png' 或空字符串
+   */
+  saveDrawingAsset: (noteFilePath, dataUrl) => ipcRenderer.invoke('asset:save-drawing', noteFilePath, dataUrl),
+  /**
+   * 复制文件到笔记资源文件夹
+   * @param {string} noteFilePath - 笔记文件绝对路径
+   * @param {string} sourcePath - 源文件绝对路径
+   * @returns {Promise<string|null>} 相对路径
+   */
+  copyAssetFile: (noteFilePath, sourcePath) => ipcRenderer.invoke('asset:copy-file', noteFilePath, sourcePath),
+  /**
+   * 获取笔记资源文件夹的绝对路径
+   * @param {string} noteFilePath - 笔记文件绝对路径
+   * @returns {Promise<string>}
+   */
+  getAssetDir: (noteFilePath) => ipcRenderer.invoke('asset:get-dir', noteFilePath),
+  /**
+   * 打开文件选择器选择视频，复制到资源文件夹
+   * @param {string} noteFilePath - 笔记文件绝对路径
+   * @returns {Promise<string|null>} 相对路径如 'assets/xxx.mp4'
+   */
+  openVideoFile: (noteFilePath) => ipcRenderer.invoke('video:open-file', noteFilePath),
+  /**
+   * 复制媒体文件到系统剪贴板
+   * @param {string} filePath - 媒体文件绝对路径
+   * @param {string} mediaType - 'image' | 'video'
+   * @returns {Promise<boolean>}
+   */
+  copyMediaToClipboard: (filePath, mediaType) => ipcRenderer.invoke('clipboard:copy-media', filePath, mediaType),
+  /**
+   * 检查剪贴板中是否有笔记内复制的视频，返回源文件路径
+   * @returns {Promise<string|null>}
+   */
+  getVideoClipboard: () => ipcRenderer.invoke('clipboard:get-video'),
 });

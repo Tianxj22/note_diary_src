@@ -1,5 +1,5 @@
 {
-  "version": "1.10.0",
+  "version": "1.11.0",
   "activeFeature": null,
   "features": [
     {
@@ -445,6 +445,30 @@
       "estimatedEffort": "1d",
       "completedAt": null,
       "verification": "支持自动保存到指定目录，崩溃恢复"
+    },
+    {
+      "id": "F-033",
+      "name": "图片/绘画资源文件化存储",
+      "description": "将插入的图片和绘画素材保存到笔记专属的资源文件夹（assets/{basename}/），笔记文件中仅存储相对路径引用，避免 base64 内联",
+      "status": "done",
+      "priority": "P1",
+      "milestone": "M3",
+      "dependencies": ["F-006", "F-013", "F-015"],
+      "estimatedEffort": "2d",
+      "completedAt": "2026-07-08",
+      "verification": "插入图片后笔记文件含 src=\"assets/...\" 而非 base64；旧格式自动迁移；重命名/删除同步清理资源文件夹"
+    },
+    {
+      "id": "F-034",
+      "name": "视频插入",
+      "description": "在工具栏插入标签页添加「插入视频」按钮，支持选择本地视频文件（mp4/webm/ogg/mov/avi/mkv），复制到资源文件夹并通过 <video> 标签嵌入笔记",
+      "status": "done",
+      "priority": "P1",
+      "milestone": "M3",
+      "dependencies": ["F-033"],
+      "estimatedEffort": "0.5d",
+      "completedAt": "2026-07-08",
+      "verification": "Ctrl+Shift+V 或点击按钮选择视频文件，<video controls> 出现在编辑器，保存重开后可播放"
     }
   ],
   "milestones": [

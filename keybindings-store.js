@@ -41,6 +41,7 @@ function getDefaultBindings() {
       'insert.timestamp':     'Ctrl+Shift+T',
       'insert.image':         'Ctrl+Shift+I',
       'insert.codeblock':     'Ctrl+Shift+K',
+      'insert.video':         'Ctrl+Shift+V',
       'view.toggleDraw':      'Ctrl+Shift+D',
     },
   };

@@ -253,13 +253,26 @@ function moveToTrash(notesDir, filePath) {
     }
     const fileName = path.basename(filePath);
     const ext = path.extname(fileName);
+    const oldBasename = path.basename(filePath, ext);
     const destPath = path.join(trashDir, fileName);
     // 如果回收站已有同名文件，追加时间戳
     const finalName = fs.existsSync(destPath)
       ? fileName.replace(new RegExp(ext.replace('.', '\\.') + '$'), `_${Date.now()}${ext}`)
       : fileName;
     const finalPath = path.join(trashDir, finalName);
+    const newBasename = path.basename(finalPath, ext);
     fs.renameSync(filePath, finalPath);
+
+    // 同步移动资源文件夹到回收站
+    const oldAssetDir = path.join(notesDir, 'assets', oldBasename);
+    if (fs.existsSync(oldAssetDir)) {
+      const trashAssetsDir = path.join(trashDir, 'assets');
+      if (!fs.existsSync(trashAssetsDir)) {
+        fs.mkdirSync(trashAssetsDir, { recursive: true });
+      }
+      const newAssetDir = path.join(trashAssetsDir, newBasename);
+      fs.renameSync(oldAssetDir, newAssetDir);
+    }
 
     // 记录删除时间
     const meta = loadTrashMeta(notesDir);
@@ -311,8 +324,22 @@ function restoreFromTrash(notesDir, fileName) {
     const trashDir = path.join(notesDir, TRASH_DIR);
     const srcPath = path.join(trashDir, fileName);
     if (!fs.existsSync(srcPath)) return null;
+    const ext = path.extname(fileName);
+    const basename = path.basename(fileName, ext);
     const destPath = path.join(notesDir, fileName);
     fs.renameSync(srcPath, destPath);
+
+    // 同步恢复资源文件夹
+    const trashAssetsDir = path.join(trashDir, 'assets', basename);
+    if (fs.existsSync(trashAssetsDir)) {
+      const assetsDir = path.join(notesDir, 'assets');
+      if (!fs.existsSync(assetsDir)) {
+        fs.mkdirSync(assetsDir, { recursive: true });
+      }
+      const destAssetDir = path.join(assetsDir, basename);
+      fs.renameSync(trashAssetsDir, destAssetDir);
+    }
+
     const meta = loadTrashMeta(notesDir);
     delete meta[fileName];
     saveTrashMeta(notesDir, meta);
@@ -326,9 +353,19 @@ function restoreFromTrash(notesDir, fileName) {
 /** 永久删除回收站中的单个文件 */
 function permanentlyDelete(notesDir, fileName) {
   try {
-    const filePath = path.join(notesDir, TRASH_DIR, fileName);
+    const trashDir = path.join(notesDir, TRASH_DIR);
+    const filePath = path.join(trashDir, fileName);
     if (!fs.existsSync(filePath)) return false;
+    const ext = path.extname(fileName);
+    const basename = path.basename(fileName, ext);
     fs.unlinkSync(filePath);
+
+    // 同步删除资源文件夹
+    const trashAssetsDir = path.join(trashDir, 'assets', basename);
+    if (fs.existsSync(trashAssetsDir)) {
+      fs.rmSync(trashAssetsDir, { recursive: true, force: true });
+    }
+
     const meta = loadTrashMeta(notesDir);
     delete meta[fileName];
     saveTrashMeta(notesDir, meta);
@@ -350,6 +387,12 @@ function emptyTrash(notesDir, ext) {
       .forEach(f => fs.unlinkSync(path.join(trashDir, f)));
     const metaPath = path.join(trashDir, TRASH_META_FILE);
     if (fs.existsSync(metaPath)) fs.unlinkSync(metaPath);
+
+    // 同步清空回收站中的资源文件夹
+    const trashAssetsDir = path.join(trashDir, 'assets');
+    if (fs.existsSync(trashAssetsDir)) {
+      fs.rmSync(trashAssetsDir, { recursive: true, force: true });
+    }
     return true;
   } catch (err) {
     console.error('清空回收站失败:', err.message);
@@ -366,13 +409,23 @@ function renameNote(oldPath, newTitle) {
     const timestamp = Date.now();
     const safeTitle = newTitle || '未命名笔记';
     const ext = path.extname(oldPath) || DEFAULT_EXT;
+    const oldBasename = path.basename(oldPath, ext);
     const newFileName = `${safeTitle}_${timestamp}${ext}`;
     const newPath = path.join(dir, newFileName);
+    const newBasename = path.basename(newPath, ext);
 
     // 先更新元数据头中的标题（在重命名之前）
     setMetadata(oldPath, { title: safeTitle, modified: timestamp });
 
     fs.renameSync(oldPath, newPath);
+
+    // 同步重命名资源文件夹
+    const oldAssetDir = path.join(dir, 'assets', oldBasename);
+    const newAssetDir = path.join(dir, 'assets', newBasename);
+    if (fs.existsSync(oldAssetDir)) {
+      fs.renameSync(oldAssetDir, newAssetDir);
+    }
+
     return { filePath: newPath, fileName: newFileName };
   } catch (err) {
     console.error('重命名笔记失败:', err.message);
@@ -385,15 +438,45 @@ function duplicateNote(filePath) {
     if (!fs.existsSync(filePath)) return null;
     const dir = path.dirname(filePath);
     const ext = path.extname(filePath);
+    const oldBasename = path.basename(filePath, ext);
     const baseName = path.basename(filePath, ext).replace(/_\d+$/, '');
     const timestamp = Date.now();
     const newFileName = `${baseName} - 副本_${timestamp}${ext}`;
     const newPath = path.join(dir, newFileName);
+    const newBasename = path.basename(newPath, ext);
     fs.copyFileSync(filePath, newPath);
+
+    // 同步复制资源文件夹
+    const oldAssetDir = path.join(dir, 'assets', oldBasename);
+    if (fs.existsSync(oldAssetDir)) {
+      const newAssetDir = path.join(dir, 'assets', newBasename);
+      copyDirectorySync(oldAssetDir, newAssetDir);
+    }
+
     return { filePath: newPath, fileName: newFileName };
   } catch (err) {
     console.error('复制笔记失败:', err.message);
     return null;
+  }
+}
+
+/**
+ * 递归复制目录
+ * @param {string} src - 源目录
+ * @param {string} dest - 目标目录
+ */
+function copyDirectorySync(src, dest) {
+  if (!fs.existsSync(src)) return;
+  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirectorySync(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
   }
 }
 
@@ -418,10 +501,126 @@ function cutNote(notesDir, filePath) {
   }
 }
 
+// ===== 资源文件夹管理 =====
+
+/**
+ * 获取笔记对应的资源文件夹路径
+ * @param {string} noteFilePath - 笔记文件绝对路径
+ * @param {string} notesDir - notes 目录路径
+ * @returns {string} 资源文件夹绝对路径
+ */
+function getAssetDir(noteFilePath, notesDir) {
+  const basename = path.basename(noteFilePath, path.extname(noteFilePath));
+  return path.join(notesDir, 'assets', basename);
+}
+
+/**
+ * 复制文件到笔记的资源文件夹
+ * @param {string} noteFilePath - 笔记文件绝对路径
+ * @param {string} sourceFilePath - 源文件绝对路径
+ * @param {string} notesDir - notes 目录路径
+ * @returns {string} 相对路径，如 'assets/xxx.ext'，失败返回 null
+ */
+function copyAssetFile(noteFilePath, sourceFilePath, notesDir) {
+  try {
+    if (!fs.existsSync(sourceFilePath)) return null;
+    const ext = path.extname(sourceFilePath).toLowerCase();
+    const assetDir = getAssetDir(noteFilePath, notesDir);
+    if (!fs.existsSync(assetDir)) {
+      fs.mkdirSync(assetDir, { recursive: true });
+    }
+    const filename = Date.now() + '_' + Math.random().toString(36).slice(2, 8) + ext;
+    const destPath = path.join(assetDir, filename);
+    fs.copyFileSync(sourceFilePath, destPath);
+    return 'assets/' + filename;
+  } catch (err) {
+    console.error('copyAssetFile failed:', err.message);
+    return null;
+  }
+}
+
+/**
+ * 将 base64 data URI 保存为资源文件
+ * @param {string} noteFilePath - 笔记文件绝对路径
+ * @param {string} base64DataUri - data URI（如 data:image/png;base64,...）
+ * @param {string} notesDir - notes 目录路径
+ * @returns {string} 相对路径，如 'assets/xxx.png'，失败返回 null
+ */
+function saveBase64Asset(noteFilePath, base64DataUri, notesDir) {
+  try {
+    const match = base64DataUri.match(/^data:(image\/\w+);base64,(.+)$/);
+    if (!match) return null;
+    const mime = match[1];
+    const b64 = match[2];
+    let ext = mime.split('/')[1];
+    if (ext === 'jpeg') ext = 'jpg';
+    const buf = Buffer.from(b64, 'base64');
+
+    const assetDir = getAssetDir(noteFilePath, notesDir);
+    if (!fs.existsSync(assetDir)) {
+      fs.mkdirSync(assetDir, { recursive: true });
+    }
+    const filename = Date.now() + '_' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+    const destPath = path.join(assetDir, filename);
+    fs.writeFileSync(destPath, buf);
+    return 'assets/' + filename;
+  } catch (err) {
+    console.error('saveBase64Asset failed:', err.message);
+    return null;
+  }
+}
+
+/**
+ * 保存绘图数据为 drawing.png（覆盖写）
+ * @param {string} noteFilePath - 笔记文件绝对路径
+ * @param {string} base64DataUri - data URI
+ * @param {string} notesDir - notes 目录路径
+ * @returns {string} 'assets/drawing.png' 或空字符串
+ */
+function saveDrawingAsset(noteFilePath, base64DataUri, notesDir) {
+  try {
+    const match = base64DataUri.match(/^data:image\/png;base64,(.+)$/);
+    if (!match) return '';
+    const buf = Buffer.from(match[1], 'base64');
+
+    // 空画布检测：如果所有像素都是透明（alpha=0），跳过保存
+    // PNG 文件头 + IHDR 检查，简化：检查 buffer 前几个字节
+    if (buf.length < 100) return ''; // 太小的 PNG 大概率是空白
+
+    const assetDir = getAssetDir(noteFilePath, notesDir);
+    if (!fs.existsSync(assetDir)) {
+      fs.mkdirSync(assetDir, { recursive: true });
+    }
+    const destPath = path.join(assetDir, 'drawing.png');
+    fs.writeFileSync(destPath, buf);
+    return 'assets/drawing.png';
+  } catch (err) {
+    console.error('saveDrawingAsset failed:', err.message);
+    return '';
+  }
+}
+
+/**
+ * 删除笔记对应的资源文件夹
+ * @param {string} noteFilePath - 笔记文件绝对路径
+ * @param {string} notesDir - notes 目录路径
+ */
+function deleteAssetDir(noteFilePath, notesDir) {
+  try {
+    const assetDir = getAssetDir(noteFilePath, notesDir);
+    if (fs.existsSync(assetDir)) {
+      fs.rmSync(assetDir, { recursive: true, force: true });
+    }
+  } catch (err) {
+    console.error('deleteAssetDir failed:', err.message);
+  }
+}
+
 module.exports = {
   ensureNotesDir, createNote, listNotes, readNote, saveNote, deleteNote,
   moveToTrash, renameNote, duplicateNote, cutNote,
   getNextDefaultName, releaseNameNumber,
   listTrash, restoreFromTrash, permanentlyDelete, emptyTrash,
   getMetadata, setMetadata, buildMetadataString, DEFAULT_EXT,
+  getAssetDir, copyAssetFile, saveBase64Asset, saveDrawingAsset, deleteAssetDir,
 };

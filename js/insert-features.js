@@ -31,7 +31,7 @@ ND.dropdownImageMenu.querySelectorAll('.menu-item').forEach(item => {
  * @param {string} method - 'file' | 'clipboard' | 'fullscreen' | 'area' | 'window'
  */
 async function executeImageInsert(method) {
-  if (!ND.editorDiv) return;
+  if (!ND.editorDiv || !ND.currentNote) return;
   ND.editorDiv.focus();
   let dataUrl = null;
   try {
@@ -67,9 +67,15 @@ async function executeImageInsert(method) {
         return; // 窗口截图通过选择器回调处理
     }
     if (dataUrl) {
-      insertImageAtCursor(dataUrl);
-      ND.statusLeft.textContent = '图片已插入';
-      setTimeout(() => updateStatus(), 1500);
+      // 保存到资源文件夹，获得相对路径
+      var relativePath = await window.electronAPI.saveBase64Asset(ND.currentNote.filePath, dataUrl);
+      if (relativePath) {
+        insertImageAtCursor(relativePath);
+        ND.statusLeft.textContent = '图片已插入';
+        setTimeout(() => updateStatus(), 1500);
+      } else {
+        ND.statusLeft.textContent = '图片保存失败';
+      }
     }
   } catch (err) {
     ND.statusLeft.textContent = '图片插入失败: ' + err.message;
@@ -101,10 +107,13 @@ async function showWindowPicker() {
       hideWindowPicker();
       ND.statusLeft.textContent = '正在截图窗口...';
       const dataUrl = await window.electronAPI.captureWindowById(sourceId);
-      if (dataUrl) {
-        insertImageAtCursor(dataUrl);
-        ND.statusLeft.textContent = '图片已插入';
-        setTimeout(() => updateStatus(), 1500);
+      if (dataUrl && ND.currentNote) {
+        var relativePath = await window.electronAPI.saveBase64Asset(ND.currentNote.filePath, dataUrl);
+        if (relativePath) {
+          insertImageAtCursor(relativePath);
+          ND.statusLeft.textContent = '图片已插入';
+          setTimeout(() => updateStatus(), 1500);
+        }
       } else {
         ND.statusLeft.textContent = '窗口截图失败';
       }
@@ -133,12 +142,32 @@ document.addEventListener('keydown', (e) => {
 });
 
 /**
- * 在光标位置插入图片
- * @param {string} dataUrl - base64 data URI
+ * 将资源相对路径转换为 file:// 显示 URL（供插入时立即显示用）
+ * 逻辑与 file-store:getAssetDir 一致：从笔记文件路径推导 assets 目录
+ * @param {string} relativePath - 如 'assets/xxx.png'
+ * @returns {string} file:// URL
  */
-function insertImageAtCursor(dataUrl) {
-  // 使用 execCommand 插入图片（可撤销）
-  const html = '<img src="' + dataUrl + '" alt="插入的图片">';
+function resolveDisplaySrc(relativePath) {
+  if (!ND.currentNote) return relativePath;
+  if (!relativePath || !relativePath.startsWith('assets/')) return relativePath;
+  var notePath = ND.currentNote.filePath.replace(/\\/g, '/');
+  var lastSlash = notePath.lastIndexOf('/');
+  var noteDir = notePath.substring(0, lastSlash);
+  var noteFile = notePath.substring(lastSlash + 1);
+  var lastDot = noteFile.lastIndexOf('.');
+  var noteBasename = lastDot > 0 ? noteFile.substring(0, lastDot) : noteFile;
+  var fileName = relativePath.substring('assets/'.length);
+  return 'file:///' + noteDir + '/assets/' + noteBasename + '/' + fileName;
+}
+
+/**
+ * 在光标位置插入图片
+ * @param {string} src - 图片资源路径（相对路径如 assets/xxx.png）
+ */
+function insertImageAtCursor(src) {
+  // 解析为 file:// URL 以便立即显示（否则浏览器无法解析相对路径）
+  var displaySrc = resolveDisplaySrc(src);
+  const html = '<img src="' + displaySrc + '" alt="插入的图片">';
   execInsertHTML(html);
 }
 
@@ -146,7 +175,20 @@ function insertImageAtCursor(dataUrl) {
  * 处理粘贴事件，支持 Ctrl+V 粘贴剪贴板中的图片
  * @param {ClipboardEvent} e
  */
-function onEditorPaste(e) {
+async function onEditorPaste(e) {
+  // 检测笔记内复制的视频（通过文本前缀同步检测，避免 async gap 导致 preventDefault 失效）
+  var textData = e.clipboardData.getData('text/plain');
+  if (textData && textData.startsWith('__NDVIDEO__') && ND.currentNote) {
+    e.preventDefault();
+    e.stopPropagation();
+    var srcPath = textData.slice('__NDVIDEO__'.length);
+    var relativePath = await window.electronAPI.copyAssetFile(ND.currentNote.filePath, srcPath);
+    if (relativePath) {
+      insertVideoAtCursor(relativePath);
+    }
+    return;
+  }
+
   const items = e.clipboardData && e.clipboardData.items;
   if (!items) return;
   for (let i = 0; i < items.length; i++) {
@@ -155,11 +197,44 @@ function onEditorPaste(e) {
       e.preventDefault();
       const blob = item.getAsFile();
       const reader = new FileReader();
-      reader.onload = () => {
-        insertImageAtCursor(reader.result);
+      reader.onload = async () => {
+        if (!ND.currentNote) return;
+        var relativePath = await window.electronAPI.saveBase64Asset(ND.currentNote.filePath, reader.result);
+        if (relativePath) {
+          insertImageAtCursor(relativePath);
+        }
       };
       reader.readAsDataURL(blob);
       return;
     }
   }
 }
+
+// ---- 视频插入 ----
+
+/**
+ * 在光标位置插入视频
+ * @param {string} src - 视频资源路径（相对路径如 assets/xxx.mp4）
+ */
+function insertVideoAtCursor(src) {
+  var displaySrc = resolveDisplaySrc(src);
+  var html = '<video src="' + displaySrc + '" controls style="max-width:100%"></video>';
+  execInsertHTML(html);
+}
+
+// ---- 视频插入按钮事件 ----
+document.getElementById('btn-insert-video').addEventListener('click', async (e) => {
+  e.stopPropagation();
+  if (!ND.editorDiv || !ND.currentNote) return;
+  ND.editorDiv.focus();
+  try {
+    var relativePath = await window.electronAPI.openVideoFile(ND.currentNote.filePath);
+    if (relativePath) {
+      insertVideoAtCursor(relativePath);
+      ND.statusLeft.textContent = '视频已插入';
+      setTimeout(function() { updateStatus(); }, 1500);
+    }
+  } catch (err) {
+    ND.statusLeft.textContent = '视频插入失败: ' + err.message;
+  }
+});

@@ -33,8 +33,10 @@
   border-radius: 4px;
 }
 
-/* 选中图片时的选中框 */
-.editor-content img.selected {
+/* 选中媒体（图片/视频/裁剪容器）时的选中框 */
+.editor-content img.selected,
+.editor-content video.selected,
+.editor-content .media-crop-wrapper.selected {
   outline: 2px solid #6c9fff;
   outline-offset: 2px;
 }

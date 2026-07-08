@@ -35,14 +35,15 @@ var shortcutActions = {
   'format.underline':   function () { if (ND.editorDiv) document.execCommand('underline'); },
   'format.strikethrough': function () { if (ND.editorDiv) document.execCommand('strikeThrough'); },
   'format.removeFormat':  function () { if (ND.editorDiv) document.execCommand('removeFormat'); },
-  'format.orderedList':   function () { if (ND.editorDiv) document.execCommand('insertOrderedList'); },
-  'format.unorderedList': function () { if (ND.editorDiv) document.execCommand('insertUnorderedList'); },
+  'format.orderedList':   function () { if (ND.editorDiv) { ND.editorDiv.focus(); document.execCommand('insertOrderedList'); document.execCommand('insertHTML', false, '<br>'); } },
+  'format.unorderedList': function () { if (ND.editorDiv) { ND.editorDiv.focus(); document.execCommand('insertUnorderedList'); document.execCommand('insertHTML', false, '<br>'); } },
   'format.indent':    function () { if (ND.editorDiv) document.execCommand('indent'); },
   'format.outdent':   function () { if (ND.editorDiv) document.execCommand('outdent'); },
   'insert.checklist': function () { if (ND.editorDiv) insertChecklist(); },
   'insert.timestamp': function () { if (ND.editorDiv) insertTimestamp(); },
   'insert.image':     function () { if (ND.editorDiv) insertImageFromFile(); },
   'insert.codeblock': function () { if (ND.editorDiv) ND.showCodeBlockModal(null); },
+  'insert.video':     function () { if (ND.editorDiv && ND.btnInsertVideo) ND.btnInsertVideo.click(); },
   'view.toggleDraw':  function () { if (ND.editorDiv) toggleDrawingMode(); },
 };
 

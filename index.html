@@ -11,7 +11,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: file:; media-src 'self' file:">
   <title>Note Diary</title>
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/sidebar.css">
@@ -154,6 +154,8 @@
             <div class="menu-item" data-method="window">🪟 窗口截图</div>
           </div>
         </div>
+        <span class="separator"></span>
+        <button id="btn-insert-video" class="style-btn" data-tooltip="插入视频 (Ctrl+Shift+V)">🎬</button>
         <span class="separator"></span>
         <button id="btn-code-block" class="style-btn" data-tooltip="插入代码块 (Ctrl+Shift+K)">&lt;/&gt;</button>
       </div>
@@ -330,6 +332,8 @@
     <div class="menu-divider"></div>
     <div class="menu-item" data-action="find">🔍 查找 <span class="shortcut-hint">Ctrl+F</span></div>
     <div class="menu-item" data-action="replace">🔄 替换 <span class="shortcut-hint">Ctrl+H</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" data-action="copy-media">📋 复制图片/视频 <span class="shortcut-hint">Ctrl+C</span></div>
     <div class="menu-divider"></div>
     <div class="menu-item" data-action="checklist">☑ 插入清单 <span class="shortcut-hint">Ctrl+Shift+C</span></div>
     <div class="menu-item" data-action="timestamp">📅 插入时间 <span class="shortcut-hint">Ctrl+Shift+T</span></div>

@@ -310,6 +310,7 @@ ND.contextMenuEditor.querySelectorAll('.menu-item').forEach(function (item) {
       case 'selectAll': document.execCommand('selectAll'); break;
       case 'find': ND.toggleFindBar(); break;
       case 'replace': ND.toggleFindBar(); if (document.getElementById('replace-input')) document.getElementById('replace-input').focus(); break;
+      case 'copy-media': copySelectedMediaToClipboard(); break;
       case 'checklist': insertChecklist(); break;
       case 'timestamp': insertTimestamp(); break;
       case 'insert-image': insertImageFromFile(); break;

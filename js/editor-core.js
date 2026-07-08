@@ -20,9 +20,9 @@ async function selectNote(note) {
   if (ND.saveTimer) { clearTimeout(ND.saveTimer); ND.saveTimer = null; }
   // 保存上一个笔记（含绘图层数据 + 元数据）
   if (prevNote && ND.editorDiv) {
-    saveDrawCanvasData();
+    await saveDrawCanvasData();
     var prevDrawing = ND.drawingCanvasData || '';
-    var prevText = ND.editorDiv.innerHTML;
+    var prevText = await extractImagesFromHTML(ND.editorDiv.innerHTML, prevNote.filePath);
     var prevMeta = prevNote._meta || { title: prevNote.displayName, created: prevNote.createdAt || Date.now(), modified: Date.now() };
     prevMeta.title = prevNote.displayName;
     prevMeta.modified = Date.now();
@@ -45,8 +45,39 @@ async function selectNote(note) {
       return line ? escapeHtml(line) : '<br>';
     }).join('<br>');
   }
-  // 以当前格式重新编码作为基准（包含元数据头），用于后续变更检测
-  ND.lastSavedContent = encodeNoteContent(decoded.text, decoded.drawing, ND.currentNote._meta);
+
+  // 向后兼容：自动迁移旧格式 base64 图片
+  var needsMigration = ND.currentContent.indexOf('data:image/') !== -1;
+  var drawingNeedsMigration = decoded.drawing && decoded.drawing.startsWith('data:image/');
+
+  if (needsMigration) {
+    ND.currentContent = await extractImagesFromHTML(ND.currentContent, ND.currentNote.filePath);
+  }
+  if (drawingNeedsMigration) {
+    ND.drawingCanvasData = await window.electronAPI.saveDrawingAsset(ND.currentNote.filePath, decoded.drawing);
+  }
+
+  // 如果有迁移发生，立即重新保存
+  if (needsMigration || drawingNeedsMigration) {
+    var migratedMeta = ND.currentNote._meta;
+    migratedMeta.modified = Date.now();
+    var migratedContent = encodeNoteContent(ND.currentContent, ND.drawingCanvasData || '', migratedMeta);
+    ND.lastSavedContent = migratedContent;
+    await window.electronAPI.saveNote(ND.currentNote.filePath, migratedContent);
+  } else {
+    // 以当前格式重新编码作为基准（包含元数据头），用于后续变更检测
+    ND.lastSavedContent = encodeNoteContent(decoded.text, decoded.drawing, ND.currentNote._meta);
+  }
+
+  // 解析资源路径为 file:// URL
+  ND.currentContent = await resolveAssetPaths(ND.currentContent, ND.currentNote.filePath);
+
+  // 解析绘图数据路径
+  if (ND.drawingCanvasData && ND.drawingCanvasData.startsWith('assets/')) {
+    var drawAssetDir = await window.electronAPI.getAssetDir(ND.currentNote.filePath);
+    ND.drawingCanvasData = 'file:///' + drawAssetDir.replace(/\\/g, '/') + '/' + ND.drawingCanvasData.replace('assets/', '');
+  }
+
   showEditor();
   ND.editorTitleInput.value = note.displayName;
   ND.editorDiv.innerHTML = ND.currentContent;
@@ -90,9 +121,9 @@ async function createNewNote() {
 // ---- 保存当前笔记 ----
 async function saveCurrentNote() {
   if (!ND.currentNote || !ND.editorDiv) return;
-  var textHtml = ND.editorDiv.innerHTML;
-  saveDrawCanvasData();
+  await saveDrawCanvasData();
   var drawingData = ND.drawingCanvasData || '';
+  var textHtml = await extractImagesFromHTML(ND.editorDiv.innerHTML, ND.currentNote.filePath);
   var meta = ND.currentNote._meta || { title: ND.currentNote.displayName, created: Date.now(), modified: Date.now() };
   meta.title = ND.currentNote.displayName;
   meta.modified = Date.now();
@@ -123,9 +154,9 @@ async function saveCurrentNote() {
 // ---- 手动保存 ----
 async function manualSave() {
   if (!ND.currentNote || !ND.editorDiv) return;
-  var textHtml = ND.editorDiv.innerHTML;
-  saveDrawCanvasData();
+  await saveDrawCanvasData();
   var drawingData = ND.drawingCanvasData || '';
+  var textHtml = await extractImagesFromHTML(ND.editorDiv.innerHTML, ND.currentNote.filePath);
   var meta = ND.currentNote._meta || { title: ND.currentNote.displayName, created: Date.now(), modified: Date.now() };
   meta.title = ND.currentNote.displayName;
   meta.modified = Date.now();
@@ -147,9 +178,9 @@ async function closeCurrentNote() {
   if (!ND.currentNote) return;
   // 先保存当前内容
   if (ND.editorDiv) {
-    saveDrawCanvasData();
-    var textHtml = ND.editorDiv.innerHTML;
+    await saveDrawCanvasData();
     var drawingData = ND.drawingCanvasData || '';
+    var textHtml = await extractImagesFromHTML(ND.editorDiv.innerHTML, ND.currentNote.filePath);
     var meta = ND.currentNote._meta || { title: ND.currentNote.displayName, created: Date.now(), modified: Date.now() };
     meta.title = ND.currentNote.displayName;
     meta.modified = Date.now();
@@ -257,8 +288,6 @@ function showEditor() {
 
 // ---- 编辑器隐藏 ----
 function hideEditor() {
-  // 保存绘图层数据
-  saveDrawCanvasData();
   ND.editorArea.innerHTML = '<div class="no-note">选择或新建一篇笔记开始编辑</div>';
   ND.editorDiv = null;
   ND.editorTitleInput = null;
@@ -270,16 +299,115 @@ function hideEditor() {
   // 保留 drawingActive 状态，以便新笔记恢复
 }
 
+// ---- 资源文件提取 ----
+
+/**
+ * 保存前处理 HTML：提取 base64 图片 + 将 file:/// URL 还原为相对路径
+ * @param {string} html - 编辑器 innerHTML
+ * @param {string} noteFilePath - 笔记文件绝对路径
+ * @returns {Promise<string>} 处理后的 HTML
+ */
+async function extractImagesFromHTML(html, noteFilePath) {
+  var tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+
+  // 计算当前笔记的 assets 目录对应的 file:// 前缀
+  var notePath = noteFilePath.replace(/\\/g, '/');
+  var lastSlash = notePath.lastIndexOf('/');
+  var noteDir = notePath.substring(0, lastSlash);
+  var noteFile = notePath.substring(lastSlash + 1);
+  var lastDot = noteFile.lastIndexOf('.');
+  var noteBasename = lastDot > 0 ? noteFile.substring(0, lastDot) : noteFile;
+  var fileAssetsPrefix = 'file:///' + noteDir + '/assets/' + noteBasename + '/';
+
+  // Pass 1: 提取 base64 图片 → 保存为文件 → 替换为相对路径
+  var imgs = tempDiv.querySelectorAll('img[src^="data:image/"]');
+  for (var i = 0; i < imgs.length; i++) {
+    var dataUrl = imgs[i].src;
+    var relativePath = await window.electronAPI.saveBase64Asset(noteFilePath, dataUrl);
+    if (relativePath) {
+      imgs[i].src = relativePath;
+    }
+    if (imgs[i].dataset.originalSrc && imgs[i].dataset.originalSrc.startsWith('data:image/')) {
+      var origPath = await window.electronAPI.saveBase64Asset(noteFilePath, imgs[i].dataset.originalSrc);
+      if (origPath) {
+        imgs[i].dataset.originalSrc = origPath;
+      }
+    }
+  }
+
+  // Pass 2: 将 file:/// 显示 URL 还原为相对路径（图片 + 视频）
+  var allImgs = tempDiv.querySelectorAll('img[src^="file:///"]');
+  for (var j = 0; j < allImgs.length; j++) {
+    var src = allImgs[j].getAttribute('src') || '';
+    if (src.startsWith(fileAssetsPrefix)) {
+      allImgs[j].setAttribute('src', 'assets/' + src.substring(fileAssetsPrefix.length));
+    }
+    if (allImgs[j].dataset.originalSrc && allImgs[j].dataset.originalSrc.startsWith(fileAssetsPrefix)) {
+      allImgs[j].dataset.originalSrc = 'assets/' + allImgs[j].dataset.originalSrc.substring(fileAssetsPrefix.length);
+    }
+  }
+
+  var allVideos = tempDiv.querySelectorAll('video[src^="file:///"]');
+  for (var k = 0; k < allVideos.length; k++) {
+    var vsrc = allVideos[k].getAttribute('src') || '';
+    if (vsrc.startsWith(fileAssetsPrefix)) {
+      allVideos[k].setAttribute('src', 'assets/' + vsrc.substring(fileAssetsPrefix.length));
+    }
+  }
+
+  return tempDiv.innerHTML;
+}
+
+/**
+ * 将 HTML 中的资源相对路径解析为 file:// 绝对路径（用于加载显示）
+ * @param {string} html - 编辑器 innerHTML
+ * @param {string} noteFilePath - 笔记文件绝对路径
+ * @returns {Promise<string>} 处理后的 HTML
+ */
+async function resolveAssetPaths(html, noteFilePath) {
+  var tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  var assetDir = await window.electronAPI.getAssetDir(noteFilePath);
+
+  // 处理图片
+  var imgs = tempDiv.querySelectorAll('img');
+  for (var i = 0; i < imgs.length; i++) {
+    var src = imgs[i].getAttribute('src') || '';
+    if (src.startsWith('assets/')) {
+      // Windows 路径反斜杠转正斜杠
+      var absPath = assetDir.replace(/\\/g, '/') + '/' + src.replace('assets/', '');
+      imgs[i].src = 'file:///' + absPath;
+    }
+    // 处理 dataset.originalSrc（裁剪原图）
+    if (imgs[i].dataset.originalSrc && imgs[i].dataset.originalSrc.startsWith('assets/')) {
+      var absOrigPath = assetDir.replace(/\\/g, '/') + '/' + imgs[i].dataset.originalSrc.replace('assets/', '');
+      imgs[i].dataset.originalSrc = 'file:///' + absOrigPath;
+    }
+  }
+
+  // 处理视频
+  var videos = tempDiv.querySelectorAll('video');
+  for (var j = 0; j < videos.length; j++) {
+    var vsrc = videos[j].getAttribute('src') || '';
+    if (vsrc.startsWith('assets/')) {
+      var absVPath = assetDir.replace(/\\/g, '/') + '/' + vsrc.replace('assets/', '');
+      videos[j].src = 'file:///' + absVPath;
+    }
+  }
+
+  return tempDiv.innerHTML;
+}
+
 // ---- 绘图层数据管理 ----
 
 /**
- * 保存当前绘图层数据到 ND.drawingCanvasData
+ * 保存当前绘图层数据为资源文件
  */
-function saveDrawCanvasData() {
-  if (ND.drawCanvas && ND.drawCtx) {
+async function saveDrawCanvasData() {
+  if (ND.drawCanvas && ND.drawCtx && ND.currentNote) {
     var dataUrl = ND.drawCanvas.toDataURL('image/png');
-    // 如果画布完全空白，不保存
-    ND.drawingCanvasData = dataUrl;
+    ND.drawingCanvasData = await window.electronAPI.saveDrawingAsset(ND.currentNote.filePath, dataUrl);
   }
 }
 
