@@ -45,6 +45,7 @@
       "git-sync.js",
       "keybindings-store.js",
       "crypto-utils.js",
+      "update-checker.js",
       "index.html",
       "css/**/*",
       "js/**/*",

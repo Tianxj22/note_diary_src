@@ -206,3 +206,52 @@ npm run test:e2e  # E2E 测试（需要桌面环境，条件允许时运行）
 <!-- ❌ 错误 -->
 <button><b>B</b> 加粗</button>
 ```
+
+---
+
+## 10. 新增文件与打包配置同步
+
+### 10.1 问题背景
+
+项目使用 [electron-builder](https://www.electron.build/) 打包，`package.json` 的 `build.files` 字段为 **显式白名单**——只有列出的文件才会被打包进 `app.asar`。
+
+开发模式下 `npm start` 直接读取本地文件系统，即使文件不在白名单中也能正常运行；但打包安装后，缺失的文件会导致 `Error: Cannot find module '...'` 运行时崩溃。
+
+> **历史教训**: F-051（应用自动更新）引入 `update-checker.js` 后忘记同步 `build.files`，打包安装后应用崩溃，参见 2026-07-10 会话记录。
+
+### 10.2 规则
+
+**在项目根目录新增或删除被 `main.js` 直接 `require()` 的 `.js` 模块文件时，必须同步更新 `package.json` 中 `build.files` 数组。**
+
+当前需保持同步的根级文件清单：
+
+| 文件 | 作用 |
+|---|---|
+| `file-store.js` | 笔记文件存储 |
+| `settings-store.js` | 持久化配置 |
+| `format-migration.js` | 文件格式迁移 |
+| `git-sync.js` | Git 云端同步 |
+| `keybindings-store.js` | 快捷键配置 |
+| `crypto-utils.js` | Token 加密 |
+| `update-checker.js` | 应用自动更新 |
+
+注意：
+- `css/**/*` 和 `js/**/*` 已覆盖整个目录，其中的文件无需单独注册
+- `main.js` 和 `preload.js` 由 electron-builder 自动识别（`package.json` `main` 字段），但仍建议保留在白名单中
+- `node_modules/` 下的依赖通常由 electron-builder 自动处理，仅 `simple-git` 因需额外文件而显式列出
+
+### 10.3 验证
+
+新增模块后，`npm start` 通过不代表打包正常，必须执行以下验证：
+
+```bash
+npm run build:win               # 重新构建安装器
+# 安装生成的 exe → 启动应用 → 确认不报 Cannot find module 错误
+```
+
+或使用便携版快速验证：
+
+```bash
+npm run build:win:portable      # 生成便携版
+# 运行便携版 exe → 确认启动正常
+```
