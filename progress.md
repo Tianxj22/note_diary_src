@@ -10,7 +10,7 @@
 - **Recommended Next Step / 下一步操作**:
   1. M3 剩余: F-020 日记日历视图 / F-021 全文搜索 / F-022 标签系统
   2. M4: F-030 导出 PDF/Markdown / F-031 主题切换 / F-032 自动保存增强
-- **Files Modified / 最近修改文件**: `js/editor-core.js`, `test/unit/utils.test.mjs`, `test/vitest.config.mjs`
+- **Files Modified / 最近修改文件**: `package.json`, `build/installer.nsh`, `js/editor-core.js`, `test/unit/utils.test.mjs`, `test/vitest.config.mjs`
 - **Last Updated / 最后更新**: 2026-07-10
 
 ---

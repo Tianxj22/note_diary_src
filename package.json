@@ -77,7 +77,10 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Note Diary",
-      "uninstallDisplayName": "Note Diary"
+      "uninstallDisplayName": "Note Diary",
+      "guid": "f8e3b2a1-c5d4-4e9f-8a7b-6c0d1e2f3a4b",
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh"
     },
     "portable": {
       "artifactName": "Note-Diary-${version}-portable.exe"
