@@ -49,10 +49,21 @@ async function selectNote(note) {
     ND.currentTags = [];
   }
   // 兼容旧纯文本笔记：将换行转换为 HTML <br>
-  if (!/^\s*</.test(ND.currentContent)) {
+  // 仅对无元数据头的旧格式文件执行此兼容转换（新格式文件始终为 HTML）
+  // 修复：旧启发式 /^\s*</.test() 对以中文/文本开头的 HTML 内容会误判，
+  // 导致 escapeHtml 被调用，造成 HTML 实体多重编码的恶性循环。
+  // 参见 progress.md 2026-07-10 会话记录。
+  if (!decoded.metadata && !/^\s*</.test(ND.currentContent)) {
     ND.currentContent = ND.currentContent.split('\n').map(function(line) {
       return line ? escapeHtml(line) : '<br>';
     }).join('<br>');
+  }
+
+  // 自动修复已损坏的 HTML 实体多重编码（因上述 bug 导致）
+  var recoveryFixed = false;
+  if (decoded.metadata && !/^\s*</.test(ND.currentContent) && /&(?:amp;)*(?:lt|gt|quot|#\d+);/.test(ND.currentContent)) {
+    ND.currentContent = decodeCorruptedEntities(ND.currentContent);
+    recoveryFixed = true;
   }
 
   // 向后兼容：自动迁移旧格式 base64 图片
@@ -75,7 +86,10 @@ async function selectNote(note) {
     await window.electronAPI.saveNote(ND.currentNote.filePath, migratedContent);
   } else {
     // 以当前格式重新编码作为基准（包含元数据头），用于后续变更检测
-    ND.lastSavedContent = encodeNoteContent(decoded.text, decoded.drawing, ND.currentNote._meta);
+    // 使用 ND.currentContent（可能已被实体修复修正）而非 decoded.text（原始文件内容）
+    // 如果执行了恢复修复，强制 lastSavedContent 为 null 以确保修复结果被保存
+    ND.lastSavedContent = recoveryFixed ? null
+      : encodeNoteContent(ND.currentContent, decoded.drawing, ND.currentNote._meta);
   }
 
   // 解析资源路径为 file:// URL
@@ -251,6 +265,40 @@ function showEditor() {
             ND.currentNote.filePath = result.filePath;
             ND.currentNote.fileName = result.fileName;
             ND.currentNote.displayName = newTitle;
+
+            // 重命名后重新解析编辑器中所有 file:/// 资源路径
+            // 资源目录已随笔记文件改名而移动，DOM 中的旧 file:// URL 会指向已删除的旧目录
+            // 必须立即更新，否则：(1) 图片/视频立即可见损坏 (2) 下次保存将绝对路径写入文件
+            // (3) Git 同步后其他设备无法加载（绝对路径机器特定）
+            if (ND.editorDiv) {
+              var newAssetDir = await window.electronAPI.getAssetDir(result.filePath);
+              var newAssetPrefix = 'file:///' + newAssetDir.replace(/\\/g, '/') + '/';
+
+              // 更新图片 src
+              var imgs = ND.editorDiv.querySelectorAll('img[src^="file:///"]');
+              for (var ri = 0; ri < imgs.length; ri++) {
+                var oldSrc = imgs[ri].getAttribute('src') || '';
+                var filename = oldSrc.replace(/^.*[\\/]/, ''); // 提取文件名
+                imgs[ri].setAttribute('src', newAssetPrefix + filename);
+              }
+
+              // 更新裁剪图片的 originalSrc（dataset）
+              var cropImgs = ND.editorDiv.querySelectorAll('img[data-original-src^="file:///"]');
+              for (var rj = 0; rj < cropImgs.length; rj++) {
+                var oldOrig = cropImgs[rj].dataset.originalSrc || '';
+                var origFilename = oldOrig.replace(/^.*[\\/]/, '');
+                cropImgs[rj].dataset.originalSrc = newAssetPrefix + origFilename;
+              }
+
+              // 更新视频 src
+              var videos = ND.editorDiv.querySelectorAll('video[src^="file:///"]');
+              for (var rk = 0; rk < videos.length; rk++) {
+                var oldVsrc = videos[rk].getAttribute('src') || '';
+                var vFilename = oldVsrc.replace(/^.*[\\/]/, '');
+                videos[rk].setAttribute('src', newAssetPrefix + vFilename);
+              }
+            }
+
             await loadNoteList();
             renderNoteList();
             updateStatus();
@@ -369,9 +417,21 @@ async function extractImagesFromHTML(html, noteFilePath) {
     var src = allImgs[j].getAttribute('src') || '';
     if (src.startsWith(fileAssetsPrefix)) {
       allImgs[j].setAttribute('src', 'assets/' + src.substring(fileAssetsPrefix.length));
+    } else {
+      // 防御性处理：file:/// URL 不匹配当前笔记前缀（如重命名后旧路径残留）
+      // 提取文件名，转为相对路径引用当前笔记的资源目录
+      var orphanFilename = src.replace(/^.*[\\/]/, '');
+      if (orphanFilename) {
+        allImgs[j].setAttribute('src', 'assets/' + orphanFilename);
+      }
     }
     if (allImgs[j].dataset.originalSrc && allImgs[j].dataset.originalSrc.startsWith(fileAssetsPrefix)) {
       allImgs[j].dataset.originalSrc = 'assets/' + allImgs[j].dataset.originalSrc.substring(fileAssetsPrefix.length);
+    } else if (allImgs[j].dataset.originalSrc && allImgs[j].dataset.originalSrc.startsWith('file:///')) {
+      var orphanOrigFilename = allImgs[j].dataset.originalSrc.replace(/^.*[\\/]/, '');
+      if (orphanOrigFilename) {
+        allImgs[j].dataset.originalSrc = 'assets/' + orphanOrigFilename;
+      }
     }
   }
 
@@ -380,6 +440,12 @@ async function extractImagesFromHTML(html, noteFilePath) {
     var vsrc = allVideos[k].getAttribute('src') || '';
     if (vsrc.startsWith(fileAssetsPrefix)) {
       allVideos[k].setAttribute('src', 'assets/' + vsrc.substring(fileAssetsPrefix.length));
+    } else {
+      // 防御性处理：file:/// URL 不匹配当前笔记前缀
+      var orphanVFilename = vsrc.replace(/^.*[\\/]/, '');
+      if (orphanVFilename) {
+        allVideos[k].setAttribute('src', 'assets/' + orphanVFilename);
+      }
     }
   }
 
@@ -405,11 +471,24 @@ async function resolveAssetPaths(html, noteFilePath) {
       // Windows 路径反斜杠转正斜杠
       var absPath = assetDir.replace(/\\/g, '/') + '/' + src.replace('assets/', '');
       imgs[i].src = 'file:///' + absPath;
+    } else if (src.startsWith('file:///')) {
+      // 防御性修复：笔记中残留了绝对 file:// URL（如重命名 bug 导致）
+      // 提取文件名，解析到当前笔记的资源目录
+      var corruptFilename = src.replace(/^.*[\\/]/, '');
+      if (corruptFilename) {
+        var fixAbsPath = assetDir.replace(/\\/g, '/') + '/' + corruptFilename;
+        imgs[i].src = 'file:///' + fixAbsPath;
+      }
     }
     // 处理 dataset.originalSrc（裁剪原图）
     if (imgs[i].dataset.originalSrc && imgs[i].dataset.originalSrc.startsWith('assets/')) {
       var absOrigPath = assetDir.replace(/\\/g, '/') + '/' + imgs[i].dataset.originalSrc.replace('assets/', '');
       imgs[i].dataset.originalSrc = 'file:///' + absOrigPath;
+    } else if (imgs[i].dataset.originalSrc && imgs[i].dataset.originalSrc.startsWith('file:///')) {
+      var corruptOrigFilename = imgs[i].dataset.originalSrc.replace(/^.*[\\/]/, '');
+      if (corruptOrigFilename) {
+        imgs[i].dataset.originalSrc = 'file:///' + assetDir.replace(/\\/g, '/') + '/' + corruptOrigFilename;
+      }
     }
   }
 
@@ -420,6 +499,12 @@ async function resolveAssetPaths(html, noteFilePath) {
     if (vsrc.startsWith('assets/')) {
       var absVPath = assetDir.replace(/\\/g, '/') + '/' + vsrc.replace('assets/', '');
       videos[j].src = 'file:///' + absVPath;
+    } else if (vsrc.startsWith('file:///')) {
+      // 防御性修复：笔记中残留了绝对 file:// URL
+      var corruptVFilename = vsrc.replace(/^.*[\\/]/, '');
+      if (corruptVFilename) {
+        videos[j].src = 'file:///' + assetDir.replace(/\\/g, '/') + '/' + corruptVFilename;
+      }
     }
   }
 
@@ -494,6 +579,43 @@ var DRAWING_SEP = '\n---DRAWING---\n';
 var TEXT_SEP = '\n---TEXT---\n';
 var METADATA_HEADER_START = '<!--';
 var METADATA_HEADER_END = '-->';
+
+/**
+ * 自动修复因 HTML 实体多重编码 bug 而损坏的内容
+ *
+ * 问题背景：旧版代码使用 /^\s*</ 启发式判断内容是否为 HTML，
+ * 对以中文/文本开头的 HTML 内容会误判为纯文本，调用 escapeHtml()
+ * 导致每轮保存-加载叠加一层实体编码。
+ *
+ * 检测策略：如果内容包含 &amp;lt; 或 &lt; 等模式但不以 < 开头，
+ * 说明 HTML 标签被错误编码了，需要逐层解码还原。
+ *
+ * @param {string} corrupted - 可能被多重编码的 HTML 内容
+ * @returns {string} 解码后的 HTML 内容
+ */
+function decodeCorruptedEntities(corrupted) {
+  var result = corrupted;
+  // 最多尝试 10 层解码（安全上限，正常情况下 1-4 层）
+  for (var pass = 0; pass < 10; pass++) {
+    var prev = result;
+    // 文本级实体解码：逐层剥离 HTML 实体编码
+    // 注意：必须用文本替换而非 innerHTML 解析，避免浏览器对 HTML 结构的副作用
+    result = result.replace(/&amp;/g, '&');
+    result = result.replace(/&lt;/g, '<');
+    result = result.replace(/&gt;/g, '>');
+    result = result.replace(/&quot;/g, '"');
+    result = result.replace(/&#39;/g, "'");
+    result = result.replace(/&#(\d+);/g, function(_, d) { return String.fromCharCode(parseInt(d, 10)); });
+
+    // 停止条件：HTML 标签已恢复（以 < 开头）且无残留的多层编码
+    if (/^\s*</.test(result) && !/&amp;(?:amp;)+lt;/.test(result)) {
+      break;
+    }
+    // 如果不再变化，停止
+    if (result === prev) break;
+  }
+  return result;
+}
 
 /**
  * 编码笔记内容为持久化格式（含元数据头）

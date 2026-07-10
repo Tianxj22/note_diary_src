@@ -13,6 +13,7 @@ export default defineConfig({
   test: {
     include: ['test/**/*.test.mjs'],
     testTimeout: 15000,
-    pool: 'forks',
+    pool: 'threads',
+    fileParallelism: false,
   },
 });

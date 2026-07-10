@@ -251,3 +251,102 @@ describe('diffLines', () => {
     expect(result.remote[1].type).toBe('added');
   });
 });
+
+// ---- decodeCorruptedEntities 测试（纯文本函数，无需 DOM）----
+
+describe('decodeCorruptedEntities — HTML 实体多重编码自动修复', () => {
+  /**
+   * js/editor-core.js 中 decodeCorruptedEntities 的等价实现
+   * 文本级实体解码，不使用 DOM API
+   * @param {string} corrupted
+   * @returns {string}
+   */
+  function decodeCorruptedEntities(corrupted) {
+    var result = corrupted;
+    for (var pass = 0; pass < 10; pass++) {
+      var prev = result;
+      result = result.replace(/&amp;/g, '&');
+      result = result.replace(/&lt;/g, '<');
+      result = result.replace(/&gt;/g, '>');
+      result = result.replace(/&quot;/g, '"');
+      result = result.replace(/&#39;/g, "'");
+      result = result.replace(/&#(\d+);/g, function(_, d) { return String.fromCharCode(parseInt(d, 10)); });
+      if (/^\s*</.test(result) && !/&amp;(?:amp;)+lt;/.test(result)) {
+        break;
+      }
+      if (result === prev) break;
+    }
+    return result;
+  }
+
+  it('U-129: 正常 HTML 内容 → 原样返回（幂等性）', () => {
+    var html = '<div><span class="check-box">☐</span>&nbsp;hello</div>';
+    expect(decodeCorruptedEntities(html)).toBe(html);
+  });
+
+  it('U-130: 1层编码的 HTML → 正确解码', () => {
+    var encoded = '&lt;div&gt;&lt;span&gt;hello&lt;/span&gt;&lt;/div&gt;';
+    var expected = '<div><span>hello</span></div>';
+    expect(decodeCorruptedEntities(encoded)).toBe(expected);
+  });
+
+  it('U-131: 2层编码的 HTML → 正确解码', () => {
+    var encoded = '&amp;lt;div&amp;gt;&amp;lt;span&amp;gt;hello&amp;lt;/span&amp;gt;&amp;lt;/div&amp;gt;';
+    var expected = '<div><span>hello</span></div>';
+    expect(decodeCorruptedEntities(encoded)).toBe(expected);
+  });
+
+  it('U-132: 4层编码的 HTML → 正确解码（模拟用户遇到的实际场景）', () => {
+    var encoded = '&amp;amp;amp;lt;div&amp;amp;amp;gt;&amp;amp;amp;lt;span&amp;amp;amp;gt;test&amp;amp;amp;lt;/span&amp;amp;amp;gt;&amp;amp;amp;lt;/div&amp;amp;amp;gt;';
+    var expected = '<div><span>test</span></div>';
+    expect(decodeCorruptedEntities(encoded)).toBe(expected);
+  });
+
+  it('U-133: 中文文本 + 被编码的 HTML 标签 → 文本保留，标签恢复', () => {
+    var encoded = '现需要给镜智提供一份机器狗&amp;lt;div&amp;gt;&amp;lt;br&amp;gt;&amp;lt;/div&amp;gt;';
+    var expected = '现需要给镜智提供一份机器狗<div><br></div>';
+    expect(decodeCorruptedEntities(encoded)).toBe(expected);
+  });
+
+  it('U-134: 中文文本 + 4层编码的 HTML → 正确恢复', () => {
+    var encoded = '功能描述&amp;amp;amp;lt;div&amp;amp;amp;gt;&amp;amp;amp;lt;span class="check-box"&amp;amp;amp;gt;☐&amp;amp;amp;lt;/span&amp;amp;amp;gt;任务&amp;amp;amp;lt;/div&amp;amp;amp;gt;';
+    var result = decodeCorruptedEntities(encoded);
+    expect(result).toContain('<div>');
+    expect(result).toContain('<span class="check-box">');
+    expect(result).toContain('☐');
+    expect(result).toContain('任务');
+    expect(result).not.toContain('&amp;lt;');
+    expect(result).not.toContain('&lt;');
+  });
+
+  it('U-135: 纯文本（无 HTML 标签）→ 原样返回', () => {
+    var plainText = '这是纯文本内容，没有任何 HTML 标签。';
+    expect(decodeCorruptedEntities(plainText)).toBe(plainText);
+  });
+
+  it('U-136: 包含 &amp; 字面量的文本 → 正确解码为 &', () => {
+    // 正常文本中的 & 会被浏览器 innerHTML 序列化为 &amp;
+    // 这个场景测试单层 &amp; 解码
+    var encoded = 'hello &amp; world';
+    var expected = 'hello & world';
+    expect(decodeCorruptedEntities(encoded)).toBe(expected);
+  });
+
+  it('U-137: 包含属性中的引号实体 → 正确解码', () => {
+    var encoded = '&lt;div class=&quot;test&quot;&gt;hello&lt;/div&gt;';
+    var expected = '<div class="test">hello</div>';
+    expect(decodeCorruptedEntities(encoded)).toBe(expected);
+  });
+
+  it('U-138: 空字符串 → 返回空字符串', () => {
+    expect(decodeCorruptedEntities('')).toBe('');
+  });
+
+  it('U-139: 已修复的内容再次调用 → 幂等（不破坏已正确的 HTML）', () => {
+    var html = '<div>已完成修复的内容</div>';
+    var firstPass = decodeCorruptedEntities(html);
+    var secondPass = decodeCorruptedEntities(firstPass);
+    expect(firstPass).toBe(html);
+    expect(secondPass).toBe(html);
+  });
+});
